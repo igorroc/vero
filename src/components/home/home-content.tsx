@@ -9,20 +9,40 @@ export function HomeContent() {
 			<Card className="max-w-2xl w-full">
 				<CardHeader className="flex flex-col items-center gap-2 pb-4">
 					<h1 className="text-4xl font-bold text-center">
-						Welcome to Your Fullstack Template
+						Vero
 					</h1>
+					<p className="text-xl text-gray-600 text-center">
+						Your Personal Finance Copilot
+					</p>
 					<Chip color="primary" variant="flat">
-						Next.js 16 + Prisma + PostgreSQL
+						Plan Your Financial Future
 					</Chip>
 				</CardHeader>
 				<CardBody className="gap-4">
 					<p className="text-center text-gray-600">
-						This is a ready-to-use fullstack Next.js template with authentication
-						and database integration. Start building your application by editing{" "}
-						<code className="bg-gray-100 px-2 py-1 rounded text-sm">
-							src/app/page.tsx
-						</code>
+						Stop wondering what you spent. Start knowing what will happen to your money.
+						Vero helps you see your financial future, calculate safe daily spending,
+						and grow your net worth intentionally.
 					</p>
+
+					<div className="grid grid-cols-2 gap-4 mt-4 text-center text-sm">
+						<div className="p-3 bg-gray-50 rounded-lg">
+							<p className="font-semibold text-blue-600">Daily Spending Limit</p>
+							<p className="text-gray-500">Know how much you can safely spend</p>
+						</div>
+						<div className="p-3 bg-gray-50 rounded-lg">
+							<p className="font-semibold text-blue-600">Cashflow Projection</p>
+							<p className="text-gray-500">See your money 90 days ahead</p>
+						</div>
+						<div className="p-3 bg-gray-50 rounded-lg">
+							<p className="font-semibold text-blue-600">Investment Planning</p>
+							<p className="text-gray-500">Automate wealth building</p>
+						</div>
+						<div className="p-3 bg-gray-50 rounded-lg">
+							<p className="font-semibold text-blue-600">Net Worth Goals</p>
+							<p className="text-gray-500">Track progress to your targets</p>
+						</div>
+					</div>
 
 					<div className="flex flex-col sm:flex-row gap-3 mt-8 justify-center">
 						<Button
@@ -41,16 +61,16 @@ export function HomeContent() {
 							variant="shadow"
 							size="lg"
 						>
-							Register
+							Get Started
 						</Button>
 						<Button
 							as={Link}
-							href="/profile"
+							href="/dashboard"
 							color="default"
 							variant="bordered"
 							size="lg"
 						>
-							Private Page
+							Dashboard
 						</Button>
 					</div>
 				</CardBody>

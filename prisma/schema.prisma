@@ -10,6 +10,10 @@ datasource db {
     url      = env("POSTGRES_PRISMA_URL")
 }
 
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
 model User {
     id       String @id @default(cuid())
     name     String
@@ -18,4 +22,193 @@ model User {
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    // Relations
+    accounts        Account[]
+    events          Event[]
+    investmentPlans InvestmentPlan[]
+    netWorthGoal    NetWorthGoal?
+    settings        UserSettings?
+    notifications   Notification[]
+}
+
+// ============================================
+// ACCOUNTS
+// ============================================
+
+enum AccountType {
+    BANK
+    CASH
+    INVESTMENT
+}
+
+model Account {
+    id             String      @id @default(cuid())
+    userId         String
+    user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+    name           String
+    type           AccountType
+    initialBalance Int // In cents (e.g., 100000 = $1000.00)
+    isActive       Boolean     @default(true)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // Relations
+    events          Event[]
+    investmentPlans InvestmentPlan[]
+
+    @@index([userId])
+}
+
+// ============================================
+// FINANCIAL EVENTS
+// ============================================
+
+enum EventType {
+    INCOME
+    EXPENSE
+    INVESTMENT
+}
+
+enum CostType {
+    RECURRENT // Regular costs: rent, utilities, subscriptions
+    EXCEPTIONAL // One-time costs: wedding, travel, emergencies
+}
+
+enum EventStatus {
+    PLANNED // Future event, affects projections only
+    CONFIRMED // Paid/received, affects real balance
+    SKIPPED // Canceled, no effect
+}
+
+enum RecurrenceFrequency {
+    DAILY
+    WEEKLY
+    BIWEEKLY
+    MONTHLY
+    YEARLY
+}
+
+model Event {
+    id          String      @id @default(cuid())
+    userId      String
+    user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+    accountId   String
+    account     Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+    description String
+    amount      Int // In cents. Positive = money in, Negative = money out
+    type        EventType
+    costType    CostType? // Only for EXPENSE type
+    status      EventStatus @default(PLANNED)
+    date        DateTime
+
+    // Recurrence fields
+    isRecurrenceTemplate Boolean              @default(false)
+    recurrenceFrequency  RecurrenceFrequency?
+    recurrenceEndDate    DateTime? // When recurrence stops (null = never)
+    recurrenceId         String? // Links generated events to their template
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([userId])
+    @@index([accountId])
+    @@index([date])
+    @@index([recurrenceId])
+    @@index([status])
+}
+
+// ============================================
+// INVESTMENT PLANNING
+// ============================================
+
+enum InvestmentFrequency {
+    WEEKLY
+    BIWEEKLY
+    MONTHLY
+    YEARLY
+}
+
+model InvestmentPlan {
+    id        String              @id @default(cuid())
+    userId    String
+    user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+    accountId String // Target investment account
+    account   Account             @relation(fields: [accountId], references: [id], onDelete: Cascade)
+    name      String
+    amount    Int // In cents
+    frequency InvestmentFrequency
+    dayOfExecution Int            @default(1) // Day of month/week for execution
+    startDate DateTime
+    endDate   DateTime?
+    isActive  Boolean             @default(true)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([userId])
+}
+
+// ============================================
+// NET WORTH GOAL
+// ============================================
+
+model NetWorthGoal {
+    id           String   @id @default(cuid())
+    userId       String   @unique
+    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    targetAmount Int // In cents
+    targetDate   DateTime
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+// ============================================
+// USER SETTINGS
+// ============================================
+
+enum HorizonMode {
+    NEXT_INCOME // Until next income event
+    END_OF_MONTH // Until end of current month
+}
+
+model UserSettings {
+    id           String      @id @default(cuid())
+    userId       String      @unique
+    user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+    safetyBuffer Int         @default(0) // In cents
+    horizonMode  HorizonMode @default(END_OF_MONTH)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+enum NotificationType {
+    UPCOMING_PAYMENT // D-7, D-3, D-1, D-0
+    MISSED_INVESTMENT // Planned investment not confirmed
+    NEGATIVE_CASHFLOW // Projected negative balance
+}
+
+model Notification {
+    id        String           @id @default(cuid())
+    userId    String
+    user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+    type      NotificationType
+    title     String
+    message   String
+    eventId   String? // Optional reference to related event
+    isRead    Boolean          @default(false)
+    expiresAt DateTime? // Auto-dismiss after this date
+
+    createdAt DateTime @default(now())
+
+    @@index([userId])
+    @@index([isRead])
+    @@index([createdAt])
 }
