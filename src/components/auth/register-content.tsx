@@ -3,16 +3,20 @@
 import Link from "next/link";
 import {RegisterForm} from "./register-form";
 import {Sparkles} from "lucide-react";
+import Image from "next/image";
+import LogoImage from "@/app/icon.png";
 
 export function RegisterContent() {
     return (
         <main className="min-h-dvh flex">
             {/* Left side - Branding */}
-            <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-purple-600 to-blue-700 p-12 flex-col justify-between">
+            <div
+                className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-purple-600 to-blue-700 p-12 flex-col justify-between">
                 <div>
                     <Link href="/" className="flex items-center gap-2">
-                        <div className="w-10 h-10 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
-                            <Sparkles className="w-6 h-6 text-white"/>
+                        <div
+                            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <Image src={LogoImage} alt="Vero Logo"/>
                         </div>
                         <span className="text-2xl font-bold text-white">Vero</span>
                     </Link>
@@ -29,24 +33,30 @@ export function RegisterContent() {
                     <div className="flex flex-col gap-3">
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
+                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor"
+                                     viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                          d="M5 13l4 4L19 7"/>
                                 </svg>
                             </div>
                             <span className="text-purple-100">Configuração em menos de 5 minutos</span>
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
+                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor"
+                                     viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                          d="M5 13l4 4L19 7"/>
                                 </svg>
                             </div>
                             <span className="text-purple-100">Sem cartão de crédito necessário</span>
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
+                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor"
+                                     viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                          d="M5 13l4 4L19 7"/>
                                 </svg>
                             </div>
                             <span className="text-purple-100">Seus dados sempre seguros</span>
@@ -65,7 +75,8 @@ export function RegisterContent() {
                     {/* Mobile Logo */}
                     <div className="lg:hidden flex justify-center mb-8">
                         <Link href="/" className="flex items-center gap-2">
-                            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl flex items-center justify-center">
+                            <div
+                                className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl flex items-center justify-center">
                                 <Sparkles className="w-6 h-6 text-white"/>
                             </div>
                             <span className="text-2xl font-bold text-slate-900 dark:text-white">Vero</span>

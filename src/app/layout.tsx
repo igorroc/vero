@@ -11,6 +11,11 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
 	title: "Vero - Seu Copiloto Financeiro",
 	description: "Planeje seu futuro financeiro com confiança. Acompanhe o fluxo de caixa, calcule limites diários de gastos e cresça seu patrimônio.",
+	icons: {
+		icon: "/favicon.png",
+		shortcut: "/favicon.png",
+		apple: "/favicon.png",
+	},
 }
 
 export default function RootLayout({

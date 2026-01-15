@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import LogoImage from "@/app/icon.png"
 import {usePathname} from "next/navigation";
 import {
     LayoutDashboard,
@@ -12,6 +13,7 @@ import {
     ChevronLeft,
     ChevronRight,
 } from "lucide-react";
+import Image from "next/image";
 
 interface NavItem {
     icon: React.ElementType;
@@ -46,10 +48,12 @@ export function Sidebar({collapsed, onCollapsedChange}: SidebarProps) {
             `}
         >
             {/* Logo */}
-            <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800">
+            <div
+                className="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800">
                 <Link href="/dashboard" className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                        <span className="text-white font-bold text-xl">V</span>
+                    <div
+                        className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <Image src={LogoImage} alt="Vero Logo"/>
                     </div>
                     {!collapsed && (
                         <span className="font-bold text-xl text-slate-900 dark:text-white">
@@ -100,7 +104,8 @@ export function Sidebar({collapsed, onCollapsedChange}: SidebarProps) {
             {/* Bottom section */}
             {!collapsed && (
                 <div className="absolute bottom-4 left-4 right-4">
-                    <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 rounded-xl p-4">
+                    <div
+                        className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 rounded-xl p-4">
                         <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
                             Seu Copiloto Financeiro
                         </p>
