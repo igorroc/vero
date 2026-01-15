@@ -160,21 +160,60 @@ export function findNextIncomeDate(
 }
 
 /**
+ * Find the last planned expense date
+ * This ensures we consider all future expenses in the calculation
+ */
+export function findLastPlannedExpenseDate(
+  events: SpendingLimitInput["events"],
+  from: Date = new Date()
+): Date | null {
+  const fromStart = startOfDay(from);
+
+  const expenseEvents = events
+    .filter(
+      (e) =>
+        (e.type === "EXPENSE" || e.type === "INVESTMENT") &&
+        e.amount < 0 &&
+        e.status === "PLANNED" &&
+        startOfDay(e.date).getTime() > fromStart.getTime()
+    )
+    .sort((a, b) => b.date.getTime() - a.date.getTime()); // Sort descending
+
+  return expenseEvents.length > 0 ? expenseEvents[0].date : null;
+}
+
+/**
  * Get the horizon date based on mode
+ *
+ * IMPORTANT: The horizon is extended to include ALL planned expenses,
+ * even if they are beyond the normal horizon (end of month or next income).
+ * This ensures we don't recommend spending money that's needed for future bills.
  */
 export function getHorizonDate(
   mode: HorizonMode,
   events: SpendingLimitInput["events"],
   today: Date = new Date()
 ): Date {
+  let baseHorizon: Date;
+
   if (mode === "NEXT_INCOME") {
     const nextIncome = findNextIncomeDate(events, today);
     // If no income found, fall back to end of month
-    return nextIncome || endOfMonth(today);
+    baseHorizon = nextIncome || endOfMonth(today);
+  } else {
+    // END_OF_MONTH mode
+    baseHorizon = endOfMonth(today);
   }
 
-  // END_OF_MONTH mode
-  return endOfMonth(today);
+  // Extend horizon to include the last planned expense if it's beyond base horizon
+  // This ensures we don't tell the user they can spend money needed for future bills
+  const lastExpenseDate = findLastPlannedExpenseDate(events, today);
+
+  if (lastExpenseDate && lastExpenseDate.getTime() > baseHorizon.getTime()) {
+    return lastExpenseDate;
+  }
+
+  return baseHorizon;
 }
 
 /**

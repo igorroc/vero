@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   calculateDailySpendingLimit,
   findNextIncomeDate,
+  findLastPlannedExpenseDate,
   getHorizonDate,
   calculateSpendingLimitAuto,
 } from "./spending-limit";
@@ -314,6 +315,89 @@ describe("findNextIncomeDate", () => {
   });
 });
 
+describe("findLastPlannedExpenseDate", () => {
+  it("should find the last planned expense date", () => {
+    const events = [
+      {
+        amount: -30000,
+        type: "EXPENSE" as const,
+        status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
+        date: utcDate(2024, 1, 15),
+      },
+      {
+        amount: -50000,
+        type: "EXPENSE" as const,
+        status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
+        date: utcDate(2024, 2, 20), // Latest
+      },
+      {
+        amount: -20000,
+        type: "EXPENSE" as const,
+        status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
+        date: utcDate(2024, 2, 10),
+      },
+    ];
+
+    const result = findLastPlannedExpenseDate(events, utcDate(2024, 1, 1));
+
+    expect(result?.toISOString().split("T")[0]).toBe("2024-02-20");
+  });
+
+  it("should include investments as expenses", () => {
+    const events = [
+      {
+        amount: -30000,
+        type: "EXPENSE" as const,
+        status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
+        date: utcDate(2024, 1, 15),
+      },
+      {
+        amount: -50000,
+        type: "INVESTMENT" as const,
+        status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
+        date: utcDate(2024, 3, 1), // Latest
+      },
+    ];
+
+    const result = findLastPlannedExpenseDate(events, utcDate(2024, 1, 1));
+
+    expect(result?.toISOString().split("T")[0]).toBe("2024-03-01");
+  });
+
+  it("should ignore CONFIRMED expenses", () => {
+    const events = [
+      {
+        amount: -30000,
+        type: "EXPENSE" as const,
+        status: "CONFIRMED" as const, // Should be ignored
+        priority: "IMPORTANT" as const,
+        date: utcDate(2024, 3, 15),
+      },
+      {
+        amount: -20000,
+        type: "EXPENSE" as const,
+        status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
+        date: utcDate(2024, 2, 10),
+      },
+    ];
+
+    const result = findLastPlannedExpenseDate(events, utcDate(2024, 1, 1));
+
+    expect(result?.toISOString().split("T")[0]).toBe("2024-02-10");
+  });
+
+  it("should return null if no planned expenses", () => {
+    const result = findLastPlannedExpenseDate([], utcDate(2024, 1, 1));
+    expect(result).toBeNull();
+  });
+});
+
 describe("getHorizonDate", () => {
   it("should return end of month for END_OF_MONTH mode", () => {
     const result = getHorizonDate("END_OF_MONTH", [], utcDate(2024, 1, 15));
@@ -342,9 +426,74 @@ describe("getHorizonDate", () => {
 
     expect(result.toISOString().split("T")[0]).toBe("2024-01-31");
   });
+
+  it("should extend horizon to include future expenses beyond base horizon", () => {
+    // User scenario: has expense next month but no income
+    const events = [
+      {
+        amount: -11000, // R$110 expense next month
+        type: "EXPENSE" as const,
+        status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
+        date: utcDate(2024, 2, 15), // Feb 15 (next month)
+      },
+    ];
+
+    // Today is Jan 15, end of month is Jan 31, but expense is Feb 15
+    const result = getHorizonDate("END_OF_MONTH", events, utcDate(2024, 1, 15));
+
+    // Horizon should be extended to Feb 15 to include the expense
+    expect(result.toISOString().split("T")[0]).toBe("2024-02-15");
+  });
+
+  it("should not extend horizon if no expenses beyond base horizon", () => {
+    const events = [
+      {
+        amount: -11000,
+        type: "EXPENSE" as const,
+        status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
+        date: utcDate(2024, 1, 20), // Before end of month
+      },
+    ];
+
+    const result = getHorizonDate("END_OF_MONTH", events, utcDate(2024, 1, 15));
+
+    // Horizon stays at end of month
+    expect(result.toISOString().split("T")[0]).toBe("2024-01-31");
+  });
 });
 
 describe("calculateSpendingLimitAuto", () => {
+  it("should consider future expenses even if beyond normal horizon", () => {
+    // User scenario: R$100 balance, R$110 expense next month, no income
+    // The user should NOT be able to spend any money
+    const events = [
+      {
+        amount: -11000, // R$110 expense next month
+        type: "EXPENSE" as const,
+        status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
+        date: utcDate(2024, 2, 15), // Feb 15
+      },
+    ];
+
+    const result = calculateSpendingLimitAuto(
+      10000, // R$100 balance
+      events,
+      "END_OF_MONTH",
+      0, // No safety buffer for simplicity
+      utcDate(2024, 1, 15) // Today is Jan 15
+    );
+
+    // Available: R$100 - R$110 = -R$10
+    // Daily limit should be negative (or zero)
+    expect(result.breakdown.requiredExpenses).toBe(11000);
+    expect(result.breakdown.availableForSpending).toBe(-1000); // -R$10
+    expect(result.breakdown.isNegative).toBe(true);
+    expect(result.breakdown.dailyLimit).toBeLessThanOrEqual(0);
+  });
+
   it("should automatically determine horizon and calculate limit", () => {
     const events = [
       {
