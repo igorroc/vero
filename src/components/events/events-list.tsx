@@ -2,8 +2,6 @@
 
 import {useEffect, useState} from "react";
 import {
-    Card,
-    CardBody,
     Button,
     Chip,
     Dropdown,
@@ -20,6 +18,7 @@ import {formatCurrency} from "@/types/finance";
 import type {Event} from "@prisma/client";
 import {toast} from "react-toastify";
 import {EventForm} from "./event-form";
+import {Plus, MoreVertical, Calendar} from "lucide-react";
 
 type TimeFilter = "all" | "past" | "upcoming" | "today";
 
@@ -83,7 +82,7 @@ export function EventsList() {
     const handleConfirm = async (eventId: string) => {
         const result = await confirmEvent(eventId);
         if (result.success) {
-            toast.success("Event confirmed");
+            toast.success("Evento confirmado");
             loadData();
         } else {
             toast.error(result.error);
@@ -93,7 +92,7 @@ export function EventsList() {
     const handleSkip = async (eventId: string) => {
         const result = await skipEvent(eventId);
         if (result.success) {
-            toast.success("Event skipped");
+            toast.success("Evento ignorado");
             loadData();
         } else {
             toast.error(result.error);
@@ -101,11 +100,11 @@ export function EventsList() {
     };
 
     const handleDelete = async (eventId: string) => {
-        if (!confirm("Are you sure you want to delete this event?")) return;
+        if (!confirm("Tem certeza que deseja excluir este evento?")) return;
 
         const result = await deleteEvent(eventId);
         if (result.success) {
-            toast.success("Event deleted");
+            toast.success("Evento excluído");
             loadData();
         } else {
             toast.error(result.error);
@@ -114,7 +113,7 @@ export function EventsList() {
 
     const formatDate = (date: Date) => {
         const d = new Date(date);
-        return d.toLocaleDateString("en-US", {
+        return d.toLocaleDateString("pt-BR", {
             weekday: "short",
             month: "short",
             day: "numeric",
@@ -141,16 +140,34 @@ export function EventsList() {
         INVESTMENT: "primary",
     };
 
+    const typeLabels: Record<string, string> = {
+        INCOME: "Receita",
+        EXPENSE: "Despesa",
+        INVESTMENT: "Investimento",
+    };
+
     const statusColors: Record<string, "default" | "success" | "warning"> = {
         PLANNED: "warning",
         CONFIRMED: "success",
         SKIPPED: "default",
     };
 
+    const statusLabels: Record<string, string> = {
+        PLANNED: "Planejado",
+        CONFIRMED: "Confirmado",
+        SKIPPED: "Ignorado",
+    };
+
+    const costTypeLabels: Record<string, string> = {
+        FIXED: "Fixo",
+        VARIABLE: "Variável",
+        EXCEPTIONAL: "Excepcional",
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
-                <Spinner size="lg" label="Loading events..."/>
+                <Spinner size="lg" label="Carregando eventos..."/>
             </div>
         );
     }
@@ -159,170 +176,165 @@ export function EventsList() {
         <div className="space-y-6">
             {/* Header */}
             <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-3xl font-bold">Events</h1>
-                    <p className="text-gray-500">Manage your financial events</p>
-                </div>
-                <Button color="primary" onPress={onOpen}>
-                    Add Event
+                <ButtonGroup>
+                    <Button
+                        color={timeFilter === "all" ? "primary" : "default"}
+                        variant={timeFilter === "all" ? "solid" : "bordered"}
+                        onPress={() => setTimeFilter("all")}
+                    >
+                        Todos
+                    </Button>
+                    <Button
+                        color={timeFilter === "past" ? "primary" : "default"}
+                        variant={timeFilter === "past" ? "solid" : "bordered"}
+                        onPress={() => setTimeFilter("past")}
+                    >
+                        Passados
+                    </Button>
+                    <Button
+                        color={timeFilter === "today" ? "primary" : "default"}
+                        variant={timeFilter === "today" ? "solid" : "bordered"}
+                        onPress={() => setTimeFilter("today")}
+                    >
+                        Hoje
+                    </Button>
+                    <Button
+                        color={timeFilter === "upcoming" ? "primary" : "default"}
+                        variant={timeFilter === "upcoming" ? "solid" : "bordered"}
+                        onPress={() => setTimeFilter("upcoming")}
+                    >
+                        Próximos
+                    </Button>
+                </ButtonGroup>
+                <Button
+                    color="primary"
+                    onPress={onOpen}
+                    startContent={<Plus className="w-4 h-4"/>}
+                >
+                    Novo Evento
                 </Button>
             </div>
 
-            {/* Filters */}
-            <ButtonGroup>
-                <Button
-                    color={timeFilter === "all" ? "primary" : "default"}
-                    variant={timeFilter === "all" ? "solid" : "bordered"}
-                    onPress={() => setTimeFilter("all")}
-                >
-                    All
-                </Button>
-                <Button
-                    color={timeFilter === "past" ? "primary" : "default"}
-                    variant={timeFilter === "past" ? "solid" : "bordered"}
-                    onPress={() => setTimeFilter("past")}
-                >
-                    Past
-                </Button>
-                <Button
-                    color={timeFilter === "today" ? "primary" : "default"}
-                    variant={timeFilter === "today" ? "solid" : "bordered"}
-                    onPress={() => setTimeFilter("today")}
-                >
-                    Today
-                </Button>
-                <Button
-                    color={timeFilter === "upcoming" ? "primary" : "default"}
-                    variant={timeFilter === "upcoming" ? "solid" : "bordered"}
-                    onPress={() => setTimeFilter("upcoming")}
-                >
-                    Upcoming
-                </Button>
-            </ButtonGroup>
-
             {/* Events list */}
             {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="modern-card p-5 border-l-4 border-l-red-500">
                     <p className="text-red-600">{error}</p>
                     <Button color="primary" size="sm" className="mt-2" onPress={loadData}>
-                        Retry
+                        Tentar Novamente
                     </Button>
                 </div>
             )}
 
             {!error && events.length === 0 && (
-                <Card>
-                    <CardBody className="text-center py-8">
-                        <p className="text-gray-500">No events found.</p>
-                        <Button color="primary" className="mt-4" onPress={onOpen}>
-                            Create your first event
-                        </Button>
-                    </CardBody>
-                </Card>
+                <div className="modern-card p-12 text-center">
+                    <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-3"/>
+                    <p className="text-slate-500">Nenhum evento encontrado.</p>
+                    <Button color="primary" className="mt-4" onPress={onOpen}>
+                        Criar seu primeiro evento
+                    </Button>
+                </div>
             )}
 
             {!error && events.length > 0 && (
-                <Card>
-                    <CardBody className="p-0">
-                        <div className="divide-y">
-                            {events.map((event) => (
-                                <div
-                                    key={event.id}
-                                    className={`flex justify-between items-center p-4 ${
-                                        isPast(event.date) && event.status === "PLANNED"
-                                            ? "bg-yellow-50"
-                                            : ""
-                                    }`}
-                                >
-                                    <div className="flex flex-col gap-1">
-                                        <div className="flex items-center gap-2">
-                                            <Chip
-                                                color={typeColors[event.type]}
-                                                size="sm"
-                                                variant="flat"
-                                            >
-                                                {event.type}
-                                            </Chip>
-                                            <Chip
-                                                color={statusColors[event.status]}
-                                                size="sm"
-                                                variant="bordered"
-                                            >
-                                                {event.status}
-                                            </Chip>
-                                            {event.costType && (
-                                                <Chip size="sm" variant="dot">
-                                                    {event.costType}
-                                                </Chip>
-                                            )}
-                                            {event.isRecurrenceTemplate && (
-                                                <Chip size="sm" color="secondary" variant="flat">
-                                                    Recurring
-                                                </Chip>
-                                            )}
-                                        </div>
-                                        <span className="font-medium text-lg">
-                      {event.description}
-                    </span>
-                                        <span
-                                            className={`text-sm ${
-                                                isToday(event.date)
-                                                    ? "text-blue-600 font-medium"
-                                                    : "text-gray-500"
-                                            }`}
+                <div className="modern-card overflow-hidden">
+                    <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                        {events.map((event) => (
+                            <div
+                                key={event.id}
+                                className={`flex justify-between items-center p-4 ${
+                                    isPast(event.date) && event.status === "PLANNED"
+                                        ? "bg-yellow-50 dark:bg-yellow-900/20"
+                                        : ""
+                                }`}
+                            >
+                                <div className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <Chip
+                                            color={typeColors[event.type]}
+                                            size="sm"
+                                            variant="flat"
                                         >
-                      {isToday(event.date) ? "Today" : formatDate(event.date)}
-                                            {isPast(event.date) && event.status === "PLANNED" && (
-                                                <span className="text-yellow-600 ml-2">(Overdue)</span>
-                                            )}
-                    </span>
+                                            {typeLabels[event.type]}
+                                        </Chip>
+                                        <Chip
+                                            color={statusColors[event.status]}
+                                            size="sm"
+                                            variant="bordered"
+                                        >
+                                            {statusLabels[event.status]}
+                                        </Chip>
+                                        {event.costType && (
+                                            <Chip size="sm" variant="dot">
+                                                {costTypeLabels[event.costType]}
+                                            </Chip>
+                                        )}
+                                        {event.isRecurrenceTemplate && (
+                                            <Chip size="sm" color="secondary" variant="flat">
+                                                Recorrente
+                                            </Chip>
+                                        )}
                                     </div>
-
-                                    <div className="flex items-center gap-4">
-                    <span
-                        className={`text-xl font-bold ${
-                            event.amount > 0 ? "text-green-600" : "text-red-600"
-                        }`}
-                    >
-                      {event.amount > 0 ? "+" : ""}
-                        {formatCurrency(event.amount)}
-                    </span>
-
-                                        <Dropdown>
-                                            <DropdownTrigger>
-                                                <Button isIconOnly variant="light" size="sm">
-                                                    ...
-                                                </Button>
-                                            </DropdownTrigger>
-                                            <DropdownMenu
-                                                aria-label="Event actions"
-                                                onAction={(key) => {
-                                                    if (key === "confirm") handleConfirm(event.id);
-                                                    if (key === "skip") handleSkip(event.id);
-                                                    if (key === "delete") handleDelete(event.id);
-                                                }}
-                                            >
-                                                {event.status === "PLANNED" ? (
-                                                    <DropdownItem key="confirm">Confirm</DropdownItem>
-                                                ) : null}
-                                                {event.status === "PLANNED" ? (
-                                                    <DropdownItem key="skip">Skip</DropdownItem>
-                                                ) : null}
-                                                <DropdownItem
-                                                    key="delete"
-                                                    className="text-danger"
-                                                    color="danger"
-                                                >
-                                                    Delete
-                                                </DropdownItem>
-                                            </DropdownMenu>
-                                        </Dropdown>
-                                    </div>
+                                    <span className="font-medium text-lg text-slate-900 dark:text-white">
+                                        {event.description}
+                                    </span>
+                                    <span
+                                        className={`text-sm ${
+                                            isToday(event.date)
+                                                ? "text-blue-600 font-medium"
+                                                : "text-slate-500"
+                                        }`}
+                                    >
+                                        {isToday(event.date) ? "Hoje" : formatDate(event.date)}
+                                        {isPast(event.date) && event.status === "PLANNED" && (
+                                            <span className="text-yellow-600 ml-2">(Atrasado)</span>
+                                        )}
+                                    </span>
                                 </div>
-                            ))}
-                        </div>
-                    </CardBody>
-                </Card>
+
+                                <div className="flex items-center gap-4">
+                                    <span
+                                        className={`text-xl font-bold ${
+                                            event.amount > 0 ? "text-green-600" : "text-red-600"
+                                        }`}
+                                    >
+                                        {event.amount > 0 ? "+" : ""}
+                                        {formatCurrency(event.amount)}
+                                    </span>
+
+                                    <Dropdown>
+                                        <DropdownTrigger>
+                                            <Button isIconOnly variant="light" size="sm">
+                                                <MoreVertical className="w-4 h-4"/>
+                                            </Button>
+                                        </DropdownTrigger>
+                                        <DropdownMenu
+                                            aria-label="Ações do evento"
+                                            onAction={(key) => {
+                                                if (key === "confirm") handleConfirm(event.id);
+                                                if (key === "skip") handleSkip(event.id);
+                                                if (key === "delete") handleDelete(event.id);
+                                            }}
+                                        >
+                                            {event.status === "PLANNED" ? (
+                                                <DropdownItem key="confirm">Confirmar</DropdownItem>
+                                            ) : null}
+                                            {event.status === "PLANNED" ? (
+                                                <DropdownItem key="skip">Ignorar</DropdownItem>
+                                            ) : null}
+                                            <DropdownItem
+                                                key="delete"
+                                                className="text-danger"
+                                                color="danger"
+                                            >
+                                                Excluir
+                                            </DropdownItem>
+                                        </DropdownMenu>
+                                    </Dropdown>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             )}
 
             {/* Event form modal */}

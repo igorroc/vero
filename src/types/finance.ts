@@ -48,7 +48,7 @@ export function centsToDollars(cents: Cents): number {
 /**
  * Format cents as currency string
  */
-export function formatCurrency(cents: Cents, locale = "en-US", currency = "USD"): string {
+export function formatCurrency(cents: Cents, locale = "pt-BR", currency = "BRL"): string {
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,

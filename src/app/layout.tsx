@@ -9,8 +9,8 @@ import { Providers } from "./providers"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-	title: "Vero - Personal Finance Copilot",
-	description: "Plan your financial future with confidence. Track cashflow, calculate daily spending limits, and grow your net worth.",
+	title: "Vero - Seu Copiloto Financeiro",
+	description: "Planeje seu futuro financeiro com confiança. Acompanhe o fluxo de caixa, calcule limites diários de gastos e cresça seu patrimônio.",
 }
 
 export default function RootLayout({
@@ -19,7 +19,7 @@ export default function RootLayout({
 	children: React.ReactNode
 }>) {
 	return (
-		<html lang="en">
+		<html lang="pt-BR">
 			<body className={inter.className}>
 				<Providers>
 					<ToastContainer />
