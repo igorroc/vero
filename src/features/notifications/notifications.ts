@@ -186,6 +186,7 @@ export async function generateNotifications(): Promise<void> {
                     type: e.type,
                     costType: e.costType,
                     status: e.status,
+                    priority: e.priority,
                     date: e.date,
                     accountId: e.accountId,
                 })),

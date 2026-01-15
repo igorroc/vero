@@ -15,6 +15,7 @@ export {
 export {
   updateEvent,
   updateEventStatus,
+  updateEventPriority,
   confirmEvent,
   skipEvent,
   unconfirmEvent,

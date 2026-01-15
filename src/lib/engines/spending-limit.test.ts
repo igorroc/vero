@@ -42,12 +42,14 @@ describe("calculateDailySpendingLimit", () => {
           amount: -30000, // -$300 rent
           type: "EXPENSE",
           status: "PLANNED",
+          priority: "IMPORTANT" as const,
           date: utcDate(2024, 1, 5),
         },
         {
           amount: -10000, // -$100 utilities
           type: "EXPENSE",
           status: "PLANNED",
+          priority: "IMPORTANT" as const,
           date: utcDate(2024, 1, 15),
         },
       ],
@@ -68,6 +70,7 @@ describe("calculateDailySpendingLimit", () => {
           amount: -20000, // -$200 investment
           type: "INVESTMENT",
           status: "PLANNED",
+          priority: "IMPORTANT" as const,
           date: utcDate(2024, 1, 10),
         },
       ],
@@ -89,6 +92,7 @@ describe("calculateDailySpendingLimit", () => {
           amount: 300000, // +$3000 salary
           type: "INCOME",
           status: "PLANNED",
+          priority: "IMPORTANT" as const,
           date: utcDate(2024, 1, 15),
         },
       ],
@@ -110,12 +114,14 @@ describe("calculateDailySpendingLimit", () => {
           amount: -30000, // Already paid
           type: "EXPENSE",
           status: "CONFIRMED",
+          priority: "IMPORTANT" as const,
           date: utcDate(2024, 1, 5),
         },
         {
           amount: -10000, // Planned
           type: "EXPENSE",
           status: "PLANNED",
+          priority: "IMPORTANT" as const,
           date: utcDate(2024, 1, 15),
         },
       ],
@@ -135,6 +141,7 @@ describe("calculateDailySpendingLimit", () => {
           amount: -50000,
           type: "EXPENSE",
           status: "PLANNED",
+          priority: "IMPORTANT" as const,
           date: utcDate(2024, 2, 15), // After Jan 31
         },
       ],
@@ -154,6 +161,7 @@ describe("calculateDailySpendingLimit", () => {
           amount: -100000, // -$1000 rent
           type: "EXPENSE",
           status: "PLANNED",
+          priority: "IMPORTANT" as const,
           date: utcDate(2024, 1, 5),
         },
       ],
@@ -175,12 +183,14 @@ describe("calculateDailySpendingLimit", () => {
           amount: -20000, // -$200 expense (leaves $300)
           type: "EXPENSE",
           status: "PLANNED",
+          priority: "IMPORTANT" as const,
           date: utcDate(2024, 1, 5),
         },
         {
           amount: -40000, // -$400 investment (causes shortfall)
           type: "INVESTMENT",
           status: "PLANNED",
+          priority: "IMPORTANT" as const,
           date: utcDate(2024, 1, 10),
         },
       ],
@@ -247,12 +257,14 @@ describe("findNextIncomeDate", () => {
         amount: 500000,
         type: "INCOME" as const,
         status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
         date: utcDate(2024, 1, 15),
       },
       {
         amount: 500000,
         type: "INCOME" as const,
         status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
         date: utcDate(2024, 2, 15),
       },
     ];
@@ -268,6 +280,7 @@ describe("findNextIncomeDate", () => {
         amount: 500000,
         type: "INCOME" as const,
         status: "CONFIRMED" as const,
+        priority: "IMPORTANT" as const,
         date: utcDate(2023, 12, 15), // Past
       },
     ];
@@ -283,12 +296,14 @@ describe("findNextIncomeDate", () => {
         amount: 500000,
         type: "INCOME" as const,
         status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
         date: utcDate(2023, 12, 15), // Past
       },
       {
         amount: 500000,
         type: "INCOME" as const,
         status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
         date: utcDate(2024, 2, 15), // Future
       },
     ];
@@ -312,6 +327,7 @@ describe("getHorizonDate", () => {
         amount: 500000,
         type: "INCOME" as const,
         status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
         date: utcDate(2024, 1, 25),
       },
     ];
@@ -335,12 +351,14 @@ describe("calculateSpendingLimitAuto", () => {
         amount: 500000,
         type: "INCOME" as const,
         status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
         date: utcDate(2024, 1, 20),
       },
       {
         amount: -30000,
         type: "EXPENSE" as const,
         status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
         date: utcDate(2024, 1, 5),
       },
     ];
@@ -367,6 +385,7 @@ describe("complex scenarios", () => {
         amount: 500000, // $5000 salary
         type: "INCOME" as const,
         status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
         date: utcDate(2024, 2, 1),
       },
       // Fixed expenses
@@ -374,18 +393,21 @@ describe("complex scenarios", () => {
         amount: -150000, // $1500 rent
         type: "EXPENSE" as const,
         status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
         date: utcDate(2024, 2, 5),
       },
       {
         amount: -20000, // $200 utilities
         type: "EXPENSE" as const,
         status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
         date: utcDate(2024, 2, 10),
       },
       {
         amount: -50000, // $500 car payment
         type: "EXPENSE" as const,
         status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
         date: utcDate(2024, 2, 15),
       },
       // Investment
@@ -393,6 +415,7 @@ describe("complex scenarios", () => {
         amount: -100000, // $1000 investment
         type: "INVESTMENT" as const,
         status: "PLANNED" as const,
+        priority: "IMPORTANT" as const,
         date: utcDate(2024, 2, 1),
       },
     ];

@@ -6,6 +6,7 @@ import type {
   Event,
   EventType,
   EventStatus,
+  EventPriority,
   CostType,
   RecurrenceFrequency,
 } from "@prisma/client";
@@ -18,6 +19,7 @@ export interface CreateEventInput {
   type: EventType;
   costType?: CostType | null; // Only for EXPENSE type
   status?: EventStatus;
+  priority?: EventPriority; // Default: IMPORTANT
   date: Date;
   // Recurrence
   isRecurring?: boolean;
@@ -82,6 +84,7 @@ export async function createEvent(
       type: input.type,
       costType: input.type === "EXPENSE" ? input.costType ?? "RECURRENT" : null,
       status: input.status ?? "PLANNED",
+      priority: input.priority ?? "IMPORTANT",
       date: input.date,
       isRecurrenceTemplate: input.isRecurring ?? false,
       recurrenceFrequency: input.isRecurring ? input.recurrenceFrequency : null,
@@ -137,6 +140,7 @@ export async function createRecurrenceInstance(
         type: template.type,
         costType: template.costType,
         status,
+        priority: template.priority,
         date,
         isRecurrenceTemplate: false,
         recurrenceId: templateId,

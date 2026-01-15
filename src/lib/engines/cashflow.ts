@@ -4,8 +4,10 @@ import type {
   CashflowEvent,
   CashflowProjection,
   CashflowInput,
+  PrioritySimulationResult,
+  EventPriority,
 } from "@/types/finance";
-import { startOfDay, addDays, formatDateISO, daysBetween } from "@/types/finance";
+import { startOfDay, addDays, formatDateISO, daysBetween, formatCurrency } from "@/types/finance";
 
 // ============================================
 // TYPES
@@ -113,6 +115,7 @@ export function buildCashflowProjection(input: CashflowInput): CashflowProjectio
         type: event.type,
         costType: event.costType,
         status: event.status,
+        priority: event.priority,
         accountId: event.accountId,
         accountName: account.name,
       });
@@ -296,5 +299,87 @@ export function getProjectionSummary(projection: CashflowProjection): {
     netChange,
     avgDailySpend,
     daysUntilNegative,
+  };
+}
+
+/**
+ * Simulate cashflow with and without OPTIONAL events
+ * Shows if postponing optional expenses would fix negative balance
+ */
+export function simulatePriorityScenarios(
+  input: CashflowInput
+): PrioritySimulationResult {
+  // Run original projection
+  const originalProjection = buildCashflowProjection(input);
+
+  // Filter out OPTIONAL events (expenses only, keep incomes)
+  const eventsWithoutOptional = input.events.filter(
+    (e) => e.priority !== "OPTIONAL" || e.type === "INCOME"
+  );
+
+  // Find optional events that could be postponed
+  const postponableEvents = input.events
+    .filter(
+      (e) =>
+        e.priority === "OPTIONAL" &&
+        e.type !== "INCOME" &&
+        e.status !== "CONFIRMED" &&
+        e.status !== "SKIPPED"
+    )
+    .map((e) => ({
+      id: e.id,
+      description: e.description,
+      amount: e.amount,
+      date: e.date,
+      priority: e.priority as EventPriority,
+    }));
+
+  // Calculate potential savings from postponing optional events
+  const potentialSavings = postponableEvents.reduce(
+    (sum, e) => sum + Math.abs(e.amount),
+    0
+  );
+
+  // Run projection without optional events
+  const projectionWithoutOptional = buildCashflowProjection({
+    ...input,
+    events: eventsWithoutOptional,
+  });
+
+  // Check if the situation would recover
+  const wouldRecover =
+    originalProjection.negativeDays > 0 &&
+    projectionWithoutOptional.negativeDays === 0;
+
+  // Generate suggestion based on results
+  let suggestion: string | null = null;
+
+  if (originalProjection.negativeDays > 0) {
+    if (wouldRecover && postponableEvents.length > 0) {
+      suggestion = `Adiando ${postponableEvents.length} gasto(s) opcional(is) (${formatCurrency(potentialSavings)}), seu saldo ficaria positivo.`;
+    } else if (postponableEvents.length > 0 && projectionWithoutOptional.negativeDays < originalProjection.negativeDays) {
+      suggestion = `Adiando gastos opcionais, você reduziria os dias com saldo negativo de ${originalProjection.negativeDays} para ${projectionWithoutOptional.negativeDays}.`;
+    } else if (postponableEvents.length === 0) {
+      suggestion = "Não há gastos opcionais para adiar. Considere revisar suas despesas importantes.";
+    } else {
+      suggestion = "Mesmo adiando gastos opcionais, o saldo continuará negativo. Revise suas despesas obrigatórias.";
+    }
+  }
+
+  return {
+    original: {
+      lowestBalance: originalProjection.lowestBalance,
+      negativeDays: originalProjection.negativeDays,
+      criticalDays: originalProjection.criticalDays,
+    },
+    withoutOptional: {
+      lowestBalance: projectionWithoutOptional.lowestBalance,
+      negativeDays: projectionWithoutOptional.negativeDays,
+      criticalDays: projectionWithoutOptional.criticalDays,
+    },
+    postponableEvents,
+    potentialSavings,
+    wouldRecover,
+    suggestion,
   };
 }

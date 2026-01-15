@@ -13,6 +13,7 @@ import {
     ArrowRight,
     DollarSign,
     Target,
+    Lightbulb,
 } from "lucide-react";
 import {getDashboardData, type DashboardData} from "@/features/dashboard";
 import {formatCurrency} from "@/types/finance";
@@ -105,7 +106,7 @@ export function DashboardContent() {
             </div>
 
             {/* Alerts Section */}
-            {(data.criticalEvents.length > 0 || data.projectionSummary.daysUntilNegative !== null) && (
+            {(data.criticalEvents.length > 0 || data.projectionSummary.daysUntilNegative !== null || data.prioritySimulation?.suggestion) && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {data.criticalEvents.length > 0 && (
                         <div className="modern-card p-5 border-l-4 border-l-red-500">
@@ -151,6 +152,55 @@ export function DashboardContent() {
                                     <p className="text-xs text-slate-400 mt-2">
                                         Revise seus gastos planejados para evitar problemas.
                                     </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {data.prioritySimulation?.suggestion && (
+                        <div className={`modern-card p-5 border-l-4 ${
+                            data.prioritySimulation.wouldRecover ? "border-l-green-500" : "border-l-blue-500"
+                        }`}>
+                            <div className="flex items-start gap-3">
+                                <div className={`p-2 rounded-lg ${
+                                    data.prioritySimulation.wouldRecover ? "bg-green-100" : "bg-blue-100"
+                                }`}>
+                                    <Lightbulb className={`w-5 h-5 ${
+                                        data.prioritySimulation.wouldRecover ? "text-green-600" : "text-blue-600"
+                                    }`}/>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-slate-900 dark:text-white">
+                                        Sugestão Inteligente
+                                    </h3>
+                                    <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+                                        {data.prioritySimulation.suggestion}
+                                    </p>
+                                    {data.prioritySimulation.postponableEvents.length > 0 && (
+                                        <div className="mt-3">
+                                            <p className="text-xs text-slate-500 mb-2">
+                                                Gastos opcionais que podem ser adiados:
+                                            </p>
+                                            <ul className="space-y-1">
+                                                {data.prioritySimulation.postponableEvents.slice(0, 3).map((event) => (
+                                                    <li key={event.id} className="text-xs text-slate-600 dark:text-slate-400">
+                                                        • {event.description}: {formatCurrency(Math.abs(event.amount))}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                            {data.prioritySimulation.postponableEvents.length > 3 && (
+                                                <p className="text-xs text-slate-400 mt-1">
+                                                    e mais {data.prioritySimulation.postponableEvents.length - 3} evento(s)...
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                    <Link
+                                        href="/events"
+                                        className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 mt-3"
+                                    >
+                                        Gerenciar prioridades <ArrowRight className="w-3 h-3"/>
+                                    </Link>
                                 </div>
                             </div>
                         </div>

@@ -82,6 +82,12 @@ enum EventStatus {
     SKIPPED // Canceled, no effect
 }
 
+enum EventPriority {
+    REQUIRED // Obrigatório - não pode ser adiado (aluguel, contas essenciais)
+    IMPORTANT // Importante - deveria ser pago, mas tem flexibilidade
+    OPTIONAL // Opcional - pode ser adiado ou cancelado se necessário
+}
+
 enum RecurrenceFrequency {
     DAILY
     WEEKLY
@@ -101,6 +107,7 @@ model Event {
     type        EventType
     costType    CostType? // Only for EXPENSE type
     status      EventStatus @default(PLANNED)
+    priority    EventPriority @default(IMPORTANT)
     date        DateTime
 
     // Recurrence fields
@@ -117,6 +124,7 @@ model Event {
     @@index([date])
     @@index([recurrenceId])
     @@index([status])
+    @@index([priority])
 }
 
 // ============================================

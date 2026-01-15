@@ -6,6 +6,7 @@ import type {
   Event,
   EventType,
   EventStatus,
+  EventPriority,
   CostType,
   RecurrenceFrequency,
 } from "@prisma/client";
@@ -19,6 +20,7 @@ export interface UpdateEventInput {
   type?: EventType;
   costType?: CostType | null;
   status?: EventStatus;
+  priority?: EventPriority;
   date?: Date;
   recurrenceFrequency?: RecurrenceFrequency | null;
   recurrenceEndDate?: Date | null;
@@ -112,6 +114,13 @@ export async function updateEvent(
       updateData.status = input.status;
     }
 
+    if (input.priority !== undefined) {
+      if (!["REQUIRED", "IMPORTANT", "OPTIONAL"].includes(input.priority)) {
+        return { success: false, error: "Invalid priority" };
+      }
+      updateData.priority = input.priority;
+    }
+
     if (input.date !== undefined) {
       updateData.date = input.date;
     }
@@ -165,4 +174,14 @@ export async function skipEvent(eventId: string): Promise<UpdateEventResult> {
  */
 export async function unconfirmEvent(eventId: string): Promise<UpdateEventResult> {
   return updateEventStatus(eventId, "PLANNED");
+}
+
+/**
+ * Update event priority
+ */
+export async function updateEventPriority(
+  eventId: string,
+  priority: EventPriority
+): Promise<UpdateEventResult> {
+  return updateEvent({ id: eventId, priority });
 }

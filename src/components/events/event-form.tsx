@@ -32,6 +32,7 @@ export function EventForm({isOpen, onClose, onSuccess, accounts}: EventFormProps
         amount: string;
         type: "INCOME" | "EXPENSE" | "INVESTMENT";
         costType: "RECURRENT" | "EXCEPTIONAL";
+        priority: "REQUIRED" | "IMPORTANT" | "OPTIONAL";
         date: string;
         isRecurring: boolean;
         recurrenceFrequency: string;
@@ -41,6 +42,7 @@ export function EventForm({isOpen, onClose, onSuccess, accounts}: EventFormProps
         amount: "",
         type: "EXPENSE",
         costType: "RECURRENT",
+        priority: "IMPORTANT",
         date: new Date().toISOString().split("T")[0],
         isRecurring: false,
         recurrenceFrequency: "MONTHLY",
@@ -60,6 +62,7 @@ export function EventForm({isOpen, onClose, onSuccess, accounts}: EventFormProps
             amount: parseFloat(formData.amount),
             type: formData.type,
             costType: formData.type === "EXPENSE" ? formData.costType : undefined,
+            priority: formData.priority,
             date: new Date(formData.date),
             isRecurring: formData.isRecurring,
             recurrenceFrequency: formData.isRecurring
@@ -80,6 +83,7 @@ export function EventForm({isOpen, onClose, onSuccess, accounts}: EventFormProps
                 amount: "",
                 type: "EXPENSE",
                 costType: "RECURRENT",
+                priority: "IMPORTANT",
                 date: new Date().toISOString().split("T")[0],
                 isRecurring: false,
                 recurrenceFrequency: "MONTHLY",
@@ -162,6 +166,28 @@ export function EventForm({isOpen, onClose, onSuccess, accounts}: EventFormProps
                             </SelectItem>
                             <SelectItem key="EXCEPTIONAL" textValue="Excepcional">
                                 Excepcional (viagens, emergências)
+                            </SelectItem>
+                        </Select>
+                    )}
+
+                    {formData.type !== "INCOME" && (
+                        <Select
+                            label="Prioridade"
+                            selectedKeys={[formData.priority]}
+                            onSelectionChange={(keys) => {
+                                const value = Array.from(keys)[0] as "REQUIRED" | "IMPORTANT" | "OPTIONAL";
+                                setFormData({...formData, priority: value});
+                            }}
+                            description="Eventos opcionais podem ser sugeridos para adiamento quando necessário."
+                        >
+                            <SelectItem key="REQUIRED" textValue="Obrigatório">
+                                🔴 Obrigatório (não pode ser adiado)
+                            </SelectItem>
+                            <SelectItem key="IMPORTANT" textValue="Importante">
+                                🟡 Importante (deveria ser pago)
+                            </SelectItem>
+                            <SelectItem key="OPTIONAL" textValue="Opcional">
+                                🟢 Opcional (pode ser adiado)
                             </SelectItem>
                         </Select>
                     )}

@@ -12,11 +12,13 @@ import {
     buildCashflowProjection,
     getProjectionSummary,
     findCriticalEvents,
+    simulatePriorityScenarios,
 } from "@/lib/engines/cashflow";
 import type {
     Cents,
     CashflowEvent,
     HorizonMode,
+    PrioritySimulationResult,
 } from "@/types/finance";
 import {addDays, startOfDay} from "@/types/finance";
 
@@ -49,6 +51,9 @@ export interface DashboardData {
 
     // Critical events (events causing negative balance)
     criticalEvents: CashflowEvent[];
+
+    // Priority simulation (what if OPTIONAL events are postponed)
+    prioritySimulation: PrioritySimulationResult | null;
 
     // User settings
     horizonMode: HorizonMode;
@@ -104,6 +109,7 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
             amount: e.amount,
             type: e.type,
             status: e.status,
+            priority: e.priority,
             date: e.date,
         }));
 
@@ -133,8 +139,8 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
                 status: e.status,
             }));
 
-        // Build cashflow projection for summary
-        const projection = buildCashflowProjection({
+        // Build cashflow projection input
+        const cashflowInput = {
             accounts: accounts.map((a) => ({
                 id: a.id,
                 name: a.name,
@@ -149,16 +155,25 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
                     type: e.type,
                     costType: e.costType,
                     status: e.status,
+                    priority: e.priority,
                     date: e.date,
                     accountId: e.accountId,
                 })),
             startDate: today,
             endDate: addDays(today, 30),
             safetyBuffer: settings.safetyBuffer,
-        });
+        };
 
+        // Build cashflow projection for summary
+        const projection = buildCashflowProjection(cashflowInput);
         const projectionSummary = getProjectionSummary(projection);
         const criticalEvents = findCriticalEvents(projection);
+
+        // Run priority simulation only if there are negative days
+        let prioritySimulation: PrioritySimulationResult | null = null;
+        if (projection.negativeDays > 0) {
+            prioritySimulation = simulatePriorityScenarios(cashflowInput);
+        }
 
         return {
             success: true,
@@ -169,6 +184,7 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
                 upcomingEvents,
                 projectionSummary,
                 criticalEvents,
+                prioritySimulation,
                 horizonMode: settings.horizonMode,
                 safetyBuffer: settings.safetyBuffer,
             },

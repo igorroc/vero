@@ -3,6 +3,7 @@ import type {
   Event,
   EventType,
   EventStatus,
+  EventPriority,
   CostType,
   RecurrenceFrequency,
   InvestmentPlan,
@@ -15,6 +16,7 @@ export type {
   Event,
   EventType,
   EventStatus,
+  EventPriority,
   CostType,
   RecurrenceFrequency,
   InvestmentPlan,
@@ -152,6 +154,7 @@ export interface CashflowEvent {
   type: EventType;
   costType: CostType | null;
   status: EventStatus;
+  priority: EventPriority;
   accountId: string;
   accountName: string;
 }
@@ -171,6 +174,33 @@ export interface CashflowProjection {
   lowestBalanceDate: Date | null;
   negativeDays: number;
   criticalDays: number;
+}
+
+/**
+ * Result of priority-based cashflow simulation
+ * Shows what happens if OPTIONAL events are postponed
+ */
+export interface PrioritySimulationResult {
+  original: {
+    lowestBalance: Cents;
+    negativeDays: number;
+    criticalDays: number;
+  };
+  withoutOptional: {
+    lowestBalance: Cents;
+    negativeDays: number;
+    criticalDays: number;
+  };
+  postponableEvents: Array<{
+    id: string;
+    description: string;
+    amount: Cents;
+    date: Date;
+    priority: EventPriority;
+  }>;
+  potentialSavings: Cents;
+  wouldRecover: boolean; // True if postponing OPTIONAL events fixes negative balance
+  suggestion: string | null; // Human-readable suggestion
 }
 
 // ============================================
@@ -256,6 +286,7 @@ export interface CashflowInput {
     type: EventType;
     costType: CostType | null;
     status: EventStatus;
+    priority: EventPriority;
     date: Date;
     accountId: string;
   }>;
@@ -273,6 +304,7 @@ export interface SpendingLimitInput {
     amount: Cents;
     type: EventType;
     status: EventStatus;
+    priority: EventPriority;
     date: Date;
   }>;
   horizonDate: Date;

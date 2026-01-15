@@ -60,6 +60,7 @@ export async function getCashflowProjection(
           type: e.type,
           costType: e.costType,
           status: e.status,
+          priority: e.priority,
           date: e.date,
           accountId: e.accountId,
         })),

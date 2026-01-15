@@ -12,7 +12,7 @@ import {
     ButtonGroup,
     useDisclosure,
 } from "@nextui-org/react";
-import {getEvents, getEventsWithProjection, confirmEvent, skipEvent, deleteEvent} from "@/features/events";
+import {getEvents, getEventsWithProjection, confirmEvent, skipEvent, deleteEvent, updateEventPriority} from "@/features/events";
 import {getAccountBalances, type AccountWithBalance} from "@/features/accounts";
 import {formatCurrency} from "@/types/finance";
 import type {Event} from "@prisma/client";
@@ -171,6 +171,23 @@ export function EventsList() {
         FIXED: "Fixo",
         VARIABLE: "Variável",
         EXCEPTIONAL: "Excepcional",
+        RECURRENT: "Recorrente",
+    };
+
+    const priorityLabels: Record<string, string> = {
+        REQUIRED: "🔴 Obrigatório",
+        IMPORTANT: "🟡 Importante",
+        OPTIONAL: "🟢 Opcional",
+    };
+
+    const handlePriorityChange = async (eventId: string, priority: "REQUIRED" | "IMPORTANT" | "OPTIONAL") => {
+        const result = await updateEventPriority(eventId, priority);
+        if (result.success) {
+            toast.success("Prioridade atualizada");
+            loadData();
+        } else {
+            toast.error(result.error);
+        }
     };
 
     if (loading) {
@@ -282,6 +299,15 @@ export function EventsList() {
                                                 Recorrente
                                             </Chip>
                                         )}
+                                        {event.type !== "INCOME" && (
+                                            <Chip
+                                                size="sm"
+                                                variant="light"
+                                                className="text-xs"
+                                            >
+                                                {priorityLabels[event.priority]}
+                                            </Chip>
+                                        )}
                                     </div>
                                     <span className="font-medium text-lg text-slate-900 dark:text-white">
                                         {event.description}
@@ -322,6 +348,9 @@ export function EventsList() {
                                                 if (key === "confirm") handleConfirm(event.id);
                                                 if (key === "skip") handleSkip(event.id);
                                                 if (key === "delete") handleDelete(event.id);
+                                                if (key === "priority-required") handlePriorityChange(event.id, "REQUIRED");
+                                                if (key === "priority-important") handlePriorityChange(event.id, "IMPORTANT");
+                                                if (key === "priority-optional") handlePriorityChange(event.id, "OPTIONAL");
                                             }}
                                         >
                                             {event.status === "PLANNED" ? (
@@ -329,6 +358,21 @@ export function EventsList() {
                                             ) : null}
                                             {event.status === "PLANNED" ? (
                                                 <DropdownItem key="skip">Ignorar</DropdownItem>
+                                            ) : null}
+                                            {event.type !== "INCOME" && event.priority !== "REQUIRED" ? (
+                                                <DropdownItem key="priority-required">
+                                                    🔴 Marcar como Obrigatório
+                                                </DropdownItem>
+                                            ) : null}
+                                            {event.type !== "INCOME" && event.priority !== "IMPORTANT" ? (
+                                                <DropdownItem key="priority-important">
+                                                    🟡 Marcar como Importante
+                                                </DropdownItem>
+                                            ) : null}
+                                            {event.type !== "INCOME" && event.priority !== "OPTIONAL" ? (
+                                                <DropdownItem key="priority-optional">
+                                                    🟢 Marcar como Opcional
+                                                </DropdownItem>
                                             ) : null}
                                             <DropdownItem
                                                 key="delete"
