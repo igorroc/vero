@@ -100,7 +100,8 @@ describe("generateOccurrences", () => {
     costType: "RECURRENT",
     accountId: "account-1",
     date: utcDate(2024, 1, 5), // First occurrence: Jan 5, 2024
-    recurrenceFrequency: "MONTHLY",
+    priority: "IMPORTANT" as const,
+        recurrenceFrequency: "MONTHLY",
     recurrenceEndDate: null,
   };
 
@@ -179,7 +180,8 @@ describe("generateOccurrences", () => {
   it("should generate daily occurrences correctly", () => {
     const template: RecurrenceTemplate = {
       ...baseTemplate,
-      recurrenceFrequency: "DAILY",
+      priority: "IMPORTANT" as const,
+        recurrenceFrequency: "DAILY",
     };
 
     const events = generateOccurrences(template, {
@@ -227,6 +229,7 @@ describe("generateEventsFromTemplates", () => {
         costType: "RECURRENT",
         accountId: "account-1",
         date: utcDate(2024, 1, 5),
+        priority: "IMPORTANT" as const,
         recurrenceFrequency: "MONTHLY",
         recurrenceEndDate: null,
       },
@@ -238,6 +241,7 @@ describe("generateEventsFromTemplates", () => {
         costType: null,
         accountId: "account-1",
         date: utcDate(2024, 1, 1),
+        priority: "IMPORTANT" as const,
         recurrenceFrequency: "MONTHLY",
         recurrenceEndDate: null,
       },
@@ -270,6 +274,7 @@ describe("generateEventsFromTemplates", () => {
         costType: "RECURRENT",
         accountId: "account-1",
         date: utcDate(2024, 1, 5),
+        priority: "IMPORTANT" as const,
         recurrenceFrequency: "MONTHLY",
         recurrenceEndDate: null,
       },
@@ -298,7 +303,8 @@ describe("determinism", () => {
       costType: "RECURRENT",
       accountId: "acc-1",
       date: utcDate(2024, 1, 15),
-      recurrenceFrequency: "WEEKLY",
+      priority: "IMPORTANT" as const,
+        recurrenceFrequency: "WEEKLY",
       recurrenceEndDate: null,
     };
 

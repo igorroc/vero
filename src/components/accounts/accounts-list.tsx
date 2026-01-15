@@ -22,13 +22,15 @@ import {
 import {
     getAccountBalances,
     createAccount,
+    updateAccount,
     deleteAccount,
     type AccountWithBalance,
     type CreateAccountInput,
+    type UpdateAccountInput,
 } from "@/features/accounts";
-import {formatCurrency} from "@/types/finance";
+import {formatCurrency, centsToDollars} from "@/types/finance";
 import {toast} from "react-toastify";
-import {Plus, MoreVertical, PiggyBank, Wallet} from "lucide-react";
+import {Plus, MoreVertical, PiggyBank, Wallet, Landmark, Banknote, TrendingUp, Pencil} from "lucide-react";
 import {StatCard} from "@/components/ui/stat-card";
 
 export function AccountsList() {
@@ -37,12 +39,47 @@ export function AccountsList() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const {isOpen, onOpen, onClose} = useDisclosure();
+    const {isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose} = useDisclosure();
     const [formLoading, setFormLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: "",
         type: "BANK" as "BANK" | "CASH" | "INVESTMENT",
         initialBalance: "",
     });
+    const [editData, setEditData] = useState<{
+        id: string;
+        name: string;
+        type: "BANK" | "CASH" | "INVESTMENT";
+        initialBalance: string;
+    } | null>(null);
+
+    // Get icon based on account type
+    const getAccountIcon = (type: string) => {
+        switch (type) {
+            case "BANK":
+                return Landmark;
+            case "CASH":
+                return Banknote;
+            case "INVESTMENT":
+                return TrendingUp;
+            default:
+                return PiggyBank;
+        }
+    };
+
+    // Get gradient based on account type
+    const getAccountGradient = (type: string) => {
+        switch (type) {
+            case "BANK":
+                return "from-blue-500 to-blue-600";
+            case "CASH":
+                return "from-green-500 to-emerald-600";
+            case "INVESTMENT":
+                return "from-purple-500 to-violet-600";
+            default:
+                return "from-slate-500 to-slate-600";
+        }
+    };
 
     useEffect(() => {
         loadAccounts();
@@ -102,6 +139,47 @@ export function AccountsList() {
         } else {
             toast.error(result.error);
         }
+    };
+
+    const handleEdit = (account: AccountWithBalance) => {
+        setEditData({
+            id: account.id,
+            name: account.name,
+            type: account.type,
+            initialBalance: centsToDollars(account.initialBalance).toString(),
+        });
+        onEditOpen();
+    };
+
+    const handleUpdate = async () => {
+        if (!editData) return;
+
+        if (!editData.name) {
+            toast.error("Nome da conta é obrigatório");
+            return;
+        }
+
+        setFormLoading(true);
+
+        const input: UpdateAccountInput = {
+            id: editData.id,
+            name: editData.name,
+            type: editData.type,
+            initialBalance: parseFloat(editData.initialBalance) || 0,
+        };
+
+        const result = await updateAccount(input);
+
+        if (result.success) {
+            toast.success("Conta atualizada com sucesso");
+            loadAccounts();
+            onEditClose();
+            setEditData(null);
+        } else {
+            toast.error(result.error);
+        }
+
+        setFormLoading(false);
     };
 
     const typeColors: Record<string, "primary" | "secondary" | "success"> = {
@@ -170,58 +248,68 @@ export function AccountsList() {
             {/* Accounts list */}
             {!error && accounts.length > 0 && (
                 <div className="grid gap-4">
-                    {accounts.map((account) => (
-                        <div key={account.id} className="modern-card p-4">
-                            <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                                        <PiggyBank className="w-6 h-6 text-white"/>
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <Chip color={typeColors[account.type]} variant="flat" size="sm">
-                                                {typeLabels[account.type]}
-                                            </Chip>
+                    {accounts.map((account) => {
+                        const AccountIcon = getAccountIcon(account.type);
+                        return (
+                            <div key={account.id} className="modern-card p-4">
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getAccountGradient(account.type)} flex items-center justify-center`}>
+                                            <AccountIcon className="w-6 h-6 text-white"/>
                                         </div>
-                                        <p className="font-semibold text-lg text-slate-900 dark:text-white">
-                                            {account.name}
-                                        </p>
-                                        <p className="text-sm text-slate-500">
-                                            Saldo inicial: {formatCurrency(account.initialBalance)}
-                                        </p>
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Chip color={typeColors[account.type]} variant="flat" size="sm">
+                                                    {typeLabels[account.type]}
+                                                </Chip>
+                                            </div>
+                                            <p className="font-semibold text-lg text-slate-900 dark:text-white">
+                                                {account.name}
+                                            </p>
+                                            <p className="text-sm text-slate-500">
+                                                Saldo inicial: {formatCurrency(account.initialBalance)}
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <span
-                                        className={`text-2xl font-bold ${
-                                            account.currentBalance < 0
-                                                ? "text-red-600"
-                                                : "text-slate-900 dark:text-white"
-                                        }`}
-                                    >
-                                        {formatCurrency(account.currentBalance)}
-                                    </span>
-                                    <Dropdown>
-                                        <DropdownTrigger>
-                                            <Button isIconOnly variant="light" size="sm">
-                                                <MoreVertical className="w-4 h-4"/>
-                                            </Button>
-                                        </DropdownTrigger>
-                                        <DropdownMenu>
-                                            <DropdownItem
-                                                key="delete"
-                                                className="text-danger"
-                                                color="danger"
-                                                onPress={() => handleDelete(account.id)}
-                                            >
-                                                Excluir
-                                            </DropdownItem>
-                                        </DropdownMenu>
-                                    </Dropdown>
+                                    <div className="flex items-center gap-4">
+                                        <span
+                                            className={`text-2xl font-bold ${
+                                                account.currentBalance < 0
+                                                    ? "text-red-600"
+                                                    : "text-slate-900 dark:text-white"
+                                            }`}
+                                        >
+                                            {formatCurrency(account.currentBalance)}
+                                        </span>
+                                        <Dropdown>
+                                            <DropdownTrigger>
+                                                <Button isIconOnly variant="light" size="sm">
+                                                    <MoreVertical className="w-4 h-4"/>
+                                                </Button>
+                                            </DropdownTrigger>
+                                            <DropdownMenu>
+                                                <DropdownItem
+                                                    key="edit"
+                                                    startContent={<Pencil className="w-4 h-4"/>}
+                                                    onPress={() => handleEdit(account)}
+                                                >
+                                                    Editar
+                                                </DropdownItem>
+                                                <DropdownItem
+                                                    key="delete"
+                                                    className="text-danger"
+                                                    color="danger"
+                                                    onPress={() => handleDelete(account.id)}
+                                                >
+                                                    Excluir
+                                                </DropdownItem>
+                                            </DropdownMenu>
+                                        </Dropdown>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 
@@ -269,6 +357,55 @@ export function AccountsList() {
                         </Button>
                         <Button color="primary" onPress={handleCreate} isLoading={formLoading}>
                             Criar Conta
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
+            {/* Edit account modal */}
+            <Modal isOpen={isEditOpen} onClose={onEditClose}>
+                <ModalContent>
+                    <ModalHeader>Editar Conta</ModalHeader>
+                    <ModalBody className="gap-4">
+                        <Input
+                            label="Nome da Conta"
+                            placeholder="Ex: Conta Corrente Principal"
+                            value={editData?.name || ""}
+                            onValueChange={(value) => setEditData(prev => prev ? {...prev, name: value} : null)}
+                            isRequired
+                        />
+
+                        <Select
+                            label="Tipo de Conta"
+                            selectedKeys={editData?.type ? [editData.type] : []}
+                            onSelectionChange={(keys) => {
+                                const value = Array.from(keys)[0] as "BANK" | "CASH" | "INVESTMENT";
+                                setEditData(prev => prev ? {...prev, type: value} : null);
+                            }}
+                        >
+                            <SelectItem key="BANK">Conta Bancária</SelectItem>
+                            <SelectItem key="CASH">Dinheiro em Espécie</SelectItem>
+                            <SelectItem key="INVESTMENT">Conta de Investimento</SelectItem>
+                        </Select>
+
+                        <Input
+                            label="Saldo Inicial"
+                            type="number"
+                            placeholder="0,00"
+                            startContent={<span className="text-gray-500">R$</span>}
+                            value={editData?.initialBalance || ""}
+                            onValueChange={(value) =>
+                                setEditData(prev => prev ? {...prev, initialBalance: value} : null)
+                            }
+                            description="Saldo inicial nesta conta (ajusta o saldo atual proporcionalmente)"
+                        />
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button variant="flat" onPress={onEditClose}>
+                            Cancelar
+                        </Button>
+                        <Button color="primary" onPress={handleUpdate} isLoading={formLoading}>
+                            Salvar Alterações
                         </Button>
                     </ModalFooter>
                 </ModalContent>

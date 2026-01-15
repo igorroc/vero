@@ -11,14 +11,22 @@ import {
     Spinner,
     ButtonGroup,
     useDisclosure,
+    Modal,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
+    Input,
+    Select,
+    SelectItem,
 } from "@nextui-org/react";
-import {getEvents, getEventsWithProjection, confirmEvent, skipEvent, deleteEvent, updateEventPriority} from "@/features/events";
+import {getEvents, getEventsWithProjection, confirmEvent, skipEvent, deleteEvent, updateEventPriority, updateEvent, type UpdateEventInput} from "@/features/events";
 import {getAccountBalances, type AccountWithBalance} from "@/features/accounts";
-import {formatCurrency} from "@/types/finance";
+import {formatCurrency, centsToDollars} from "@/types/finance";
 import type {Event} from "@prisma/client";
 import {toast} from "react-toastify";
 import {EventForm} from "./event-form";
-import {Plus, MoreVertical, Calendar} from "lucide-react";
+import {Plus, MoreVertical, Calendar, Pencil} from "lucide-react";
 
 type TimeFilter = "all" | "past" | "upcoming" | "today";
 
@@ -29,6 +37,20 @@ export function EventsList() {
     const [error, setError] = useState<string | null>(null);
     const [timeFilter, setTimeFilter] = useState<TimeFilter>("upcoming");
     const {isOpen, onOpen, onClose} = useDisclosure();
+    const {isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose} = useDisclosure();
+    const [editLoading, setEditLoading] = useState(false);
+    const [editData, setEditData] = useState<{
+        id: string;
+        accountId: string;
+        description: string;
+        amount: string;
+        type: "INCOME" | "EXPENSE" | "INVESTMENT";
+        costType: "RECURRENT" | "EXCEPTIONAL";
+        priority: "REQUIRED" | "IMPORTANT" | "OPTIONAL";
+        date: string;
+        isGenerated: boolean;
+        templateId?: string;
+    } | null>(null);
 
     useEffect(() => {
         loadData();
@@ -181,13 +203,87 @@ export function EventsList() {
     };
 
     const handlePriorityChange = async (eventId: string, priority: "REQUIRED" | "IMPORTANT" | "OPTIONAL") => {
-        const result = await updateEventPriority(eventId, priority);
+        // Check if this is a generated event (from recurrence template)
+        // Generated events have IDs like "generated-{templateId}-{index}"
+        let targetId = eventId;
+        if (eventId.startsWith("generated-")) {
+            // Extract template ID from the generated event ID
+            const parts = eventId.split("-");
+            // Format: generated-{templateId}-{index}
+            // Template ID is everything between "generated-" and the last "-{index}"
+            targetId = parts.slice(1, -1).join("-");
+        }
+
+        const result = await updateEventPriority(targetId, priority);
         if (result.success) {
             toast.success("Prioridade atualizada");
             loadData();
         } else {
             toast.error(result.error);
         }
+    };
+
+    const handleEdit = (event: Event) => {
+        // Check if this is a generated event
+        const isGenerated = event.id.startsWith("generated-");
+        let targetId = event.id;
+        let templateId: string | undefined;
+
+        if (isGenerated) {
+            // Extract template ID for generated events
+            const parts = event.id.split("-");
+            templateId = parts.slice(1, -1).join("-");
+            targetId = templateId;
+        }
+
+        setEditData({
+            id: targetId,
+            accountId: event.accountId,
+            description: event.description,
+            amount: centsToDollars(Math.abs(event.amount)).toString(),
+            type: event.type as "INCOME" | "EXPENSE" | "INVESTMENT",
+            costType: (event.costType as "RECURRENT" | "EXCEPTIONAL") || "RECURRENT",
+            priority: event.priority as "REQUIRED" | "IMPORTANT" | "OPTIONAL",
+            date: new Date(event.date).toISOString().split("T")[0],
+            isGenerated,
+            templateId,
+        });
+        onEditOpen();
+    };
+
+    const handleUpdate = async () => {
+        if (!editData) return;
+
+        if (!editData.description) {
+            toast.error("Descrição é obrigatória");
+            return;
+        }
+
+        setEditLoading(true);
+
+        const input: UpdateEventInput = {
+            id: editData.id,
+            accountId: editData.accountId,
+            description: editData.description,
+            amount: parseFloat(editData.amount),
+            type: editData.type,
+            costType: editData.type === "EXPENSE" ? editData.costType : undefined,
+            priority: editData.priority,
+            date: new Date(editData.date),
+        };
+
+        const result = await updateEvent(input);
+
+        if (result.success) {
+            toast.success(editData.isGenerated ? "Modelo recorrente atualizado" : "Evento atualizado");
+            loadData();
+            onEditClose();
+            setEditData(null);
+        } else {
+            toast.error(result.error);
+        }
+
+        setEditLoading(false);
     };
 
     if (loading) {
@@ -345,6 +441,7 @@ export function EventsList() {
                                         <DropdownMenu
                                             aria-label="Ações do evento"
                                             onAction={(key) => {
+                                                if (key === "edit") handleEdit(event);
                                                 if (key === "confirm") handleConfirm(event.id);
                                                 if (key === "skip") handleSkip(event.id);
                                                 if (key === "delete") handleDelete(event.id);
@@ -353,6 +450,12 @@ export function EventsList() {
                                                 if (key === "priority-optional") handlePriorityChange(event.id, "OPTIONAL");
                                             }}
                                         >
+                                            <DropdownItem
+                                                key="edit"
+                                                startContent={<Pencil className="w-4 h-4"/>}
+                                            >
+                                                {event.id.startsWith("generated-") ? "Editar Modelo" : "Editar"}
+                                            </DropdownItem>
                                             {event.status === "PLANNED" ? (
                                                 <DropdownItem key="confirm">Confirmar</DropdownItem>
                                             ) : null}
@@ -397,6 +500,129 @@ export function EventsList() {
                 onSuccess={loadData}
                 accounts={accounts}
             />
+
+            {/* Edit event modal */}
+            <Modal isOpen={isEditOpen} onClose={onEditClose} size="lg">
+                <ModalContent>
+                    <ModalHeader>
+                        {editData?.isGenerated ? "Editar Modelo Recorrente" : "Editar Evento"}
+                    </ModalHeader>
+                    <ModalBody className="gap-4">
+                        {editData?.isGenerated && (
+                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-2">
+                                <p className="text-sm text-amber-700 dark:text-amber-300">
+                                    Você está editando o modelo recorrente. As alterações afetarão todas as ocorrências futuras.
+                                </p>
+                            </div>
+                        )}
+
+                        <Select
+                            label="Conta"
+                            selectedKeys={editData?.accountId ? [editData.accountId] : []}
+                            onSelectionChange={(keys) => {
+                                const value = Array.from(keys)[0] as string;
+                                setEditData(prev => prev ? {...prev, accountId: value} : null);
+                            }}
+                            isRequired
+                        >
+                            {accounts.map((account) => (
+                                <SelectItem key={account.id} textValue={account.name}>
+                                    {account.name}
+                                </SelectItem>
+                            ))}
+                        </Select>
+
+                        <Input
+                            label="Descrição"
+                            placeholder="Ex: Aluguel mensal"
+                            value={editData?.description || ""}
+                            onValueChange={(value) => setEditData(prev => prev ? {...prev, description: value} : null)}
+                            isRequired
+                        />
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <Input
+                                label="Valor"
+                                type="number"
+                                placeholder="0,00"
+                                startContent={<span className="text-gray-500">R$</span>}
+                                value={editData?.amount || ""}
+                                onValueChange={(value) => setEditData(prev => prev ? {...prev, amount: value} : null)}
+                                isRequired
+                            />
+
+                            <Select
+                                label="Tipo"
+                                selectedKeys={editData?.type ? [editData.type] : []}
+                                onSelectionChange={(keys) => {
+                                    const value = Array.from(keys)[0] as "INCOME" | "EXPENSE" | "INVESTMENT";
+                                    setEditData(prev => prev ? {...prev, type: value} : null);
+                                }}
+                                isRequired
+                            >
+                                <SelectItem key="INCOME" textValue="Receita">Receita (+)</SelectItem>
+                                <SelectItem key="EXPENSE" textValue="Despesa">Despesa (-)</SelectItem>
+                                <SelectItem key="INVESTMENT" textValue="Investimento">Investimento (-)</SelectItem>
+                            </Select>
+                        </div>
+
+                        {editData?.type === "EXPENSE" && (
+                            <Select
+                                label="Tipo de Custo"
+                                selectedKeys={editData?.costType ? [editData.costType] : []}
+                                onSelectionChange={(keys) => {
+                                    const value = Array.from(keys)[0] as "RECURRENT" | "EXCEPTIONAL";
+                                    setEditData(prev => prev ? {...prev, costType: value} : null);
+                                }}
+                            >
+                                <SelectItem key="RECURRENT" textValue="Recorrente">
+                                    Recorrente (aluguel, contas, assinaturas)
+                                </SelectItem>
+                                <SelectItem key="EXCEPTIONAL" textValue="Excepcional">
+                                    Excepcional (viagens, emergências)
+                                </SelectItem>
+                            </Select>
+                        )}
+
+                        {editData?.type !== "INCOME" && (
+                            <Select
+                                label="Prioridade"
+                                selectedKeys={editData?.priority ? [editData.priority] : []}
+                                onSelectionChange={(keys) => {
+                                    const value = Array.from(keys)[0] as "REQUIRED" | "IMPORTANT" | "OPTIONAL";
+                                    setEditData(prev => prev ? {...prev, priority: value} : null);
+                                }}
+                            >
+                                <SelectItem key="REQUIRED" textValue="Obrigatório">
+                                    🔴 Obrigatório (não pode ser adiado)
+                                </SelectItem>
+                                <SelectItem key="IMPORTANT" textValue="Importante">
+                                    🟡 Importante (deveria ser pago)
+                                </SelectItem>
+                                <SelectItem key="OPTIONAL" textValue="Opcional">
+                                    🟢 Opcional (pode ser adiado)
+                                </SelectItem>
+                            </Select>
+                        )}
+
+                        <Input
+                            label="Data"
+                            type="date"
+                            value={editData?.date || ""}
+                            onValueChange={(value) => setEditData(prev => prev ? {...prev, date: value} : null)}
+                            isRequired
+                        />
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button variant="flat" onPress={onEditClose}>
+                            Cancelar
+                        </Button>
+                        <Button color="primary" onPress={handleUpdate} isLoading={editLoading}>
+                            Salvar Alterações
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </div>
     );
 }

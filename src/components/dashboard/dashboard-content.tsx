@@ -8,12 +8,13 @@ import {
     TrendingUp,
     TrendingDown,
     Calendar,
-    PiggyBank,
     AlertTriangle,
     ArrowRight,
     DollarSign,
     Target,
     Lightbulb,
+    Landmark,
+    Banknote,
 } from "lucide-react";
 import {getDashboardData, type DashboardData} from "@/features/dashboard";
 import {formatCurrency} from "@/types/finance";
@@ -302,34 +303,40 @@ export function DashboardContent() {
                     </div>
 
                     <div className="space-y-3">
-                        {data.accounts.slice(0, 4).map((account) => (
-                            <div
-                                key={account.id}
-                                className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800 rounded-xl"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div
-                                        className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                                        <PiggyBank className="w-5 h-5 text-white"/>
+                        {data.accounts.slice(0, 4).map((account) => {
+                            const AccountIcon = account.type === "BANK" ? Landmark :
+                                account.type === "CASH" ? Banknote : TrendingUp;
+                            const gradient = account.type === "BANK" ? "from-blue-500 to-blue-600" :
+                                account.type === "CASH" ? "from-green-500 to-emerald-600" : "from-purple-500 to-violet-600";
+                            return (
+                                <div
+                                    key={account.id}
+                                    className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800 rounded-xl"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div
+                                            className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+                                            <AccountIcon className="w-5 h-5 text-white"/>
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-slate-900 dark:text-white">
+                                                {account.name}
+                                            </p>
+                                            <p className="text-xs text-slate-500">
+                                                {account.type === "CASH" ? "Dinheiro" :
+                                                    account.type === "BANK" ? "Conta Bancária" :
+                                                        "Investimento"}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="font-medium text-slate-900 dark:text-white">
-                                            {account.name}
-                                        </p>
-                                        <p className="text-xs text-slate-500">
-                                            {account.type === "CASH" ? "Dinheiro" :
-                                                account.type === "BANK" ? "Conta Bancária" :
-                                                    "Investimento"}
-                                        </p>
-                                    </div>
+                                    <p className={`font-bold ${
+                                        account.currentBalance >= 0 ? "text-slate-900 dark:text-white" : "text-red-600"
+                                    }`}>
+                                        {formatCurrency(account.currentBalance)}
+                                    </p>
                                 </div>
-                                <p className={`font-bold ${
-                                    account.currentBalance >= 0 ? "text-slate-900 dark:text-white" : "text-red-600"
-                                }`}>
-                                    {formatCurrency(account.currentBalance)}
-                                </p>
-                            </div>
-                        ))}
+                            );
+                        })}
 
                         {data.accounts.length === 0 && (
                             <div className="text-center py-8">

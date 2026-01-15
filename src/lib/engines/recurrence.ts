@@ -1,4 +1,4 @@
-import type { RecurrenceFrequency, EventType, EventStatus, CostType } from "@prisma/client";
+import type { RecurrenceFrequency, EventType, EventStatus, EventPriority, CostType } from "@prisma/client";
 import { addDays, startOfDay } from "@/types/finance";
 
 // ============================================
@@ -14,6 +14,7 @@ export interface RecurrenceTemplate {
   amount: number; // In cents
   type: EventType;
   costType: CostType | null;
+  priority: EventPriority;
   accountId: string;
   date: Date; // First occurrence date
   recurrenceFrequency: RecurrenceFrequency;
@@ -29,6 +30,7 @@ export interface GeneratedEvent {
   amount: number;
   type: EventType;
   costType: CostType | null;
+  priority: EventPriority;
   status: EventStatus;
   accountId: string;
   date: Date;
@@ -134,6 +136,7 @@ export function generateOccurrences(
         amount: template.amount,
         type: template.type,
         costType: template.costType,
+        priority: template.priority,
         status: "PLANNED", // Generated events are always planned
         accountId: template.accountId,
         date: new Date(currentDate),
