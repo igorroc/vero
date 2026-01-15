@@ -12,7 +12,7 @@ import {
     ButtonGroup,
     useDisclosure,
 } from "@nextui-org/react";
-import {getEvents, confirmEvent, skipEvent, deleteEvent} from "@/features/events";
+import {getEvents, getEventsWithProjection, confirmEvent, skipEvent, deleteEvent} from "@/features/events";
 import {getAccountBalances, type AccountWithBalance} from "@/features/accounts";
 import {formatCurrency} from "@/types/finance";
 import type {Event} from "@prisma/client";
@@ -48,27 +48,36 @@ export function EventsList() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        let startDate: Date | undefined;
-        let endDate: Date | undefined;
+        let result;
 
         switch (timeFilter) {
-            case "past":
-                endDate = new Date(today);
+            case "past": {
+                const endDate = new Date(today);
                 endDate.setDate(endDate.getDate() - 1);
+                result = await getEvents({endDate});
                 break;
-            case "today":
-                startDate = today;
-                endDate = today;
+            }
+            case "today": {
+                // Use projection to include recurring events for today
+                const endOfToday = new Date(today);
+                endOfToday.setHours(23, 59, 59, 999);
+                result = await getEventsWithProjection(today, endOfToday);
                 break;
-            case "upcoming":
-                startDate = today;
+            }
+            case "upcoming": {
+                // Use projection to include recurring events (next 90 days)
+                const futureDate = new Date(today);
+                futureDate.setDate(futureDate.getDate() + 60);
+                result = await getEventsWithProjection(today, futureDate);
                 break;
+            }
             case "all":
-            default:
+            default: {
+                // For "all", show stored events (not generated)
+                result = await getEvents({});
                 break;
+            }
         }
-
-        const result = await getEvents({startDate, endDate});
 
         if (result.success) {
             setEvents(result.events);
