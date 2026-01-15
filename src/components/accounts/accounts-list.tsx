@@ -28,9 +28,10 @@ import {
     type CreateAccountInput,
     type UpdateAccountInput,
 } from "@/features/accounts";
+import {createWithdrawal, type CreateWithdrawalInput} from "@/features/events";
 import {formatCurrency, centsToDollars} from "@/types/finance";
 import {toast} from "react-toastify";
-import {Plus, MoreVertical, PiggyBank, Wallet, Landmark, Banknote, TrendingUp, Pencil} from "lucide-react";
+import {Plus, MoreVertical, PiggyBank, Wallet, Landmark, Banknote, TrendingUp, Pencil, ArrowDownToLine} from "lucide-react";
 import {StatCard} from "@/components/ui/stat-card";
 
 export function AccountsList() {
@@ -51,6 +52,17 @@ export function AccountsList() {
         name: string;
         type: "BANK" | "CASH" | "INVESTMENT";
         initialBalance: string;
+    } | null>(null);
+
+    // Withdrawal (Resgate) state
+    const {isOpen: isWithdrawalOpen, onOpen: onWithdrawalOpen, onClose: onWithdrawalClose} = useDisclosure();
+    const [withdrawalData, setWithdrawalData] = useState<{
+        fromAccountId: string;
+        fromAccountName: string;
+        toAccountId: string;
+        amount: string;
+        description: string;
+        date: string;
     } | null>(null);
 
     // Get icon based on account type
@@ -182,6 +194,61 @@ export function AccountsList() {
         setFormLoading(false);
     };
 
+    const handleWithdrawal = (account: AccountWithBalance) => {
+        // Get the first non-investment account as default destination
+        const defaultDestination = accounts.find(a => a.type !== "INVESTMENT");
+
+        setWithdrawalData({
+            fromAccountId: account.id,
+            fromAccountName: account.name,
+            toAccountId: defaultDestination?.id || "",
+            amount: "",
+            description: "",
+            date: new Date().toISOString().split("T")[0],
+        });
+        onWithdrawalOpen();
+    };
+
+    const handleWithdrawalSubmit = async () => {
+        if (!withdrawalData) return;
+
+        if (!withdrawalData.toAccountId) {
+            toast.error("Selecione uma conta de destino");
+            return;
+        }
+
+        if (!withdrawalData.amount || parseFloat(withdrawalData.amount) <= 0) {
+            toast.error("O valor deve ser maior que zero");
+            return;
+        }
+
+        setFormLoading(true);
+
+        const input: CreateWithdrawalInput = {
+            fromAccountId: withdrawalData.fromAccountId,
+            toAccountId: withdrawalData.toAccountId,
+            amount: parseFloat(withdrawalData.amount),
+            description: withdrawalData.description || undefined,
+            date: new Date(withdrawalData.date),
+        };
+
+        const result = await createWithdrawal(input);
+
+        if (result.success) {
+            toast.success("Resgate realizado com sucesso");
+            loadAccounts();
+            onWithdrawalClose();
+            setWithdrawalData(null);
+        } else {
+            toast.error(result.error);
+        }
+
+        setFormLoading(false);
+    };
+
+    // Get non-investment accounts for withdrawal destination
+    const nonInvestmentAccounts = accounts.filter(a => a.type !== "INVESTMENT");
+
     const typeColors: Record<string, "primary" | "secondary" | "success"> = {
         BANK: "primary",
         CASH: "secondary",
@@ -287,19 +354,32 @@ export function AccountsList() {
                                                     <MoreVertical className="w-4 h-4"/>
                                                 </Button>
                                             </DropdownTrigger>
-                                            <DropdownMenu>
+                                            <DropdownMenu
+                                                aria-label="Ações da conta"
+                                                onAction={(key) => {
+                                                    if (key === "edit") handleEdit(account);
+                                                    if (key === "withdrawal") handleWithdrawal(account);
+                                                    if (key === "delete") handleDelete(account.id);
+                                                }}
+                                            >
                                                 <DropdownItem
                                                     key="edit"
                                                     startContent={<Pencil className="w-4 h-4"/>}
-                                                    onPress={() => handleEdit(account)}
                                                 >
                                                     Editar
                                                 </DropdownItem>
+                                                {account.type === "INVESTMENT" && nonInvestmentAccounts.length > 0 ? (
+                                                    <DropdownItem
+                                                        key="withdrawal"
+                                                        startContent={<ArrowDownToLine className="w-4 h-4"/>}
+                                                    >
+                                                        Resgatar
+                                                    </DropdownItem>
+                                                ) : null}
                                                 <DropdownItem
                                                     key="delete"
                                                     className="text-danger"
                                                     color="danger"
-                                                    onPress={() => handleDelete(account.id)}
                                                 >
                                                     Excluir
                                                 </DropdownItem>
@@ -406,6 +486,91 @@ export function AccountsList() {
                         </Button>
                         <Button color="primary" onPress={handleUpdate} isLoading={formLoading}>
                             Salvar Alterações
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
+            {/* Withdrawal (Resgate) modal */}
+            <Modal isOpen={isWithdrawalOpen} onClose={onWithdrawalClose}>
+                <ModalContent>
+                    <ModalHeader>
+                        <div className="flex items-center gap-2">
+                            <ArrowDownToLine className="w-5 h-5 text-purple-600"/>
+                            <span>Resgatar Investimento</span>
+                        </div>
+                    </ModalHeader>
+                    <ModalBody className="gap-4">
+                        <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
+                            <p className="text-sm text-purple-700 dark:text-purple-300">
+                                Resgatando de: <strong>{withdrawalData?.fromAccountName}</strong>
+                            </p>
+                        </div>
+
+                        <Select
+                            label="Conta de Destino"
+                            placeholder="Selecione a conta para receber o resgate"
+                            selectedKeys={withdrawalData?.toAccountId ? [withdrawalData.toAccountId] : []}
+                            onSelectionChange={(keys) => {
+                                const value = Array.from(keys)[0] as string;
+                                setWithdrawalData(prev => prev ? {...prev, toAccountId: value} : null);
+                            }}
+                            isRequired
+                        >
+                            {nonInvestmentAccounts.map((account) => (
+                                <SelectItem key={account.id} textValue={account.name}>
+                                    <div className="flex justify-between items-center w-full">
+                                        <span>{account.name}</span>
+                                        <span className="text-xs text-slate-500">
+                                            {account.type === "BANK" ? "Banco" : "Dinheiro"}
+                                        </span>
+                                    </div>
+                                </SelectItem>
+                            ))}
+                        </Select>
+
+                        <Input
+                            label="Valor do Resgate"
+                            type="number"
+                            placeholder="0,00"
+                            startContent={<span className="text-gray-500">R$</span>}
+                            value={withdrawalData?.amount || ""}
+                            onValueChange={(value) =>
+                                setWithdrawalData(prev => prev ? {...prev, amount: value} : null)
+                            }
+                            isRequired
+                        />
+
+                        <Input
+                            label="Descrição (opcional)"
+                            placeholder="Ex: Resgate para emergência"
+                            value={withdrawalData?.description || ""}
+                            onValueChange={(value) =>
+                                setWithdrawalData(prev => prev ? {...prev, description: value} : null)
+                            }
+                        />
+
+                        <Input
+                            label="Data"
+                            type="date"
+                            value={withdrawalData?.date || ""}
+                            onValueChange={(value) =>
+                                setWithdrawalData(prev => prev ? {...prev, date: value} : null)
+                            }
+                            isRequired
+                        />
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button variant="flat" onPress={onWithdrawalClose}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            color="secondary"
+                            onPress={handleWithdrawalSubmit}
+                            isLoading={formLoading}
+                            startContent={<ArrowDownToLine className="w-4 h-4"/>}
+                        >
+                            Resgatar
                         </Button>
                     </ModalFooter>
                 </ModalContent>

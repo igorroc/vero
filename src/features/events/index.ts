@@ -23,3 +23,8 @@ export {
 } from "./update-event";
 
 export { deleteEvent, deleteRecurrence } from "./delete-event";
+
+export {
+  createWithdrawal,
+  type CreateWithdrawalInput,
+} from "./create-withdrawal";
