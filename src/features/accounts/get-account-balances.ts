@@ -4,11 +4,12 @@ import prisma from "@/lib/db";
 import {getUserBySession} from "@/lib/auth";
 import type {Cents} from "@/types/finance";
 import {startOfDay} from "@/types/finance";
+import {AccountType} from "@prisma/client";
 
 export interface AccountWithBalance {
     id: string;
     name: string;
-    type: string;
+    type: AccountType;
     initialBalance: Cents;
     currentBalance: Cents;
 }

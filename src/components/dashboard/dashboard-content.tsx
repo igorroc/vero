@@ -183,14 +183,16 @@ export function DashboardContent() {
                                             </p>
                                             <ul className="space-y-1">
                                                 {data.prioritySimulation.postponableEvents.slice(0, 3).map((event) => (
-                                                    <li key={event.id} className="text-xs text-slate-600 dark:text-slate-400">
+                                                    <li key={event.id}
+                                                        className="text-xs text-slate-600 dark:text-slate-400">
                                                         • {event.description}: {formatCurrency(Math.abs(event.amount))}
                                                     </li>
                                                 ))}
                                             </ul>
                                             {data.prioritySimulation.postponableEvents.length > 3 && (
                                                 <p className="text-xs text-slate-400 mt-1">
-                                                    e mais {data.prioritySimulation.postponableEvents.length - 3} evento(s)...
+                                                    e
+                                                    mais {data.prioritySimulation.postponableEvents.length - 3} evento(s)...
                                                 </p>
                                             )}
                                         </div>
@@ -306,7 +308,8 @@ export function DashboardContent() {
                                 className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800 rounded-xl"
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                                    <div
+                                        className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                                         <PiggyBank className="w-5 h-5 text-white"/>
                                     </div>
                                     <div>
@@ -314,10 +317,9 @@ export function DashboardContent() {
                                             {account.name}
                                         </p>
                                         <p className="text-xs text-slate-500">
-                                            {account.type === "CHECKING" ? "Corrente" :
-                                                account.type === "SAVINGS" ? "Poupança" :
-                                                    account.type === "CREDIT_CARD" ? "Cartão de Crédito" :
-                                                        "Investimento"}
+                                            {account.type === "CASH" ? "Dinheiro" :
+                                                account.type === "BANK" ? "Conta Bancária" :
+                                                    "Investimento"}
                                         </p>
                                     </div>
                                 </div>
@@ -386,13 +388,14 @@ export function DashboardContent() {
                                 >
                                     <div className="flex justify-between items-start">
                                         <div className="flex-1">
-                                            <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium mb-2 ${
-                                                event.type === "INCOME"
-                                                    ? "bg-green-100 text-green-700"
-                                                    : event.type === "INVESTMENT"
-                                                        ? "bg-purple-100 text-purple-700"
-                                                        : "bg-red-100 text-red-700"
-                                            }`}>
+                                            <span
+                                                className={`inline-block px-2 py-0.5 rounded text-xs font-medium mb-2 ${
+                                                    event.type === "INCOME"
+                                                        ? "bg-green-100 text-green-700"
+                                                        : event.type === "INVESTMENT"
+                                                            ? "bg-purple-100 text-purple-700"
+                                                            : "bg-red-100 text-red-700"
+                                                }`}>
                                                 {event.type === "INCOME" ? "Receita" :
                                                     event.type === "INVESTMENT" ? "Investimento" : "Despesa"}
                                             </span>
