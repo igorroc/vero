@@ -11,7 +11,7 @@ export default async function DashboardPage() {
     }
 
     return (
-        <AppLayout>
+        <AppLayout userName={user.name} userEmail={user.email}>
             <DashboardContent/>
         </AppLayout>
     );

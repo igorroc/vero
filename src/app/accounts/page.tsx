@@ -11,7 +11,7 @@ export default async function AccountsPage() {
     }
 
     return (
-        <AppLayout title="Contas" subtitle="Gerencie suas contas bancárias">
+        <AppLayout title="Contas" subtitle="Gerencie suas contas bancárias" userName={user.name} userEmail={user.email}>
             <AccountsList/>
         </AppLayout>
     );

@@ -11,7 +11,7 @@ export default async function CashflowPage() {
     }
 
     return (
-        <AppLayout title="Fluxo de Caixa" subtitle="Projeção dia a dia">
+        <AppLayout title="Fluxo de Caixa" subtitle="Projeção dia a dia" userName={user.name} userEmail={user.email}>
             <CashflowTimeline/>
         </AppLayout>
     );

@@ -11,7 +11,7 @@ export default async function EventsPage() {
     }
 
     return (
-        <AppLayout title="Eventos" subtitle="Gerencie seus eventos financeiros">
+        <AppLayout title="Eventos" subtitle="Gerencie seus eventos financeiros" userName={user.name} userEmail={user.email}>
             <EventsList/>
         </AppLayout>
     );

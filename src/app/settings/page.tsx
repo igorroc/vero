@@ -27,7 +27,7 @@ export default async function SettingsPage() {
     }
 
     return (
-        <AppLayout title="Configurações" subtitle="Personalize seu copiloto financeiro">
+        <AppLayout title="Configurações" subtitle="Personalize seu copiloto financeiro" userName={user.name} userEmail={user.email}>
             <div className="max-w-2xl">
                 <SettingsForm
                     initialSettings={{

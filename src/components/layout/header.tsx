@@ -1,14 +1,27 @@
 "use client";
 
-import {Bell, Search, User} from "lucide-react";
-import {Button, Badge, Avatar, Input} from "@nextui-org/react";
+import {Bell, LogOut} from "lucide-react";
+import {
+    Button,
+    Dropdown,
+    DropdownTrigger,
+    DropdownMenu,
+    DropdownItem,
+    Avatar,
+} from "@nextui-org/react";
+import {useRouter} from "next/navigation";
+import {logoutAction} from "@/features/auth";
 
 interface HeaderProps {
     title?: string;
     subtitle?: string;
+    userName?: string;
+    userEmail?: string;
 }
 
-export function Header({title, subtitle}: HeaderProps) {
+export function Header({title, subtitle, userName, userEmail}: HeaderProps) {
+    const router = useRouter();
+
     const getGreeting = () => {
         const hour = new Date().getHours();
         if (hour < 12) return "Bom dia";
@@ -16,8 +29,24 @@ export function Header({title, subtitle}: HeaderProps) {
         return "Boa noite";
     };
 
+    const handleLogout = async () => {
+        await logoutAction();
+        router.push("/auth/login");
+    };
+
+    // Get initials from name
+    const getInitials = (name?: string) => {
+        if (!name) return "U";
+        const parts = name.split(" ");
+        if (parts.length >= 2) {
+            return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+        }
+        return name.substring(0, 2).toUpperCase();
+    };
+
     return (
-        <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between">
+        <header
+            className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between">
             {/* Left side - Greeting or Title */}
             <div>
                 {title ? (
@@ -33,45 +62,54 @@ export function Header({title, subtitle}: HeaderProps) {
                     <>
                         <p className="text-sm text-slate-500">{getGreeting()}</p>
                         <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-                            Bem-vindo de volta!
+                            {userName ? `Olá, ${userName.split(" ")[0]}!` : "Bem-vindo de volta!"}
                         </h1>
                     </>
                 )}
             </div>
 
-            {/* Right side - Search, Notifications, Profile */}
-            <div className="flex items-center gap-4">
-                {/* Search */}
-                <div className="hidden md:block">
-                    <Input
-                        classNames={{
-                            base: "w-64",
-                            inputWrapper: "bg-slate-100 dark:bg-slate-800 border-none",
-                        }}
-                        placeholder="Buscar..."
-                        size="sm"
-                        startContent={<Search className="w-4 h-4 text-slate-400"/>}
-                    />
-                </div>
-
+            {/* Right side - Notifications, Profile */}
+            <div className="flex items-center gap-3">
                 {/* Notifications */}
-                <Badge content="3" color="danger" shape="circle" size="sm">
-                    <Button
-                        isIconOnly
-                        variant="light"
-                        className="text-slate-600 dark:text-slate-400"
-                    >
-                        <Bell className="w-5 h-5"/>
-                    </Button>
-                </Badge>
+                <Button
+                    isIconOnly
+                    variant="light"
+                    className="text-slate-600 dark:text-slate-400"
+                    title="Notificações (em breve)"
+                >
+                    <Bell className="w-5 h-5"/>
+                </Button>
 
-                {/* Profile */}
-                <Avatar
-                    size="sm"
-                    src=""
-                    fallback={<User className="w-4 h-4"/>}
-                    className="bg-gradient-to-br from-blue-500 to-purple-600"
-                />
+                {/* User Dropdown */}
+                <Dropdown placement="bottom-end">
+                    <DropdownTrigger>
+                        <Avatar
+                            as="button"
+                            size="sm"
+                            name={getInitials(userName)}
+                            className="bg-gradient-to-br from-blue-500 to-purple-600 text-white cursor-pointer"
+                        />
+                    </DropdownTrigger>
+                    <DropdownMenu aria-label="Menu do usuário">
+                        <DropdownItem
+                            key="profile"
+                            className="h-14 gap-2"
+                            textValue="Perfil"
+                            isReadOnly
+                        >
+                            <p className="font-semibold">{userName || "Usuário"}</p>
+                            <p className="text-sm text-slate-500">{userEmail || ""}</p>
+                        </DropdownItem>
+                        <DropdownItem
+                            key="logout"
+                            color="danger"
+                            startContent={<LogOut className="w-4 h-4"/>}
+                            onPress={handleLogout}
+                        >
+                            Sair
+                        </DropdownItem>
+                    </DropdownMenu>
+                </Dropdown>
             </div>
         </header>
     );

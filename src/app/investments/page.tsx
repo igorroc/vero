@@ -11,7 +11,7 @@ export default async function InvestmentsPage() {
     }
 
     return (
-        <AppLayout title="Investimentos" subtitle="Acompanhe suas metas e planos">
+        <AppLayout title="Investimentos" subtitle="Acompanhe suas metas e planos" userName={user.name} userEmail={user.email}>
             <div className="space-y-8">
                 <NetWorthGoalCard/>
                 <InvestmentsList/>
