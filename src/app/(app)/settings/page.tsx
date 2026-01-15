@@ -1,14 +1,18 @@
-import {redirect} from "next/navigation";
+import type {Metadata} from "next";
 import {getUserBySession} from "@/lib/auth";
 import {SettingsForm} from "@/components/settings";
-import {AppLayout} from "@/components/layout";
+import {PageHeader} from "@/components/ui";
 import prisma from "@/lib/db";
+
+export const metadata: Metadata = {
+    title: "Configurações | Vero",
+};
 
 export default async function SettingsPage() {
     const user = await getUserBySession();
 
     if (!user) {
-        redirect("/auth/login");
+        return null;
     }
 
     // Get or create user settings
@@ -27,7 +31,8 @@ export default async function SettingsPage() {
     }
 
     return (
-        <AppLayout title="Configurações" subtitle="Personalize seu copiloto financeiro" userName={user.name} userEmail={user.email}>
+        <>
+            <PageHeader title="Configurações" subtitle="Personalize seu copiloto financeiro"/>
             <div className="max-w-2xl">
                 <SettingsForm
                     initialSettings={{
@@ -36,6 +41,6 @@ export default async function SettingsPage() {
                     }}
                 />
             </div>
-        </AppLayout>
+        </>
     );
 }

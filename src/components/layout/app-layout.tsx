@@ -5,13 +5,11 @@ import {Header} from "./header";
 
 interface AppLayoutProps {
     children: React.ReactNode;
-    title?: string;
-    subtitle?: string;
     userName?: string;
     userEmail?: string;
 }
 
-export function AppLayout({children, title, subtitle, userName, userEmail}: AppLayoutProps) {
+export function AppLayout({children, userName, userEmail}: AppLayoutProps) {
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
             {/* Sidebar */}
@@ -21,8 +19,6 @@ export function AppLayout({children, title, subtitle, userName, userEmail}: AppL
             <div className="ml-64 transition-all duration-300">
                 {/* Header */}
                 <Header
-                    title={title}
-                    subtitle={subtitle}
                     userName={userName}
                     userEmail={userEmail}
                 />

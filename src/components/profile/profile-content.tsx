@@ -1,173 +1,152 @@
-"use client"
+"use client";
 
-import {
-	Card,
-	CardBody,
-	CardHeader,
-	Button,
-	Chip,
-	User,
-	Table,
-	TableHeader,
-	TableColumn,
-	TableBody,
-	TableRow,
-	TableCell,
-	Avatar,
-	Divider,
-} from "@nextui-org/react"
-import Link from "next/link"
+import {Avatar, Button, Divider} from "@nextui-org/react";
+import {User, Mail, Calendar, Shield, LogOut} from "lucide-react";
+import {useRouter} from "next/navigation";
+import {logoutAction} from "@/features/auth";
 
 type UserType = {
-	id: string
-	email: string
-	name: string | null
-	createdAt?: Date
-}
+    id: string;
+    email: string;
+    name: string | null;
+    createdAt?: Date;
+};
 
 type ProfileContentProps = {
-	user: UserType | null
-	allUsers: UserType[]
-}
+    user: UserType | null;
+};
 
-export function ProfileContent({ user, allUsers }: ProfileContentProps) {
-	if (!user) {
-		return (
-			<main className="flex min-h-dvh flex-col items-center justify-center p-8 bg-gradient-to-br from-gray-900 to-gray-800">
-				<Card className="max-w-md w-full">
-					<CardBody className="text-center">
-						<p className="text-lg">You are not logged in</p>
-						<Button as={Link} href="/auth/login" color="primary" className="mt-4">
-							Go to Login
-						</Button>
-					</CardBody>
-				</Card>
-			</main>
-		)
-	}
+export function ProfileContent({user}: ProfileContentProps) {
+    const router = useRouter();
 
-	const formatDate = (date?: Date) => {
-		if (!date) return "N/A"
-		return new Date(date).toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "short",
-			day: "numeric",
-		})
-	}
+    if (!user) {
+        return null;
+    }
 
-	return (
-		<main className="flex min-h-dvh flex-col items-center p-8 py-12 bg-gradient-to-br from-gray-900 to-gray-800">
-			<div className="max-w-3xl w-full space-y-6">
-				{/* User Profile Card */}
-				<Card className="w-full">
-					<CardHeader className="flex flex-col items-center gap-3 pb-4 pt-6">
-						<Chip color="success" variant="flat" size="sm">
-							Authenticated
-						</Chip>
-						<h1 className="text-3xl font-bold text-center">Your Profile</h1>
-					</CardHeader>
-					<CardBody className="gap-6">
-						<div className="flex flex-col items-center gap-4">
-							<Avatar
-								name={user.name?.charAt(0).toUpperCase() || "U"}
-								size="lg"
-								showFallback
-								className="w-20 h-20 text-large"
-							/>
-							<div className="text-center">
-								<h2 className="text-xl font-semibold">{user.name || "User"}</h2>
-								<p className="text-sm text-gray-500">{user.email}</p>
-								{user.createdAt && (
-									<p className="text-xs text-gray-400 mt-1">
-										Member since {formatDate(user.createdAt)}
-									</p>
-								)}
-							</div>
-						</div>
+    const formatDate = (date?: Date) => {
+        if (!date) return "N/A";
+        return new Date(date).toLocaleDateString("pt-BR", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        });
+    };
 
-						<Divider />
+    const getInitials = (name?: string | null) => {
+        if (!name) return "U";
+        const parts = name.split(" ");
+        if (parts.length >= 2) {
+            return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+        }
+        return name.substring(0, 2).toUpperCase();
+    };
 
-						<div className="flex flex-col sm:flex-row gap-2">
-							<Button
-								as={Link}
-								href="/"
-								color="default"
-								variant="bordered"
-								fullWidth
-							>
-								Back to Home
-							</Button>
-							<Button
-								as={Link}
-								href="/auth/logout"
-								color="danger"
-								variant="shadow"
-								fullWidth
-							>
-								Log out
-							</Button>
-						</div>
-					</CardBody>
-				</Card>
+    const handleLogout = async () => {
+        await logoutAction();
+        router.push("/auth/login");
+    };
 
-				{/* Users List Card */}
-				<Card className="w-full">
-					<CardHeader className="flex flex-col gap-2 pb-4">
-						<div className="flex items-center justify-between w-full">
-							<h2 className="text-2xl font-bold">Registered Users</h2>
-							<Chip color="primary" variant="flat">
-								{allUsers.length} {allUsers.length === 1 ? "user" : "users"}
-							</Chip>
-						</div>
-						<p className="text-sm text-gray-500">
-							All users registered in the system
-						</p>
-					</CardHeader>
-					<CardBody>
-						<Table aria-label="Users table" removeWrapper>
-							<TableHeader>
-								<TableColumn>USER</TableColumn>
-								<TableColumn>EMAIL</TableColumn>
-								<TableColumn>JOINED</TableColumn>
-							</TableHeader>
-							<TableBody>
-								{allUsers.map((u) => (
-									<TableRow key={u.id}>
-										<TableCell>
-											<User
-												name={u.name || "Anonymous"}
-												avatarProps={{
-													name: u.name?.charAt(0).toUpperCase() || "A",
-													showFallback: true,
-													size: "sm",
-												}}
-												classNames={{
-													name: u.id === user.id ? "font-bold" : "",
-												}}
-											/>
-										</TableCell>
-										<TableCell>
-											<div className="flex items-center gap-2">
-												<span className="text-sm">{u.email}</span>
-												{u.id === user.id && (
-													<Chip size="sm" color="success" variant="flat">
-														You
-													</Chip>
-												)}
-											</div>
-										</TableCell>
-										<TableCell>
-											<span className="text-sm text-gray-500">
-												{formatDate(u.createdAt)}
-											</span>
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</CardBody>
-				</Card>
-			</div>
-		</main>
-	)
+    return (
+        <div className="max-w-2xl space-y-6">
+            {/* Profile Card */}
+            <div className="modern-card p-6">
+                <div className="flex flex-col sm:flex-row items-center gap-6">
+                    <Avatar
+                        name={getInitials(user.name)}
+                        className="w-24 h-24 text-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white"
+                    />
+                    <div className="text-center sm:text-left">
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+                            {user.name || "Usuário"}
+                        </h2>
+                        <p className="text-slate-500 dark:text-slate-400">{user.email}</p>
+                        {user.createdAt && (
+                            <p className="text-sm text-slate-400 mt-1">
+                                Membro desde {formatDate(user.createdAt)}
+                            </p>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Account Info */}
+            <div className="modern-card p-6">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                    Informações da Conta
+                </h3>
+
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                            <User className="w-5 h-5 text-blue-600 dark:text-blue-400"/>
+                        </div>
+                        <div>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Nome</p>
+                            <p className="font-medium text-slate-900 dark:text-white">
+                                {user.name || "Não informado"}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                        <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                            <Mail className="w-5 h-5 text-purple-600 dark:text-purple-400"/>
+                        </div>
+                        <div>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Email</p>
+                            <p className="font-medium text-slate-900 dark:text-white">{user.email}</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                        <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                            <Calendar className="w-5 h-5 text-green-600 dark:text-green-400"/>
+                        </div>
+                        <div>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Data de Cadastro</p>
+                            <p className="font-medium text-slate-900 dark:text-white">
+                                {formatDate(user.createdAt)}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                        <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                            <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400"/>
+                        </div>
+                        <div>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Status</p>
+                            <p className="font-medium text-green-600">Conta Ativa</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Actions */}
+            <div className="modern-card p-6">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                    Ações da Conta
+                </h3>
+
+                <div className="space-y-3">
+                    <Button
+                        color="danger"
+                        variant="flat"
+                        className="w-full justify-start"
+                        startContent={<LogOut className="w-4 h-4"/>}
+                        onPress={handleLogout}
+                    >
+                        Sair da Conta
+                    </Button>
+                </div>
+
+                <Divider className="my-4"/>
+
+                <p className="text-xs text-slate-400 text-center">
+                    Para alterar suas informações pessoais ou excluir sua conta,
+                    entre em contato com o suporte.
+                </p>
+            </div>
+        </div>
+    );
 }

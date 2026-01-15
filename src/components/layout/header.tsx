@@ -1,6 +1,7 @@
 "use client";
 
-import {Bell, LogOut} from "lucide-react";
+import {Bell, LogOut, User} from "lucide-react";
+import Link from "next/link";
 import {
     Button,
     Dropdown,
@@ -13,13 +14,11 @@ import {useRouter} from "next/navigation";
 import {logoutAction} from "@/features/auth";
 
 interface HeaderProps {
-    title?: string;
-    subtitle?: string;
     userName?: string;
     userEmail?: string;
 }
 
-export function Header({title, subtitle, userName, userEmail}: HeaderProps) {
+export function Header({userName, userEmail}: HeaderProps) {
     const router = useRouter();
 
     const getGreeting = () => {
@@ -47,25 +46,12 @@ export function Header({title, subtitle, userName, userEmail}: HeaderProps) {
     return (
         <header
             className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between">
-            {/* Left side - Greeting or Title */}
+            {/* Left side - Greeting */}
             <div>
-                {title ? (
-                    <>
-                        <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-                            {title}
-                        </h1>
-                        {subtitle && (
-                            <p className="text-sm text-slate-500">{subtitle}</p>
-                        )}
-                    </>
-                ) : (
-                    <>
-                        <p className="text-sm text-slate-500">{getGreeting()}</p>
-                        <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-                            {userName ? `Olá, ${userName.split(" ")[0]}!` : "Bem-vindo de volta!"}
-                        </h1>
-                    </>
-                )}
+                <p className="text-sm text-slate-500">{getGreeting()}</p>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+                    {userName ? `Olá, ${userName.split(" ")[0]}!` : "Bem-vindo de volta!"}
+                </h1>
             </div>
 
             {/* Right side - Notifications, Profile */}
@@ -92,13 +78,21 @@ export function Header({title, subtitle, userName, userEmail}: HeaderProps) {
                     </DropdownTrigger>
                     <DropdownMenu aria-label="Menu do usuário">
                         <DropdownItem
-                            key="profile"
+                            key="user-info"
                             className="h-14 gap-2"
-                            textValue="Perfil"
+                            textValue="Informações do usuário"
                             isReadOnly
                         >
                             <p className="font-semibold">{userName || "Usuário"}</p>
                             <p className="text-sm text-slate-500">{userEmail || ""}</p>
+                        </DropdownItem>
+                        <DropdownItem
+                            key="profile"
+                            as={Link}
+                            href="/profile"
+                            startContent={<User className="w-4 h-4"/>}
+                        >
+                            Meu Perfil
                         </DropdownItem>
                         <DropdownItem
                             key="logout"

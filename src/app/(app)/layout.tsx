@@ -1,9 +1,12 @@
 import {redirect} from "next/navigation";
 import {getUserBySession} from "@/lib/auth";
-import {CashflowTimeline} from "@/components/cashflow";
 import {AppLayout} from "@/components/layout";
 
-export default async function CashflowPage() {
+export default async function AppGroupLayout({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
     const user = await getUserBySession();
 
     if (!user) {
@@ -11,8 +14,8 @@ export default async function CashflowPage() {
     }
 
     return (
-        <AppLayout title="Fluxo de Caixa" subtitle="Projeção dia a dia" userName={user.name} userEmail={user.email}>
-            <CashflowTimeline/>
+        <AppLayout userName={user.name} userEmail={user.email}>
+            {children}
         </AppLayout>
     );
 }
