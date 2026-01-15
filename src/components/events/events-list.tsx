@@ -9,7 +9,6 @@ import {
     DropdownMenu,
     DropdownItem,
     Spinner,
-    ButtonGroup,
     useDisclosure,
     Modal,
     ModalContent,
@@ -20,13 +19,37 @@ import {
     Select,
     SelectItem,
 } from "@nextui-org/react";
-import {getEvents, getEventsWithProjection, confirmEvent, skipEvent, deleteEvent, updateEventPriority, updateEvent, type UpdateEventInput} from "@/features/events";
+import {
+    getEvents,
+    getEventsWithProjection,
+    confirmEvent,
+    skipEvent,
+    deleteEvent,
+    updateEventPriority,
+    updateEvent,
+    type UpdateEventInput
+} from "@/features/events";
 import {getAccountBalances, type AccountWithBalance} from "@/features/accounts";
 import {formatCurrency, centsToDollars} from "@/types/finance";
 import type {Event} from "@prisma/client";
 import {toast} from "react-toastify";
 import {EventForm} from "./event-form";
-import {Plus, MoreVertical, Calendar, Pencil} from "lucide-react";
+import {
+    Plus,
+    MoreVertical,
+    Calendar,
+    Pencil,
+    ShoppingBag,
+    Utensils,
+    Car,
+    Home,
+    TrendingUp,
+    Heart,
+    Zap,
+    CreditCard,
+    CircleDollarSign,
+    ChevronDown
+} from "lucide-react";
 
 type TimeFilter = "all" | "past" | "upcoming" | "today";
 
@@ -189,18 +212,80 @@ export function EventsList() {
         SKIPPED: "Ignorado",
     };
 
-    const costTypeLabels: Record<string, string> = {
-        FIXED: "Fixo",
-        VARIABLE: "Variável",
-        EXCEPTIONAL: "Excepcional",
-        RECURRENT: "Recorrente",
-    };
-
     const priorityLabels: Record<string, string> = {
         REQUIRED: "🔴 Obrigatório",
         IMPORTANT: "🟡 Importante",
         OPTIONAL: "🟢 Opcional",
     };
+
+    // Icon and color mapping for event types
+    const getEventIcon = (description: string, type: string) => {
+        const desc = description.toLowerCase();
+        if (desc.includes("aluguel") || desc.includes("casa") || desc.includes("moradia")) return Home;
+        if (desc.includes("mercado") || desc.includes("compra") || desc.includes("shopping")) return ShoppingBag;
+        if (desc.includes("restaurante") || desc.includes("comida") || desc.includes("alimenta")) return Utensils;
+        if (desc.includes("transporte") || desc.includes("uber") || desc.includes("carro") || desc.includes("gasolina")) return Car;
+        if (desc.includes("saúde") || desc.includes("médico") || desc.includes("farmácia")) return Heart;
+        if (desc.includes("energia") || desc.includes("luz") || desc.includes("água") || desc.includes("internet")) return Zap;
+        if (type === "INVESTMENT") return TrendingUp;
+        if (type === "INCOME") return CircleDollarSign;
+        return CreditCard;
+    };
+
+    const getEventColors = (type: string, description: string) => {
+        const desc = description.toLowerCase();
+        if (type === "INCOME") return {
+            bg: "bg-emerald-100 dark:bg-emerald-900/30",
+            icon: "text-emerald-600 dark:text-emerald-400"
+        };
+        if (type === "INVESTMENT") return {
+            bg: "bg-blue-100 dark:bg-blue-900/30",
+            icon: "text-blue-600 dark:text-blue-400"
+        };
+        if (desc.includes("aluguel") || desc.includes("casa")) return {
+            bg: "bg-purple-100 dark:bg-purple-900/30",
+            icon: "text-purple-600 dark:text-purple-400"
+        };
+        if (desc.includes("mercado") || desc.includes("compra") || desc.includes("shopping")) return {
+            bg: "bg-cyan-100 dark:bg-cyan-900/30",
+            icon: "text-cyan-600 dark:text-cyan-400"
+        };
+        if (desc.includes("restaurante") || desc.includes("comida")) return {
+            bg: "bg-indigo-100 dark:bg-indigo-900/30",
+            icon: "text-indigo-600 dark:text-indigo-400"
+        };
+        if (desc.includes("transporte") || desc.includes("uber") || desc.includes("carro")) return {
+            bg: "bg-amber-100 dark:bg-amber-900/30",
+            icon: "text-amber-600 dark:text-amber-400"
+        };
+        if (desc.includes("energia") || desc.includes("luz") || desc.includes("água")) return {
+            bg: "bg-orange-100 dark:bg-orange-900/30",
+            icon: "text-orange-600 dark:text-orange-400"
+        };
+        return {bg: "bg-rose-100 dark:bg-rose-900/30", icon: "text-rose-600 dark:text-rose-400"};
+    };
+
+    // Calculate budget summary
+    const calculateBudgetSummary = () => {
+        const totalExpenses = events
+            .filter(e => e.type === "EXPENSE" && e.status !== "SKIPPED")
+            .reduce((sum, e) => sum + Math.abs(e.amount), 0);
+        const totalIncome = events
+            .filter(e => e.type === "INCOME" && e.status !== "SKIPPED")
+            .reduce((sum, e) => sum + e.amount, 0);
+        const confirmedExpenses = events
+            .filter(e => e.type === "EXPENSE" && e.status === "CONFIRMED")
+            .reduce((sum, e) => sum + Math.abs(e.amount), 0);
+
+        return {
+            totalExpenses,
+            totalIncome,
+            confirmedExpenses,
+            progress: totalExpenses > 0 ? (confirmedExpenses / totalExpenses) * 100 : 0,
+        };
+    };
+
+    const budgetSummary = calculateBudgetSummary();
 
     const handlePriorityChange = async (eventId: string, priority: "REQUIRED" | "IMPORTANT" | "OPTIONAL") => {
         // Check if this is a generated event (from recurrence template)
@@ -294,53 +379,141 @@ export function EventsList() {
         );
     }
 
+    // Get current month name
+    const currentMonth = new Date().toLocaleDateString("pt-BR", {month: "long"});
+
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex justify-between items-center">
-                <ButtonGroup>
-                    <Button
-                        color={timeFilter === "all" ? "primary" : "default"}
-                        variant={timeFilter === "all" ? "solid" : "bordered"}
-                        onPress={() => setTimeFilter("all")}
-                    >
-                        Todos
-                    </Button>
-                    <Button
-                        color={timeFilter === "past" ? "primary" : "default"}
-                        variant={timeFilter === "past" ? "solid" : "bordered"}
-                        onPress={() => setTimeFilter("past")}
-                    >
-                        Passados
-                    </Button>
-                    <Button
-                        color={timeFilter === "today" ? "primary" : "default"}
-                        variant={timeFilter === "today" ? "solid" : "bordered"}
-                        onPress={() => setTimeFilter("today")}
-                    >
-                        Hoje
-                    </Button>
-                    <Button
-                        color={timeFilter === "upcoming" ? "primary" : "default"}
-                        variant={timeFilter === "upcoming" ? "solid" : "bordered"}
-                        onPress={() => setTimeFilter("upcoming")}
-                    >
-                        Próximos
-                    </Button>
-                </ButtonGroup>
+        <div className="space-y-4 sm:space-y-6">
+            {/* Budget Summary Card - Inspired by Figma */}
+            {events.length > 0 && (
+                <div
+                    className="bg-gradient-to-r from-indigo-900 to-indigo-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white relative overflow-hidden">
+                    {/* Decorative elements */}
+                    <div
+                        className="absolute top-4 right-4 w-16 h-16 sm:w-20 sm:h-20 bg-pink-500/20 rounded-full blur-xl"/>
+                    <div
+                        className="absolute bottom-4 right-12 w-10 h-10 sm:w-12 sm:h-12 bg-teal-500/30 rounded-full blur-lg"/>
+
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 relative z-10">
+                        <div className="space-y-1">
+                            <p className="text-indigo-200 text-sm font-medium capitalize">
+                                Orçamento de {currentMonth}
+                            </p>
+                            <p className="text-2xl sm:text-3xl font-bold">
+                                {formatCurrency(budgetSummary.totalExpenses)}
+                            </p>
+                        </div>
+                        <div className="text-right hidden sm:block">
+                            <p className="text-indigo-200 text-sm">Receitas</p>
+                            <p className="text-lg font-semibold text-emerald-400">
+                                +{formatCurrency(budgetSummary.totalIncome)}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="mt-4 space-y-2 relative z-10">
+                        <div className="flex justify-between text-xs sm:text-sm text-indigo-200">
+                            <span>Confirmado</span>
+                            <span>{Math.round(budgetSummary.progress)}%</span>
+                        </div>
+                        <div className="h-1.5 sm:h-2 bg-white/20 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all duration-500"
+                                style={{width: `${budgetSummary.progress}%`}}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Mobile income display */}
+                    <div className="mt-3 sm:hidden flex justify-between text-sm">
+                        <span className="text-indigo-200">Receitas esperadas</span>
+                        <span
+                            className="text-emerald-400 font-medium">+{formatCurrency(budgetSummary.totalIncome)}</span>
+                    </div>
+                </div>
+            )}
+
+            {/* Header with filters */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                {/* Mobile: Dropdown filter */}
+                <div className="w-full sm:hidden">
+                    <Dropdown>
+                        <DropdownTrigger>
+                            <Button
+                                variant="flat"
+                                className="w-full justify-between"
+                                endContent={<ChevronDown className="w-4 h-4"/>}
+                            >
+                                {timeFilter === "all" && "Todos os eventos"}
+                                {timeFilter === "past" && "Eventos passados"}
+                                {timeFilter === "today" && "Eventos de hoje"}
+                                {timeFilter === "upcoming" && "Próximos eventos"}
+                            </Button>
+                        </DropdownTrigger>
+                        <DropdownMenu
+                            aria-label="Filtro de tempo"
+                            selectionMode="single"
+                            selectedKeys={[timeFilter]}
+                            onSelectionChange={(keys) => {
+                                const value = Array.from(keys)[0] as TimeFilter;
+                                setTimeFilter(value);
+                            }}
+                        >
+                            <DropdownItem key="all">Todos os eventos</DropdownItem>
+                            <DropdownItem key="past">Eventos passados</DropdownItem>
+                            <DropdownItem key="today">Eventos de hoje</DropdownItem>
+                            <DropdownItem key="upcoming">Próximos eventos</DropdownItem>
+                        </DropdownMenu>
+                    </Dropdown>
+                </div>
+
+                {/* Desktop: Button group filter */}
+                <div className="hidden sm:flex gap-2 flex-wrap">
+                    {[
+                        {key: "all", label: "Todos"},
+                        {key: "past", label: "Passados"},
+                        {key: "today", label: "Hoje"},
+                        {key: "upcoming", label: "Próximos"},
+                    ].map((filter) => (
+                        <Button
+                            key={filter.key}
+                            size="sm"
+                            radius="full"
+                            color={timeFilter === filter.key ? "primary" : "default"}
+                            variant={timeFilter === filter.key ? "solid" : "flat"}
+                            onPress={() => setTimeFilter(filter.key as TimeFilter)}
+                        >
+                            {filter.label}
+                        </Button>
+                    ))}
+                </div>
+
                 <Button
                     color="primary"
                     onPress={onOpen}
+                    radius="full"
+                    className="w-full sm:w-auto"
                     startContent={<Plus className="w-4 h-4"/>}
                 >
                     Novo Evento
                 </Button>
             </div>
 
+            {/* Section title */}
+            <div className="flex items-center justify-between">
+                <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">
+                    Seus Eventos
+                </h2>
+                <span className="text-xs sm:text-sm text-slate-500">
+                    {events.length} {events.length === 1 ? "evento" : "eventos"}
+                </span>
+            </div>
+
             {/* Events list */}
             {error && (
-                <div className="modern-card p-5 border-l-4 border-l-red-500">
-                    <p className="text-red-600">{error}</p>
+                <div className="modern-card p-4 sm:p-5 border-l-4 border-l-red-500">
+                    <p className="text-red-600 text-sm sm:text-base">{error}</p>
                     <Button color="primary" size="sm" className="mt-2" onPress={loadData}>
                         Tentar Novamente
                     </Button>
@@ -348,94 +521,122 @@ export function EventsList() {
             )}
 
             {!error && events.length === 0 && (
-                <div className="modern-card p-12 text-center">
-                    <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-3"/>
-                    <p className="text-slate-500">Nenhum evento encontrado.</p>
-                    <Button color="primary" className="mt-4" onPress={onOpen}>
+                <div className="modern-card p-8 sm:p-12 text-center">
+                    <div
+                        className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Calendar className="w-8 h-8 sm:w-10 sm:h-10 text-slate-400"/>
+                    </div>
+                    <p className="text-slate-500 mb-4">Nenhum evento encontrado.</p>
+                    <Button color="primary" radius="full" onPress={onOpen}>
                         Criar seu primeiro evento
                     </Button>
                 </div>
             )}
 
             {!error && events.length > 0 && (
-                <div className="modern-card overflow-hidden">
-                    <div className="divide-y divide-slate-200 dark:divide-slate-700">
-                        {events.map((event) => (
+                <div className="space-y-3">
+                    {events.map((event) => {
+                        const EventIcon = getEventIcon(event.description, event.type);
+                        const colors = getEventColors(event.type, event.description);
+                        const isOverdue = isPast(event.date) && event.status === "PLANNED";
+
+                        return (
                             <div
                                 key={event.id}
-                                className={`flex justify-between items-center p-4 ${
-                                    isPast(event.date) && event.status === "PLANNED"
-                                        ? "bg-yellow-50 dark:bg-yellow-900/20"
-                                        : ""
+                                className={`bg-white dark:bg-slate-900 rounded-2xl sm:rounded-[20px] p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow border border-slate-100 dark:border-slate-800 ${
+                                    isOverdue ? "ring-2 ring-amber-400/50" : ""
                                 }`}
                             >
-                                <div className="flex flex-col gap-1">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <Chip
-                                            color={typeColors[event.type]}
-                                            size="sm"
-                                            variant="flat"
-                                        >
-                                            {typeLabels[event.type]}
-                                        </Chip>
-                                        <Chip
-                                            color={statusColors[event.status]}
-                                            size="sm"
-                                            variant="bordered"
-                                        >
-                                            {statusLabels[event.status]}
-                                        </Chip>
-                                        {event.costType && (
-                                            <Chip size="sm" variant="dot">
-                                                {costTypeLabels[event.costType]}
-                                            </Chip>
-                                        )}
-                                        {event.isRecurrenceTemplate && (
-                                            <Chip size="sm" color="secondary" variant="flat">
-                                                Recorrente
-                                            </Chip>
-                                        )}
-                                        {event.type !== "INCOME" && (
+                                <div className="flex items-center gap-3 sm:gap-4">
+                                    {/* Icon */}
+                                    <div
+                                        className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl sm:rounded-[18px] ${colors.bg} flex items-center justify-center flex-shrink-0`}>
+                                        <EventIcon className={`w-6 h-6 sm:w-8 sm:h-8 ${colors.icon}`}/>
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <h3 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base truncate">
+                                                    {event.description}
+                                                </h3>
+                                                <p className={`text-xs sm:text-sm mt-0.5 ${
+                                                    isToday(event.date)
+                                                        ? "text-blue-600 font-medium"
+                                                        : isOverdue
+                                                            ? "text-amber-600"
+                                                            : "text-slate-500"
+                                                }`}>
+                                                    {isToday(event.date) ? "Hoje" : formatDate(event.date)}
+                                                    {isOverdue && " • Atrasado"}
+                                                </p>
+                                            </div>
+
+                                            <div className="text-right flex-shrink-0">
+                                                <p className={`font-semibold text-sm sm:text-base ${
+                                                    event.amount > 0
+                                                        ? "text-emerald-600"
+                                                        : "text-slate-900 dark:text-white"
+                                                }`}>
+                                                    {event.amount > 0 ? "+" : ""}
+                                                    {formatCurrency(event.amount)}
+                                                </p>
+                                                <p className="text-xs text-slate-400 mt-0.5 hidden sm:block">
+                                                    {statusLabels[event.status]}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Tags row */}
+                                        <div className="flex items-center gap-1.5 sm:gap-2 mt-2 flex-wrap">
                                             <Chip
                                                 size="sm"
-                                                variant="light"
-                                                className="text-xs"
+                                                variant="flat"
+                                                color={typeColors[event.type]}
+                                                className="text-[10px] sm:text-xs h-5 sm:h-6"
                                             >
-                                                {priorityLabels[event.priority]}
+                                                {typeLabels[event.type]}
                                             </Chip>
-                                        )}
+                                            {event.isRecurrenceTemplate && (
+                                                <Chip
+                                                    size="sm"
+                                                    variant="flat"
+                                                    color="secondary"
+                                                    className="text-[10px] sm:text-xs h-5 sm:h-6"
+                                                >
+                                                    Recorrente
+                                                </Chip>
+                                            )}
+                                            {event.type !== "INCOME" && (
+                                                <span className="text-[10px] sm:text-xs text-slate-500">
+                                                    {priorityLabels[event.priority]}
+                                                </span>
+                                            )}
+
+                                            {/* Mobile status chip */}
+                                            <Chip
+                                                size="sm"
+                                                variant="bordered"
+                                                color={statusColors[event.status]}
+                                                className="text-[10px] sm:text-xs h-5 sm:h-6 sm:hidden ml-auto"
+                                            >
+                                                {statusLabels[event.status]}
+                                            </Chip>
+                                        </div>
                                     </div>
-                                    <span className="font-medium text-lg text-slate-900 dark:text-white">
-                                        {event.description}
-                                    </span>
-                                    <span
-                                        className={`text-sm ${
-                                            isToday(event.date)
-                                                ? "text-blue-600 font-medium"
-                                                : "text-slate-500"
-                                        }`}
-                                    >
-                                        {isToday(event.date) ? "Hoje" : formatDate(event.date)}
-                                        {isPast(event.date) && event.status === "PLANNED" && (
-                                            <span className="text-yellow-600 ml-2">(Atrasado)</span>
-                                        )}
-                                    </span>
-                                </div>
 
-                                <div className="flex items-center gap-4">
-                                    <span
-                                        className={`text-xl font-bold ${
-                                            event.amount > 0 ? "text-green-600" : "text-red-600"
-                                        }`}
-                                    >
-                                        {event.amount > 0 ? "+" : ""}
-                                        {formatCurrency(event.amount)}
-                                    </span>
-
+                                    {/* Actions menu */}
                                     <Dropdown>
                                         <DropdownTrigger>
-                                            <Button isIconOnly variant="light" size="sm">
-                                                <MoreVertical className="w-4 h-4"/>
+                                            <Button
+                                                isIconOnly
+                                                variant="light"
+                                                size="sm"
+                                                radius="full"
+                                                className="flex-shrink-0"
+                                            >
+                                                <MoreVertical className="w-4 h-4 sm:w-5 sm:h-5"/>
                                             </Button>
                                         </DropdownTrigger>
                                         <DropdownMenu
@@ -488,8 +689,8 @@ export function EventsList() {
                                     </Dropdown>
                                 </div>
                             </div>
-                        ))}
-                    </div>
+                        );
+                    })}
                 </div>
             )}
 
@@ -502,28 +703,40 @@ export function EventsList() {
             />
 
             {/* Edit event modal */}
-            <Modal isOpen={isEditOpen} onClose={onEditClose} size="lg">
+            <Modal
+                isOpen={isEditOpen}
+                onClose={onEditClose}
+                size="lg"
+                scrollBehavior="inside"
+                classNames={{
+                    base: "mx-2 sm:mx-0",
+                    body: "py-4",
+                }}
+            >
                 <ModalContent>
-                    <ModalHeader>
+                    <ModalHeader className="text-lg sm:text-xl">
                         {editData?.isGenerated ? "Editar Modelo Recorrente" : "Editar Evento"}
                     </ModalHeader>
-                    <ModalBody className="gap-4">
+                    <ModalBody className="gap-3 sm:gap-4">
                         {editData?.isGenerated && (
-                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-2">
-                                <p className="text-sm text-amber-700 dark:text-amber-300">
-                                    Você está editando o modelo recorrente. As alterações afetarão todas as ocorrências futuras.
+                            <div
+                                className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
+                                <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-300">
+                                    As alterações afetarão todas as ocorrências futuras.
                                 </p>
                             </div>
                         )}
 
                         <Select
                             label="Conta"
+                            size="sm"
                             selectedKeys={editData?.accountId ? [editData.accountId] : []}
                             onSelectionChange={(keys) => {
                                 const value = Array.from(keys)[0] as string;
                                 setEditData(prev => prev ? {...prev, accountId: value} : null);
                             }}
                             isRequired
+                            classNames={{label: "text-sm"}}
                         >
                             {accounts.map((account) => (
                                 <SelectItem key={account.id} textValue={account.name}>
@@ -534,31 +747,37 @@ export function EventsList() {
 
                         <Input
                             label="Descrição"
+                            size="sm"
                             placeholder="Ex: Aluguel mensal"
                             value={editData?.description || ""}
                             onValueChange={(value) => setEditData(prev => prev ? {...prev, description: value} : null)}
                             isRequired
+                            classNames={{label: "text-sm"}}
                         />
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                             <Input
                                 label="Valor"
+                                size="sm"
                                 type="number"
                                 placeholder="0,00"
-                                startContent={<span className="text-gray-500">R$</span>}
+                                startContent={<span className="text-gray-500 text-sm">R$</span>}
                                 value={editData?.amount || ""}
                                 onValueChange={(value) => setEditData(prev => prev ? {...prev, amount: value} : null)}
                                 isRequired
+                                classNames={{label: "text-sm"}}
                             />
 
                             <Select
                                 label="Tipo"
+                                size="sm"
                                 selectedKeys={editData?.type ? [editData.type] : []}
                                 onSelectionChange={(keys) => {
                                     const value = Array.from(keys)[0] as "INCOME" | "EXPENSE" | "INVESTMENT";
                                     setEditData(prev => prev ? {...prev, type: value} : null);
                                 }}
                                 isRequired
+                                classNames={{label: "text-sm"}}
                             >
                                 <SelectItem key="INCOME" textValue="Receita">Receita (+)</SelectItem>
                                 <SelectItem key="EXPENSE" textValue="Despesa">Despesa (-)</SelectItem>
@@ -569,14 +788,16 @@ export function EventsList() {
                         {editData?.type === "EXPENSE" && (
                             <Select
                                 label="Tipo de Custo"
+                                size="sm"
                                 selectedKeys={editData?.costType ? [editData.costType] : []}
                                 onSelectionChange={(keys) => {
                                     const value = Array.from(keys)[0] as "RECURRENT" | "EXCEPTIONAL";
                                     setEditData(prev => prev ? {...prev, costType: value} : null);
                                 }}
+                                classNames={{label: "text-sm"}}
                             >
                                 <SelectItem key="RECURRENT" textValue="Recorrente">
-                                    Recorrente (aluguel, contas, assinaturas)
+                                    Recorrente (aluguel, contas)
                                 </SelectItem>
                                 <SelectItem key="EXCEPTIONAL" textValue="Excepcional">
                                     Excepcional (viagens, emergências)
@@ -587,37 +808,42 @@ export function EventsList() {
                         {editData?.type !== "INCOME" && (
                             <Select
                                 label="Prioridade"
+                                size="sm"
                                 selectedKeys={editData?.priority ? [editData.priority] : []}
                                 onSelectionChange={(keys) => {
                                     const value = Array.from(keys)[0] as "REQUIRED" | "IMPORTANT" | "OPTIONAL";
                                     setEditData(prev => prev ? {...prev, priority: value} : null);
                                 }}
+                                classNames={{label: "text-sm"}}
                             >
                                 <SelectItem key="REQUIRED" textValue="Obrigatório">
-                                    🔴 Obrigatório (não pode ser adiado)
+                                    🔴 Obrigatório
                                 </SelectItem>
                                 <SelectItem key="IMPORTANT" textValue="Importante">
-                                    🟡 Importante (deveria ser pago)
+                                    🟡 Importante
                                 </SelectItem>
                                 <SelectItem key="OPTIONAL" textValue="Opcional">
-                                    🟢 Opcional (pode ser adiado)
+                                    🟢 Opcional
                                 </SelectItem>
                             </Select>
                         )}
 
                         <Input
                             label="Data"
+                            size="sm"
                             type="date"
                             value={editData?.date || ""}
                             onValueChange={(value) => setEditData(prev => prev ? {...prev, date: value} : null)}
                             isRequired
+                            classNames={{label: "text-sm"}}
                         />
                     </ModalBody>
-                    <ModalFooter>
-                        <Button variant="flat" onPress={onEditClose}>
+                    <ModalFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+                        <Button variant="flat" onPress={onEditClose} className="w-full sm:w-auto order-2 sm:order-1">
                             Cancelar
                         </Button>
-                        <Button color="primary" onPress={handleUpdate} isLoading={editLoading}>
+                        <Button color="primary" onPress={handleUpdate} isLoading={editLoading}
+                                className="w-full sm:w-auto order-1 sm:order-2">
                             Salvar Alterações
                         </Button>
                     </ModalFooter>

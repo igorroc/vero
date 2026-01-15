@@ -96,18 +96,31 @@ export function EventForm({isOpen, onClose, onSuccess, accounts}: EventFormProps
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} size="lg">
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            size="lg"
+            scrollBehavior="inside"
+            classNames={{
+                base: "mx-2 sm:mx-0",
+                body: "py-4",
+            }}
+        >
             <ModalContent>
-                <ModalHeader>Novo Evento</ModalHeader>
-                <ModalBody className="gap-4">
+                <ModalHeader className="text-lg sm:text-xl">Novo Evento</ModalHeader>
+                <ModalBody className="gap-3 sm:gap-4">
                     <Select
                         label="Conta"
+                        size="sm"
                         selectedKeys={formData.accountId ? [formData.accountId] : []}
                         onSelectionChange={(keys) => {
                             const value = Array.from(keys)[0] as string;
                             setFormData({...formData, accountId: value});
                         }}
                         isRequired
+                        classNames={{
+                            label: "text-sm",
+                        }}
                     >
                         {accounts.map((account) => (
                             <SelectItem key={account.id} textValue={account.name}>
@@ -119,31 +132,43 @@ export function EventForm({isOpen, onClose, onSuccess, accounts}: EventFormProps
 
                     <Input
                         label="Descrição"
+                        size="sm"
                         placeholder="Ex: Aluguel mensal"
                         value={formData.description}
                         onValueChange={(value) => setFormData({...formData, description: value})}
                         isRequired
+                        classNames={{
+                            label: "text-sm",
+                        }}
                     />
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <Input
                             label="Valor"
+                            size="sm"
                             type="number"
                             placeholder="0,00"
-                            startContent={<span className="text-gray-500">R$</span>}
+                            startContent={<span className="text-gray-500 text-sm">R$</span>}
                             value={formData.amount}
                             onValueChange={(value) => setFormData({...formData, amount: value})}
                             isRequired
+                            classNames={{
+                                label: "text-sm",
+                            }}
                         />
 
                         <Select
                             label="Tipo"
+                            size="sm"
                             selectedKeys={[formData.type]}
                             onSelectionChange={(keys) => {
                                 const value = Array.from(keys)[0] as "INCOME" | "EXPENSE" | "INVESTMENT";
                                 setFormData({...formData, type: value});
                             }}
                             isRequired
+                            classNames={{
+                                label: "text-sm",
+                            }}
                         >
                             <SelectItem key="INCOME" textValue="Receita">Receita (+)</SelectItem>
                             <SelectItem key="EXPENSE" textValue="Despesa">Despesa (-)</SelectItem>
@@ -154,15 +179,20 @@ export function EventForm({isOpen, onClose, onSuccess, accounts}: EventFormProps
                     {formData.type === "EXPENSE" && (
                         <Select
                             label="Tipo de Custo"
+                            size="sm"
                             selectedKeys={[formData.costType]}
                             onSelectionChange={(keys) => {
                                 const value = Array.from(keys)[0] as "RECURRENT" | "EXCEPTIONAL";
                                 setFormData({...formData, costType: value});
                             }}
-                            description="Custos recorrentes são usados para planejamento de longo prazo. Custos excepcionais são gastos únicos."
+                            description="Custos recorrentes são para planejamento de longo prazo."
+                            classNames={{
+                                label: "text-sm",
+                                description: "text-xs",
+                            }}
                         >
                             <SelectItem key="RECURRENT" textValue="Recorrente">
-                                Recorrente (aluguel, contas, assinaturas)
+                                Recorrente (aluguel, contas)
                             </SelectItem>
                             <SelectItem key="EXCEPTIONAL" textValue="Excepcional">
                                 Excepcional (viagens, emergências)
@@ -173,41 +203,51 @@ export function EventForm({isOpen, onClose, onSuccess, accounts}: EventFormProps
                     {formData.type !== "INCOME" && (
                         <Select
                             label="Prioridade"
+                            size="sm"
                             selectedKeys={[formData.priority]}
                             onSelectionChange={(keys) => {
                                 const value = Array.from(keys)[0] as "REQUIRED" | "IMPORTANT" | "OPTIONAL";
                                 setFormData({...formData, priority: value});
                             }}
-                            description="Eventos opcionais podem ser sugeridos para adiamento quando necessário."
+                            description="Eventos opcionais podem ser sugeridos para adiamento."
+                            classNames={{
+                                label: "text-sm",
+                                description: "text-xs",
+                            }}
                         >
                             <SelectItem key="REQUIRED" textValue="Obrigatório">
-                                🔴 Obrigatório (não pode ser adiado)
+                                🔴 Obrigatório
                             </SelectItem>
                             <SelectItem key="IMPORTANT" textValue="Importante">
-                                🟡 Importante (deveria ser pago)
+                                🟡 Importante
                             </SelectItem>
                             <SelectItem key="OPTIONAL" textValue="Opcional">
-                                🟢 Opcional (pode ser adiado)
+                                🟢 Opcional
                             </SelectItem>
                         </Select>
                     )}
 
                     <Input
                         label="Data"
+                        size="sm"
                         type="date"
                         value={formData.date}
                         onValueChange={(value) => setFormData({...formData, date: value})}
                         isRequired
+                        classNames={{
+                            label: "text-sm",
+                        }}
                     />
 
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 sm:p-4">
                         <div>
-                            <p className="font-medium text-slate-900 dark:text-white">Evento Recorrente</p>
-                            <p className="text-sm text-slate-500">
-                                Este evento se repete em uma agenda
+                            <p className="font-medium text-sm sm:text-base text-slate-900 dark:text-white">Evento Recorrente</p>
+                            <p className="text-xs sm:text-sm text-slate-500">
+                                Repete em uma agenda
                             </p>
                         </div>
                         <Switch
+                            size="sm"
                             isSelected={formData.isRecurring}
                             onValueChange={(value) =>
                                 setFormData({...formData, isRecurring: value})
@@ -218,10 +258,14 @@ export function EventForm({isOpen, onClose, onSuccess, accounts}: EventFormProps
                     {formData.isRecurring && (
                         <Select
                             label="Frequência"
+                            size="sm"
                             selectedKeys={[formData.recurrenceFrequency]}
                             onSelectionChange={(keys) => {
                                 const value = Array.from(keys)[0] as string;
                                 setFormData({...formData, recurrenceFrequency: value});
+                            }}
+                            classNames={{
+                                label: "text-sm",
                             }}
                         >
                             <SelectItem key="DAILY">Diário</SelectItem>
@@ -232,11 +276,11 @@ export function EventForm({isOpen, onClose, onSuccess, accounts}: EventFormProps
                         </Select>
                     )}
                 </ModalBody>
-                <ModalFooter>
-                    <Button variant="flat" onPress={onClose}>
+                <ModalFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+                    <Button variant="flat" onPress={onClose} className="w-full sm:w-auto order-2 sm:order-1">
                         Cancelar
                     </Button>
-                    <Button color="primary" onPress={handleSubmit} isLoading={loading}>
+                    <Button color="primary" onPress={handleSubmit} isLoading={loading} className="w-full sm:w-auto order-1 sm:order-2">
                         Criar Evento
                     </Button>
                 </ModalFooter>
