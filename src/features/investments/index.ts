@@ -1,10 +1,11 @@
 export {
-  getInvestmentPlans,
-  createInvestmentPlan,
-  updateInvestmentPlan,
-  deleteInvestmentPlan,
-  getMonthlyInvestmentAmount,
-  getTotalMonthlyInvestment,
-  type CreateInvestmentPlanInput,
-  type UpdateInvestmentPlanInput,
+    getInvestmentPlans,
+    createInvestmentPlan,
+    updateInvestmentPlan,
+    deleteInvestmentPlan,
+    getTotalMonthlyInvestment,
+    type CreateInvestmentPlanInput,
+    type UpdateInvestmentPlanInput,
 } from "./investment-plans";
+
+export {getMonthlyInvestmentAmount} from "./utils";

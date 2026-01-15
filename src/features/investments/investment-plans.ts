@@ -224,39 +224,23 @@ export async function deleteInvestmentPlan(
 // HELPERS
 // ============================================
 
-/**
- * Calculate monthly investment amount from a plan
- */
-export function getMonthlyInvestmentAmount(plan: InvestmentPlan): number {
-  switch (plan.frequency) {
-    case "WEEKLY":
-      return plan.amount * 4.33; // Average weeks per month
-    case "BIWEEKLY":
-      return plan.amount * 2.17;
-    case "MONTHLY":
-      return plan.amount;
-    case "YEARLY":
-      return plan.amount / 12;
-    default:
-      return plan.amount;
-  }
-}
+import {getMonthlyInvestmentAmount} from "./utils";
 
 /**
  * Get total monthly investment across all active plans
  */
 export async function getTotalMonthlyInvestment(): Promise<number> {
-  const user = await getUserBySession();
-  if (!user) return 0;
+    const user = await getUserBySession();
+    if (!user) return 0;
 
-  const plans = await prisma.investmentPlan.findMany({
-    where: {
-      userId: user.id,
-      isActive: true,
-    },
-  });
+    const plans = await prisma.investmentPlan.findMany({
+        where: {
+            userId: user.id,
+            isActive: true,
+        },
+    });
 
-  return plans.reduce((total, plan) => {
-    return total + getMonthlyInvestmentAmount(plan);
-  }, 0);
+    return plans.reduce((total, plan) => {
+        return total + getMonthlyInvestmentAmount(plan);
+    }, 0);
 }
