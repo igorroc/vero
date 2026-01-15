@@ -12,7 +12,6 @@ import {
     ChevronLeft,
     ChevronRight,
 } from "lucide-react";
-import {useState} from "react";
 
 interface NavItem {
     icon: React.ElementType;
@@ -29,20 +28,27 @@ const navItems: NavItem[] = [
     {icon: Settings, label: "Configurações", href: "/settings"},
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+    collapsed: boolean;
+    onCollapsedChange: (collapsed: boolean) => void;
+}
+
+export function Sidebar({collapsed, onCollapsedChange}: SidebarProps) {
     const pathname = usePathname();
-    const [collapsed, setCollapsed] = useState(false);
 
     return (
         <aside
-            className={`fixed left-0 top-0 h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-all duration-300 z-50 ${
-                collapsed ? "w-20" : "w-64"
-            }`}
+            className={`
+                fixed left-0 top-0 h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800
+                transition-all duration-300 z-50
+                hidden md:block
+                ${collapsed ? "w-20" : "w-64"}
+            `}
         >
             {/* Logo */}
             <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800">
                 <Link href="/dashboard" className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                         <span className="text-white font-bold text-xl">V</span>
                     </div>
                     {!collapsed && (
@@ -51,8 +57,10 @@ export function Sidebar() {
                         </span>
                     )}
                 </Link>
+
+                {/* Collapse button */}
                 <button
-                    onClick={() => setCollapsed(!collapsed)}
+                    onClick={() => onCollapsedChange(!collapsed)}
                     className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
                 >
                     {collapsed ? (
@@ -78,6 +86,7 @@ export function Sidebar() {
                                     ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/30"
                                     : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                             }`}
+                            title={collapsed ? item.label : undefined}
                         >
                             <Icon className="w-5 h-5 flex-shrink-0"/>
                             {!collapsed && (

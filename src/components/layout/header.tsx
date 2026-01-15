@@ -45,22 +45,36 @@ export function Header({userName, userEmail}: HeaderProps) {
 
     return (
         <header
-            className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between">
-            {/* Left side - Greeting */}
-            <div>
-                <p className="text-sm text-slate-500">{getGreeting()}</p>
-                <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-                    {userName ? `Olá, ${userName.split(" ")[0]}!` : "Bem-vindo de volta!"}
-                </h1>
+            className="h-14 sm:h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30">
+            {/* Left side - Logo on mobile, Greeting on desktop */}
+            <div className="flex items-center gap-3">
+                {/* Mobile: Logo in header */}
+                <div className="flex items-center gap-2 md:hidden">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">V</span>
+                    </div>
+                    <span className="font-bold text-lg text-slate-900 dark:text-white">
+                        Vero
+                    </span>
+                </div>
+
+                {/* Desktop: Greeting */}
+                <div className="hidden md:block">
+                    <p className="text-sm text-slate-500">{getGreeting()}</p>
+                    <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+                        {userName ? `Olá, ${userName.split(" ")[0]}!` : "Bem-vindo!"}
+                    </h1>
+                </div>
             </div>
 
             {/* Right side - Notifications, Profile */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
                 {/* Notifications */}
                 <Button
                     isIconOnly
                     variant="light"
-                    className="text-slate-600 dark:text-slate-400"
+                    size="sm"
+                    className="text-slate-600 dark:text-slate-400 hidden sm:flex"
                     title="Notificações (em breve)"
                 >
                     <Bell className="w-5 h-5"/>
@@ -73,7 +87,7 @@ export function Header({userName, userEmail}: HeaderProps) {
                             as="button"
                             size="sm"
                             name={getInitials(userName)}
-                            className="bg-gradient-to-br from-blue-500 to-purple-600 text-white cursor-pointer"
+                            className="bg-gradient-to-br from-blue-500 to-purple-600 text-white cursor-pointer w-8 h-8 sm:w-9 sm:h-9"
                         />
                     </DropdownTrigger>
                     <DropdownMenu aria-label="Menu do usuário">
@@ -83,8 +97,8 @@ export function Header({userName, userEmail}: HeaderProps) {
                             textValue="Informações do usuário"
                             isReadOnly
                         >
-                            <p className="font-semibold">{userName || "Usuário"}</p>
-                            <p className="text-sm text-slate-500">{userEmail || ""}</p>
+                            <p className="font-semibold text-sm sm:text-base">{userName || "Usuário"}</p>
+                            <p className="text-xs sm:text-sm text-slate-500">{userEmail || ""}</p>
                         </DropdownItem>
                         <DropdownItem
                             key="profile"
@@ -93,6 +107,13 @@ export function Header({userName, userEmail}: HeaderProps) {
                             startContent={<User className="w-4 h-4"/>}
                         >
                             Meu Perfil
+                        </DropdownItem>
+                        <DropdownItem
+                            key="notifications"
+                            className="sm:hidden"
+                            startContent={<Bell className="w-4 h-4"/>}
+                        >
+                            Notificações
                         </DropdownItem>
                         <DropdownItem
                             key="logout"
