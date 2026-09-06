@@ -28,6 +28,7 @@ import {
 	deleteEvent,
 	updateEventPriority,
 	updateEvent,
+	updateTransfer,
 	type UpdateEventInput,
 } from "@/features/events"
 import {
@@ -78,6 +79,17 @@ export function EventsList() {
 		onClose: onEditClose,
 	} = useDisclosure()
 	const [editLoading, setEditLoading] = useState(false)
+	const {
+		isOpen: isTransferEditOpen,
+		onOpen: onTransferEditOpen,
+		onClose: onTransferEditClose,
+	} = useDisclosure()
+	const [transferEditData, setTransferEditData] = useState<{
+		id: string
+		description: string
+		amount: string
+		date: string
+	} | null>(null)
 	const [editData, setEditData] = useState<{
 		id: string
 		accountId: string
@@ -412,6 +424,16 @@ export function EventsList() {
 	}
 
 	const handleEdit = (event: Event) => {
+		if (event.type === "TRANSFER") {
+			setTransferEditData({
+				id: event.id,
+				description: event.description,
+				amount: centsToDollars(Math.abs(event.amount)).toString(),
+				date: formatDateInput(new Date(event.date)),
+			})
+			onTransferEditOpen()
+			return
+		}
 		// Check if this is a generated event
 		const isGenerated = event.id.startsWith("generated-")
 		let targetId = event.id
@@ -481,6 +503,26 @@ export function EventsList() {
 			toast.error(result.error)
 		}
 
+		setEditLoading(false)
+	}
+
+	const handleTransferUpdate = async () => {
+		if (!transferEditData) return
+		setEditLoading(true)
+		const result = await updateTransfer({
+			id: transferEditData.id,
+			description: transferEditData.description,
+			amount: parseFloat(transferEditData.amount),
+			date: dateFromInput(transferEditData.date),
+		})
+		if (result.success) {
+			toast.success("Transferência atualizada")
+			await loadData()
+			onTransferEditClose()
+			setTransferEditData(null)
+		} else {
+			toast.error(result.error)
+		}
 		setEditLoading(false)
 	}
 
@@ -805,16 +847,12 @@ export function EventsList() {
 													handlePriorityChange(event.id, "OPTIONAL")
 											}}
 										>
-											{event.type !== "TRANSFER" ? (
-												<DropdownItem
-													key="edit"
-													startContent={<Pencil className="w-4 h-4" />}
-												>
-													{event.id.startsWith("generated-")
-														? "Editar Modelo"
-														: "Editar"}
-												</DropdownItem>
-											) : null}
+											<DropdownItem
+												key="edit"
+												startContent={<Pencil className="w-4 h-4" />}
+											>
+												{event.id.startsWith("generated-") ? "Editar Modelo" : "Editar"}
+											</DropdownItem>
 											{event.status === "PLANNED" ? (
 												<DropdownItem key="confirm">Confirmar</DropdownItem>
 											) : null}
@@ -1081,6 +1119,47 @@ export function EventsList() {
 						>
 							Salvar Alterações
 						</Button>
+					</ModalFooter>
+				</ModalContent>
+			</Modal>
+
+			<Modal isOpen={isTransferEditOpen} onClose={onTransferEditClose}>
+				<ModalContent>
+					<ModalHeader>Editar transferência</ModalHeader>
+					<ModalBody>
+						<Input
+							label="Descrição"
+							value={transferEditData?.description ?? ""}
+							onValueChange={(description) =>
+								setTransferEditData((current) => current ? { ...current, description } : null)
+							}
+							isRequired
+						/>
+						<Input
+							label="Valor"
+							type="number"
+							min="0.01"
+							step="0.01"
+							startContent="R$"
+							value={transferEditData?.amount ?? ""}
+							onValueChange={(amount) =>
+								setTransferEditData((current) => current ? { ...current, amount } : null)
+							}
+							isRequired
+						/>
+						<Input
+							label="Data"
+							type="date"
+							value={transferEditData?.date ?? ""}
+							onValueChange={(date) =>
+								setTransferEditData((current) => current ? { ...current, date } : null)
+							}
+							isRequired
+						/>
+					</ModalBody>
+					<ModalFooter>
+						<Button variant="flat" onPress={onTransferEditClose}>Cancelar</Button>
+						<Button color="primary" onPress={handleTransferUpdate} isLoading={editLoading}>Salvar alterações</Button>
 					</ModalFooter>
 				</ModalContent>
 			</Modal>

@@ -25,3 +25,4 @@ export {
 export { deleteEvent, deleteRecurrence } from "./delete-event"
 
 export { createTransfer, type CreateTransferInput } from "./create-transfer"
+export { updateTransfer, type UpdateTransferInput } from "./update-transfer"
