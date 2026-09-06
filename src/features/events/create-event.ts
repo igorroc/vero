@@ -10,7 +10,7 @@ import type {
 	CostType,
 	RecurrenceFrequency,
 } from "@prisma/client"
-import { dollarsToCents } from "@/types/finance"
+import { dollarsToCents, startOfDay } from "@/types/finance"
 
 export interface CreateEventInput {
 	accountId: string
@@ -98,6 +98,7 @@ export async function createEvent(
 		}
 
 		// Create the event
+		const isPastEvent = startOfDay(input.date).getTime() < startOfDay(new Date()).getTime()
 		const eventData = {
 			userId: user.id,
 			accountId: input.accountId,
@@ -107,7 +108,7 @@ export async function createEvent(
 			type: input.type,
 			costType:
 				input.type === "EXPENSE" ? (input.costType ?? "RECURRENT") : null,
-			status: input.status ?? "PLANNED",
+			status: isPastEvent ? "CONFIRMED" : (input.status ?? "PLANNED"),
 			priority: input.priority ?? "IMPORTANT",
 			date: input.date,
 			isRecurrenceTemplate: input.isRecurring ?? false,
