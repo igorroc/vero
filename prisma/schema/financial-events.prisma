@@ -2,6 +2,7 @@ enum EventType {
     INCOME
     EXPENSE
     INVESTMENT
+    TRANSFER
 }
 
 enum CostType {
@@ -34,7 +35,9 @@ model Event {
     userId      String
     user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
     accountId   String
-    account     Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+    account     Account     @relation("SourceAccountEvents", fields: [accountId], references: [id], onDelete: Cascade)
+    destinationAccountId String?
+    destinationAccount   Account? @relation("DestinationAccountEvents", fields: [destinationAccountId], references: [id], onDelete: Restrict)
     categoryId  String?
     category    Category?   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
     description String
@@ -55,6 +58,7 @@ model Event {
 
     @@index([userId])
     @@index([accountId])
+    @@index([destinationAccountId])
     @@index([categoryId])
     @@index([date])
     @@index([recurrenceId])

@@ -16,7 +16,8 @@ model Account {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    events          Event[]
+    events          Event[]     @relation("SourceAccountEvents")
+    incomingTransfers Event[]   @relation("DestinationAccountEvents")
     investmentPlans InvestmentPlan[]
 
     @@index([userId])
