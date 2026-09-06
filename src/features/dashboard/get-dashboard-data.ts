@@ -160,6 +160,7 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 					priority: e.priority,
 					date: e.date,
 					accountId: e.accountId,
+					destinationAccountId: e.destinationAccountId,
 				})),
 			startDate: today,
 			endDate: addDays(today, 30),

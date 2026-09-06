@@ -63,6 +63,7 @@ export async function getCashflowProjection(
 					priority: e.priority,
 					date: e.date,
 					accountId: e.accountId,
+					destinationAccountId: e.destinationAccountId,
 				})),
 			startDate: today,
 			endDate,

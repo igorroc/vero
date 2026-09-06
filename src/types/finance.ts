@@ -161,6 +161,8 @@ export interface CashflowEvent {
 	priority: EventPriority
 	accountId: string
 	accountName: string
+	destinationAccountId?: string | null
+	destinationAccountName?: string | null
 }
 
 /**
@@ -293,6 +295,7 @@ export interface CashflowInput {
 		priority: EventPriority
 		date: Date
 		accountId: string
+		destinationAccountId?: string | null
 	}>
 	startDate: Date
 	endDate: Date

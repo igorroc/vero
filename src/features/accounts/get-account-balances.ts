@@ -51,6 +51,13 @@ export async function getAccountBalances(
 						amount: true,
 					},
 				},
+				incomingTransfers: {
+					where: {
+						status: "CONFIRMED",
+						date: { lte: targetDate },
+					},
+					select: { amount: true },
+				},
 			},
 			orderBy: {
 				createdAt: "asc",
@@ -63,7 +70,11 @@ export async function getAccountBalances(
 					(sum, event) => sum + event.amount,
 					0,
 				)
-				const currentBalance = account.initialBalance + confirmedTotal
+				const incomingTransfersTotal = account.incomingTransfers.reduce(
+					(sum, event) => sum - event.amount,
+					0,
+				)
+				const currentBalance = account.initialBalance + confirmedTotal + incomingTransfersTotal
 
 				return {
 					id: account.id,
