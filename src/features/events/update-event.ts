@@ -15,6 +15,7 @@ import { dollarsToCents } from "@/types/finance";
 export interface UpdateEventInput {
   id: string;
   accountId?: string;
+  categoryId?: string | null;
   description?: string;
   amount?: number; // In dollars
   type?: EventType;
@@ -65,11 +66,32 @@ export async function updateEvent(
       }
     }
 
+    const eventType = input.type ?? existing.type;
+    if (eventType === "EXPENSE" && input.categoryId !== undefined) {
+      if (!input.categoryId) {
+        return {success: false, error: "Categoria é obrigatória para despesas"};
+      }
+
+      const category = await prisma.category.findFirst({
+        where: {id: input.categoryId, userId: user.id},
+        select: {id: true},
+      });
+      if (!category) return {success: false, error: "Categoria inválida"};
+    }
+
+    if (input.type === "EXPENSE" && !input.categoryId && !existing.categoryId) {
+      return {success: false, error: "Categoria é obrigatória para despesas"};
+    }
+
     // Build update data
     const updateData: Record<string, unknown> = {};
 
     if (input.accountId !== undefined) {
       updateData.accountId = input.accountId;
+    }
+
+    if (eventType === "EXPENSE" && input.categoryId !== undefined) {
+      updateData.categoryId = input.categoryId;
     }
 
     if (input.description !== undefined) {
@@ -97,6 +119,7 @@ export async function updateEvent(
       // Clear costType if not expense
       if (input.type !== "EXPENSE") {
         updateData.costType = null;
+        updateData.categoryId = null;
       }
     }
 
