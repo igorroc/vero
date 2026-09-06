@@ -30,7 +30,7 @@ import {
 	type UpdateAccountInput,
 } from "@/features/accounts"
 import { createTransfer, type CreateTransferInput } from "@/features/events"
-import { formatCurrency, centsToDollars } from "@/types/finance"
+import { dateFromInput, formatCurrency, centsToDollars, formatDateInput } from "@/types/finance"
 import { toast } from "react-toastify"
 import {
 	Plus,
@@ -222,7 +222,7 @@ export function AccountsList() {
 			toAccountId: defaultDestination?.id || "",
 			amount: "",
 			description: "",
-			date: new Date().toISOString().split("T")[0],
+			date: formatDateInput(new Date()),
 		})
 		onWithdrawalOpen()
 	}
@@ -251,7 +251,7 @@ export function AccountsList() {
 			toAccountId: withdrawalData.toAccountId,
 			amount: parseFloat(withdrawalData.amount),
 			description: withdrawalData.description,
-			date: new Date(withdrawalData.date),
+			date: dateFromInput(withdrawalData.date),
 		}
 
 		const result = await createTransfer(input)

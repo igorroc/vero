@@ -130,6 +130,24 @@ export function formatDateISO(date: Date): string {
 	return date.toISOString().split("T")[0]
 }
 
+/**
+ * Creates a Date at local midnight from an HTML date input value.
+ * Date's string constructor treats YYYY-MM-DD as UTC, shifting it for some users.
+ */
+export function dateFromInput(value: string): Date {
+	const [year, month, day] = value.split("-").map(Number)
+	return new Date(year, month - 1, day)
+}
+
+/** Format a local Date for an HTML date input. */
+export function formatDateInput(date: Date): string {
+	return [
+		date.getFullYear(),
+		String(date.getMonth() + 1).padStart(2, "0"),
+		String(date.getDate()).padStart(2, "0"),
+	].join("-")
+}
+
 // ============================================
 // CASHFLOW TYPES
 // ============================================

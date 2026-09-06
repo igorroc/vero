@@ -22,6 +22,7 @@ import {
 import type { AccountWithBalance } from "@/features/accounts"
 import type { CategoryWithGroup } from "@/features/categories"
 import { toast } from "react-toastify"
+import { dateFromInput, formatDateInput } from "@/types/finance"
 
 interface EventFormProps {
 	isOpen: boolean
@@ -61,7 +62,7 @@ export function EventForm({
 		type: "EXPENSE",
 		costType: "RECURRENT",
 		priority: "IMPORTANT",
-		date: new Date().toISOString().split("T")[0],
+		date: formatDateInput(new Date()),
 		isRecurring: false,
 		recurrenceFrequency: "MONTHLY",
 	})
@@ -86,7 +87,7 @@ export function EventForm({
 				toAccountId: formData.destinationAccountId,
 				description: formData.description,
 				amount: parseFloat(formData.amount),
-				date: new Date(formData.date),
+				date: dateFromInput(formData.date),
 			})
 			if (result.success) {
 				toast.success("Transferência criada com sucesso")
@@ -101,7 +102,7 @@ export function EventForm({
 					type: "EXPENSE",
 					costType: "RECURRENT",
 					priority: "IMPORTANT",
-					date: new Date().toISOString().split("T")[0],
+					date: formatDateInput(new Date()),
 					isRecurring: false,
 					recurrenceFrequency: "MONTHLY",
 				})
@@ -122,7 +123,7 @@ export function EventForm({
 			type: formData.type,
 			costType: formData.type === "EXPENSE" ? formData.costType : undefined,
 			priority: formData.priority,
-			date: new Date(formData.date),
+			date: dateFromInput(formData.date),
 			isRecurring: formData.isRecurring,
 			recurrenceFrequency: formData.isRecurring
 				? (formData.recurrenceFrequency as CreateEventInput["recurrenceFrequency"])
@@ -144,7 +145,7 @@ export function EventForm({
 				type: "EXPENSE",
 				costType: "RECURRENT",
 				priority: "IMPORTANT",
-				date: new Date().toISOString().split("T")[0],
+				date: formatDateInput(new Date()),
 				isRecurring: false,
 				recurrenceFrequency: "MONTHLY",
 			})

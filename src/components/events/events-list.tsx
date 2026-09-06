@@ -35,7 +35,7 @@ import {
 	type AccountWithBalance,
 } from "@/features/accounts"
 import { getCategories, type CategoryWithGroup } from "@/features/categories"
-import { formatCurrency, centsToDollars } from "@/types/finance"
+import { formatCurrency, centsToDollars, dateFromInput, formatDateInput } from "@/types/finance"
 import type { Event } from "@prisma/client"
 import { toast } from "react-toastify"
 import { EventForm } from "./event-form"
@@ -420,7 +420,7 @@ export function EventsList() {
 			type: event.type as "INCOME" | "EXPENSE" | "INVESTMENT",
 			costType: (event.costType as "RECURRENT" | "EXCEPTIONAL") || "RECURRENT",
 			priority: event.priority as "REQUIRED" | "IMPORTANT" | "OPTIONAL",
-			date: new Date(event.date).toISOString().split("T")[0],
+			date: formatDateInput(new Date(event.date)),
 			isGenerated,
 			templateId,
 		})
@@ -450,7 +450,7 @@ export function EventsList() {
 			type: editData.type,
 			costType: editData.type === "EXPENSE" ? editData.costType : undefined,
 			priority: editData.priority,
-			date: new Date(editData.date),
+			date: dateFromInput(editData.date),
 		}
 
 		const result = await updateEvent(input)
