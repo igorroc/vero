@@ -144,7 +144,16 @@ export function EventsList() {
 		if (result.success) {
 			setEvents(
 				[...result.events].sort(
-					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+					(a, b) => {
+						const aDay = new Date(a.date).setHours(0, 0, 0, 0)
+						const bDay = new Date(b.date).setHours(0, 0, 0, 0)
+						if (aDay !== bDay) return bDay - aDay
+
+						const aIsIncome = a.amount > 0
+						const bIsIncome = b.amount > 0
+						if (aIsIncome !== bIsIncome) return aIsIncome ? 1 : -1
+						return new Date(b.date).getTime() - new Date(a.date).getTime()
+					},
 				),
 			)
 		} else {
