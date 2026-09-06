@@ -96,6 +96,53 @@ export async function saveBudgetItem(budgetId: string, categoryId: string, amoun
 	}
 }
 
+export async function saveBudgetItems(
+	budgetId: string,
+	items: Array<{ categoryId: string; amount: number }>,
+) {
+	try {
+		const user = await getUserBySession()
+		if (!user) return { success: false, error: "Não autenticado" } as const
+		const budget = await prisma.budget.findFirst({
+			where: { id: budgetId, userId: user.id },
+			select: { id: true },
+		})
+		if (!budget) return { success: false, error: "Orçamento inválido" } as const
+
+		const normalizedItems = items
+			.map((item) => ({ categoryId: item.categoryId, amount: dollarsToCents(item.amount) }))
+			.filter((item) => item.categoryId && Number.isFinite(item.amount))
+		const categoryIds = [...new Set(normalizedItems.map((item) => item.categoryId))]
+		const categories = await prisma.category.findMany({
+			where: { userId: user.id, id: { in: categoryIds } },
+			select: { id: true },
+		})
+		if (categories.length !== categoryIds.length) {
+			return { success: false, error: "Categoria inválida" } as const
+		}
+
+		await prisma.$transaction(async (tx) => {
+			for (const item of normalizedItems) {
+				if (item.amount <= 0) {
+					await tx.budgetItem.deleteMany({
+						where: { budgetId: budget.id, categoryId: item.categoryId },
+					})
+				} else {
+					await tx.budgetItem.upsert({
+						where: { budgetId_categoryId: { budgetId: budget.id, categoryId: item.categoryId } },
+						create: { budgetId: budget.id, categoryId: item.categoryId, amount: item.amount },
+						update: { amount: item.amount },
+					})
+				}
+			}
+		})
+		return { success: true } as const
+	} catch (error) {
+		console.error("Failed to save budget items:", error)
+		return { success: false, error: "Não foi possível salvar o orçamento" } as const
+	}
+}
+
 export async function deleteBudgetItem(budgetItemId: string) {
 	try {
 		const user = await getUserBySession()
