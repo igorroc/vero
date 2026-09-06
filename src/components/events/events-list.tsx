@@ -54,6 +54,7 @@ import {
 	CreditCard,
 	CircleDollarSign,
 	ChevronDown,
+	ArrowDownRight,
 } from "lucide-react"
 
 type TimeFilter = "all" | "past" | "upcoming" | "today"
@@ -204,16 +205,18 @@ export function EventsList() {
 		return d < today
 	}
 
-	const typeColors: Record<string, "success" | "danger" | "primary"> = {
+	const typeColors: Record<string, "success" | "danger" | "primary" | "secondary"> = {
 		INCOME: "success",
 		EXPENSE: "danger",
 		INVESTMENT: "primary",
+		TRANSFER: "secondary",
 	}
 
 	const typeLabels: Record<string, string> = {
 		INCOME: "Receita",
 		EXPENSE: "Despesa",
 		INVESTMENT: "Investimento",
+		TRANSFER: "Transferência",
 	}
 
 	const statusColors: Record<string, "default" | "success" | "warning"> = {
@@ -276,6 +279,7 @@ export function EventsList() {
 		)
 			return Zap
 		if (type === "INVESTMENT") return TrendingUp
+		if (type === "TRANSFER") return ArrowDownRight
 		if (type === "INCOME") return CircleDollarSign
 		return CreditCard
 	}
@@ -291,6 +295,11 @@ export function EventsList() {
 			return {
 				bg: "bg-blue-100 dark:bg-blue-900/30",
 				icon: "text-blue-600 dark:text-blue-400",
+			}
+		if (type === "TRANSFER")
+			return {
+				bg: "bg-violet-100 dark:bg-violet-900/30",
+				icon: "text-violet-600 dark:text-violet-400",
 			}
 		if (desc.includes("aluguel") || desc.includes("casa"))
 			return {
@@ -662,7 +671,10 @@ export function EventsList() {
 													{isToday(event.date)
 														? "Hoje"
 														: formatDate(event.date)}
-													{isOverdue && " • Atrasado"}
+											{isOverdue && " • Atrasado"}
+											{event.type === "TRANSFER" && event.destinationAccountId && (
+												<span className="ml-1">• {accounts.find((account) => account.id === event.accountId)?.name} para {accounts.find((account) => account.id === event.destinationAccountId)?.name}</span>
+											)}
 												</p>
 											</div>
 
@@ -758,33 +770,33 @@ export function EventsList() {
 													handlePriorityChange(event.id, "OPTIONAL")
 											}}
 										>
-											<DropdownItem
+											{event.type !== "TRANSFER" ? <DropdownItem
 												key="edit"
 												startContent={<Pencil className="w-4 h-4" />}
 											>
 												{event.id.startsWith("generated-")
 													? "Editar Modelo"
 													: "Editar"}
-											</DropdownItem>
+											</DropdownItem> : null}
 											{event.status === "PLANNED" ? (
 												<DropdownItem key="confirm">Confirmar</DropdownItem>
 											) : null}
 											{event.status === "PLANNED" ? (
 												<DropdownItem key="skip">Ignorar</DropdownItem>
 											) : null}
-											{event.type !== "INCOME" &&
+											{event.type !== "INCOME" && event.type !== "TRANSFER" &&
 											event.priority !== "REQUIRED" ? (
 												<DropdownItem key="priority-required">
 													🔴 Marcar como Obrigatório
 												</DropdownItem>
 											) : null}
-											{event.type !== "INCOME" &&
+											{event.type !== "INCOME" && event.type !== "TRANSFER" &&
 											event.priority !== "IMPORTANT" ? (
 												<DropdownItem key="priority-important">
 													🟡 Marcar como Importante
 												</DropdownItem>
 											) : null}
-											{event.type !== "INCOME" &&
+											{event.type !== "INCOME" && event.type !== "TRANSFER" &&
 											event.priority !== "OPTIONAL" ? (
 												<DropdownItem key="priority-optional">
 													🟢 Marcar como Opcional
@@ -993,32 +1005,6 @@ export function EventsList() {
 									</SelectItem>
 								</Select>}
 							</>
-						)}
-
-						{editData?.type !== "INCOME" && (
-							<Select
-								label="Prioridade"
-								size="sm"
-								selectedKeys={editData?.priority ? [editData.priority] : []}
-								onSelectionChange={(keys) => {
-									const value = Array.from(keys)[0] as
-										"REQUIRED" | "IMPORTANT" | "OPTIONAL"
-									setEditData((prev) =>
-										prev ? { ...prev, priority: value } : null,
-									)
-								}}
-								classNames={{ label: "text-sm" }}
-							>
-								<SelectItem key="REQUIRED" textValue="Obrigatório">
-									🔴 Obrigatório
-								</SelectItem>
-								<SelectItem key="IMPORTANT" textValue="Importante">
-									🟡 Importante
-								</SelectItem>
-								<SelectItem key="OPTIONAL" textValue="Opcional">
-									🟢 Opcional
-								</SelectItem>
-							</Select>
 						)}
 
 						<Input

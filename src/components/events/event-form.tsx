@@ -14,7 +14,7 @@ import {
 	SelectSection,
 	Switch,
 } from "@nextui-org/react"
-import { createEvent, type CreateEventInput } from "@/features/events"
+import { createEvent, createTransfer, type CreateEventInput } from "@/features/events"
 import type { AccountWithBalance } from "@/features/accounts"
 import type { CategoryWithGroup } from "@/features/categories"
 import { toast } from "react-toastify"
@@ -35,12 +35,14 @@ export function EventForm({
 	categories,
 }: EventFormProps) {
 	const [loading, setLoading] = useState(false)
+	const [createAnother, setCreateAnother] = useState(false)
 	const [formData, setFormData] = useState<{
 		accountId: string
+		destinationAccountId: string
 		categoryId: string
 		description: string
 		amount: string
-		type: "INCOME" | "EXPENSE" | "INVESTMENT"
+		type: "INCOME" | "EXPENSE" | "INVESTMENT" | "TRANSFER"
 		costType: "RECURRENT" | "EXCEPTIONAL"
 		priority: "REQUIRED" | "IMPORTANT" | "OPTIONAL"
 		date: string
@@ -48,6 +50,7 @@ export function EventForm({
 		recurrenceFrequency: string
 	}>({
 		accountId: accounts[0]?.id || "",
+		destinationAccountId: "",
 		categoryId: "",
 		description: "",
 		amount: "",
@@ -64,13 +67,48 @@ export function EventForm({
 			!formData.accountId ||
 			!formData.description ||
 			!formData.amount ||
-			!formData.categoryId
+			(formData.type !== "TRANSFER" && !formData.categoryId) ||
+			(formData.type === "TRANSFER" && !formData.destinationAccountId)
 		) {
 			toast.error("Por favor, preencha todos os campos obrigatórios")
 			return
 		}
 
 		setLoading(true)
+
+		if (formData.type === "TRANSFER") {
+			const result = await createTransfer({
+				fromAccountId: formData.accountId,
+				toAccountId: formData.destinationAccountId,
+				description: formData.description,
+				amount: parseFloat(formData.amount),
+				date: new Date(formData.date),
+			})
+			if (result.success) {
+				toast.success("Transferência criada com sucesso")
+				if (result.warning) toast.warning(result.warning)
+				onSuccess()
+				setFormData({
+					accountId: accounts[0]?.id || "",
+					destinationAccountId: "",
+					categoryId: "",
+					description: "",
+					amount: "",
+					type: "EXPENSE",
+					costType: "RECURRENT",
+					priority: "IMPORTANT",
+					date: new Date().toISOString().split("T")[0],
+					isRecurring: false,
+					recurrenceFrequency: "MONTHLY",
+				})
+				if (!createAnother) {
+					setCreateAnother(false)
+					onClose()
+				}
+			} else toast.error(result.error)
+			setLoading(false)
+			return
+		}
 
 		const input: CreateEventInput = {
 			accountId: formData.accountId,
@@ -92,10 +130,10 @@ export function EventForm({
 		if (result.success) {
 			toast.success("Evento criado com sucesso")
 			onSuccess()
-			onClose()
 			// Reset form
 			setFormData({
-				accountId: accounts[0]?.id || "",
+			accountId: accounts[0]?.id || "",
+			destinationAccountId: "",
 				categoryId: "",
 				description: "",
 				amount: "",
@@ -106,6 +144,10 @@ export function EventForm({
 				isRecurring: false,
 				recurrenceFrequency: "MONTHLY",
 			})
+			if (!createAnother) {
+				setCreateAnother(false)
+				onClose()
+			}
 		} else {
 			toast.error(result.error)
 		}
@@ -190,11 +232,12 @@ export function EventForm({
 							selectedKeys={[formData.type]}
 							onSelectionChange={(keys) => {
 								const value = Array.from(keys)[0] as
-									"INCOME" | "EXPENSE" | "INVESTMENT"
+									"INCOME" | "EXPENSE" | "INVESTMENT" | "TRANSFER"
 								setFormData({
 									...formData,
 									type: value,
-					categoryId: "",
+									categoryId: "",
+									destinationAccountId: "",
 								})
 							}}
 							isRequired
@@ -211,10 +254,22 @@ export function EventForm({
 							<SelectItem key="INVESTMENT" textValue="Investimento">
 								Investimento (-)
 							</SelectItem>
+							<SelectItem key="TRANSFER" textValue="Transferência">
+								Transferência
+							</SelectItem>
 						</Select>
 					</div>
 
-					{(
+					{formData.type === "TRANSFER" && (
+						<div className="space-y-2">
+							<Select label="Conta de destino" size="sm" selectedKeys={formData.destinationAccountId ? [formData.destinationAccountId] : []} onSelectionChange={(keys) => setFormData({ ...formData, destinationAccountId: String(Array.from(keys)[0] ?? "") })} isRequired>
+								{accounts.filter((account) => account.id !== formData.accountId).map((account) => <SelectItem key={account.id}>{account.name}</SelectItem>)}
+							</Select>
+							{Number(formData.amount) > (accounts.find((account) => account.id === formData.accountId)?.currentBalance ?? 0) / 100 && <p className="text-xs text-amber-600">Esta transferência deixará a conta de origem com saldo negativo.</p>}
+						</div>
+					)}
+
+					{formData.type !== "TRANSFER" && (
 						<>
 							<Select
 								label="Categoria"
@@ -283,33 +338,6 @@ export function EventForm({
 						</>
 					)}
 
-					{formData.type !== "INCOME" && (
-						<Select
-							label="Prioridade"
-							size="sm"
-							selectedKeys={[formData.priority]}
-							onSelectionChange={(keys) => {
-								const value = Array.from(keys)[0] as
-									"REQUIRED" | "IMPORTANT" | "OPTIONAL"
-								setFormData({ ...formData, priority: value })
-							}}
-							description="Eventos opcionais podem ser sugeridos para adiamento."
-							classNames={{
-								label: "text-sm",
-								description: "text-xs",
-							}}
-						>
-							<SelectItem key="REQUIRED" textValue="Obrigatório">
-								🔴 Obrigatório
-							</SelectItem>
-							<SelectItem key="IMPORTANT" textValue="Importante">
-								🟡 Importante
-							</SelectItem>
-							<SelectItem key="OPTIONAL" textValue="Opcional">
-								🟢 Opcional
-							</SelectItem>
-						</Select>
-					)}
 
 					<Input
 						label="Data"
@@ -323,7 +351,7 @@ export function EventForm({
 						}}
 					/>
 
-					<div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 sm:p-4">
+					{formData.type !== "TRANSFER" && <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 sm:p-4">
 						<div>
 							<p className="font-medium text-sm sm:text-base text-slate-900 dark:text-white">
 								Evento Recorrente
@@ -339,9 +367,9 @@ export function EventForm({
 								setFormData({ ...formData, isRecurring: value })
 							}
 						/>
-					</div>
+					</div>}
 
-					{formData.isRecurring && (
+					{formData.type !== "TRANSFER" && formData.isRecurring && (
 						<Select
 							label="Frequência"
 							size="sm"
@@ -361,6 +389,22 @@ export function EventForm({
 							<SelectItem key="YEARLY">Anual</SelectItem>
 						</Select>
 					)}
+
+					<div className="flex items-center justify-between rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">
+						<div>
+							<p className="font-medium text-sm text-slate-900 dark:text-white">
+								Criar um novo evento
+							</p>
+							<p className="text-xs text-slate-500">
+								Mantém este formulário aberto após salvar.
+							</p>
+						</div>
+						<Switch
+							size="sm"
+							isSelected={createAnother}
+							onValueChange={setCreateAnother}
+						/>
+					</div>
 				</ModalBody>
 				<ModalFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
 					<Button

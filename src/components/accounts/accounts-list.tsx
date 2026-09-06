@@ -28,7 +28,7 @@ import {
 	type CreateAccountInput,
 	type UpdateAccountInput,
 } from "@/features/accounts"
-import { createWithdrawal, type CreateWithdrawalInput } from "@/features/events"
+import { createTransfer, type CreateTransferInput } from "@/features/events"
 import { formatCurrency, centsToDollars } from "@/types/finance"
 import { toast } from "react-toastify"
 import {
@@ -40,7 +40,7 @@ import {
 	Banknote,
 	TrendingUp,
 	Pencil,
-	ArrowDownToLine,
+	ArrowRightLeft,
 } from "lucide-react"
 import { StatCard } from "@/components/ui/stat-card"
 
@@ -213,8 +213,7 @@ export function AccountsList() {
 	}
 
 	const handleWithdrawal = (account: AccountWithBalance) => {
-		// Get the first non-investment account as default destination
-		const defaultDestination = accounts.find((a) => a.type !== "INVESTMENT")
+		const defaultDestination = accounts.find((a) => a.id !== account.id)
 
 		setWithdrawalData({
 			fromAccountId: account.id,
@@ -239,21 +238,26 @@ export function AccountsList() {
 			toast.error("O valor deve ser maior que zero")
 			return
 		}
+		if (!withdrawalData.description.trim()) {
+			toast.error("A descrição é obrigatória")
+			return
+		}
 
 		setFormLoading(true)
 
-		const input: CreateWithdrawalInput = {
+		const input: CreateTransferInput = {
 			fromAccountId: withdrawalData.fromAccountId,
 			toAccountId: withdrawalData.toAccountId,
 			amount: parseFloat(withdrawalData.amount),
-			description: withdrawalData.description || undefined,
+			description: withdrawalData.description,
 			date: new Date(withdrawalData.date),
 		}
 
-		const result = await createWithdrawal(input)
+		const result = await createTransfer(input)
 
 		if (result.success) {
-			toast.success("Resgate realizado com sucesso")
+			toast.success("Transferência realizada com sucesso")
+			if (result.warning) toast.warning(result.warning)
 			loadAccounts()
 			onWithdrawalClose()
 			setWithdrawalData(null)
@@ -264,8 +268,9 @@ export function AccountsList() {
 		setFormLoading(false)
 	}
 
-	// Get non-investment accounts for withdrawal destination
-	const nonInvestmentAccounts = accounts.filter((a) => a.type !== "INVESTMENT")
+	const destinationAccounts = accounts.filter(
+		(account) => account.id !== withdrawalData?.fromAccountId,
+	)
 
 	const typeColors: Record<string, "primary" | "secondary" | "success"> = {
 		BANK: "primary",
@@ -387,7 +392,7 @@ export function AccountsList() {
 												aria-label="Ações da conta"
 												onAction={(key) => {
 													if (key === "edit") handleEdit(account)
-													if (key === "withdrawal") handleWithdrawal(account)
+													if (key === "transfer") handleWithdrawal(account)
 													if (key === "delete") handleDelete(account.id)
 												}}
 											>
@@ -397,15 +402,14 @@ export function AccountsList() {
 												>
 													Editar
 												</DropdownItem>
-												{account.type === "INVESTMENT" &&
-												nonInvestmentAccounts.length > 0 ? (
+												{accounts.length > 1 ? (
 													<DropdownItem
-														key="withdrawal"
+														key="transfer"
 														startContent={
-															<ArrowDownToLine className="w-4 h-4" />
+															<ArrowRightLeft className="w-4 h-4" />
 														}
 													>
-														Resgatar
+														Transferir
 													</DropdownItem>
 												) : null}
 												<DropdownItem
@@ -539,26 +543,26 @@ export function AccountsList() {
 				</ModalContent>
 			</Modal>
 
-			{/* Withdrawal (Resgate) modal */}
+			{/* Transfer modal */}
 			<Modal isOpen={isWithdrawalOpen} onClose={onWithdrawalClose}>
 				<ModalContent>
 					<ModalHeader>
 						<div className="flex items-center gap-2">
-							<ArrowDownToLine className="w-5 h-5 text-purple-600" />
-							<span>Resgatar Investimento</span>
+							<ArrowRightLeft className="w-5 h-5 text-blue-600" />
+							<span>Transferir entre contas</span>
 						</div>
 					</ModalHeader>
 					<ModalBody className="gap-4">
 						<div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
 							<p className="text-sm text-purple-700 dark:text-purple-300">
-								Resgatando de:{" "}
+								Saindo de:{" "}
 								<strong>{withdrawalData?.fromAccountName}</strong>
 							</p>
 						</div>
 
 						<Select
-							label="Conta de Destino"
-							placeholder="Selecione a conta para receber o resgate"
+							label="Conta de destino"
+							placeholder="Selecione a conta para receber o valor"
 							selectedKeys={
 								withdrawalData?.toAccountId ? [withdrawalData.toAccountId] : []
 							}
@@ -570,12 +574,12 @@ export function AccountsList() {
 							}}
 							isRequired
 						>
-							{nonInvestmentAccounts.map((account) => (
+							{destinationAccounts.map((account) => (
 								<SelectItem key={account.id} textValue={account.name}>
 									<div className="flex justify-between items-center w-full">
 										<span>{account.name}</span>
 										<span className="text-xs text-slate-500">
-											{account.type === "BANK" ? "Banco" : "Dinheiro"}
+										{account.type === "BANK" ? "Banco" : account.type === "CASH" ? "Dinheiro" : "Investimento"}
 										</span>
 									</div>
 								</SelectItem>
@@ -583,7 +587,7 @@ export function AccountsList() {
 						</Select>
 
 						<Input
-							label="Valor do Resgate"
+							label="Valor da transferência"
 							type="number"
 							placeholder="0,00"
 							startContent={<span className="text-gray-500">R$</span>}
@@ -597,14 +601,15 @@ export function AccountsList() {
 						/>
 
 						<Input
-							label="Descrição (opcional)"
-							placeholder="Ex: Resgate para emergência"
+							label="Descrição"
+							placeholder="Ex: Reserva para conta corrente"
 							value={withdrawalData?.description || ""}
 							onValueChange={(value) =>
 								setWithdrawalData((prev) =>
 									prev ? { ...prev, description: value } : null,
 								)
 							}
+							isRequired
 						/>
 
 						<Input
@@ -627,9 +632,9 @@ export function AccountsList() {
 							color="secondary"
 							onPress={handleWithdrawalSubmit}
 							isLoading={formLoading}
-							startContent={<ArrowDownToLine className="w-4 h-4" />}
+							startContent={<ArrowRightLeft className="w-4 h-4" />}
 						>
-							Resgatar
+							Transferir
 						</Button>
 					</ModalFooter>
 				</ModalContent>
