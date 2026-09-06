@@ -418,8 +418,8 @@ export function EventsList() {
 			toast.error("Descrição é obrigatória")
 			return
 		}
-		if (editData.type === "EXPENSE" && !editData.categoryId) {
-			toast.error("Categoria é obrigatória para despesas")
+		if (!editData.categoryId) {
+			toast.error("Categoria é obrigatória")
 			return
 		}
 
@@ -428,7 +428,7 @@ export function EventsList() {
 		const input: UpdateEventInput = {
 			id: editData.id,
 			accountId: editData.accountId,
-			categoryId: editData.type === "EXPENSE" ? editData.categoryId : null,
+			categoryId: editData.categoryId,
 			description: editData.description,
 			amount: parseFloat(editData.amount),
 			type: editData.type,
@@ -904,8 +904,7 @@ export function EventsList() {
 											? {
 													...prev,
 													type: value,
-													categoryId:
-														value === "EXPENSE" ? prev.categoryId : "",
+											categoryId: "",
 												}
 											: null,
 									)
@@ -925,7 +924,7 @@ export function EventsList() {
 							</Select>
 						</div>
 
-						{editData?.type === "EXPENSE" && (
+						{editData && (
 							<>
 								<Select
 									label="Categoria"
@@ -948,7 +947,13 @@ export function EventsList() {
 								>
 									{Array.from(
 										new Map(
-											categories.map((category) => [
+											categories.filter((category) =>
+												editData.type === "INCOME"
+													? category.categoryGroup.type === "INCOME"
+													: editData.type === "INVESTMENT"
+														? category.categoryGroup.type === "INVESTMENT"
+														: ["ESSENTIAL", "LIFESTYLE"].includes(category.categoryGroup.type),
+											).map((category) => [
 												category.categoryGroup.id,
 												category.categoryGroup,
 											]),
@@ -967,7 +972,7 @@ export function EventsList() {
 										</SelectSection>
 									))}
 								</Select>
-								<Select
+								{editData.type === "EXPENSE" && <Select
 									label="Tipo de Custo"
 									size="sm"
 									selectedKeys={editData?.costType ? [editData.costType] : []}
@@ -986,7 +991,7 @@ export function EventsList() {
 									<SelectItem key="EXCEPTIONAL" textValue="Excepcional">
 										Excepcional (viagens, emergências)
 									</SelectItem>
-								</Select>
+								</Select>}
 							</>
 						)}
 

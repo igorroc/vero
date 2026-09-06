@@ -64,7 +64,7 @@ export function EventForm({
 			!formData.accountId ||
 			!formData.description ||
 			!formData.amount ||
-			(formData.type === "EXPENSE" && !formData.categoryId)
+			!formData.categoryId
 		) {
 			toast.error("Por favor, preencha todos os campos obrigatórios")
 			return
@@ -74,7 +74,7 @@ export function EventForm({
 
 		const input: CreateEventInput = {
 			accountId: formData.accountId,
-			categoryId: formData.type === "EXPENSE" ? formData.categoryId : undefined,
+			categoryId: formData.categoryId,
 			description: formData.description,
 			amount: parseFloat(formData.amount),
 			type: formData.type,
@@ -194,7 +194,7 @@ export function EventForm({
 								setFormData({
 									...formData,
 									type: value,
-									categoryId: value === "EXPENSE" ? formData.categoryId : "",
+					categoryId: "",
 								})
 							}}
 							isRequired
@@ -214,7 +214,7 @@ export function EventForm({
 						</Select>
 					</div>
 
-					{formData.type === "EXPENSE" && (
+					{(
 						<>
 							<Select
 								label="Categoria"
@@ -230,13 +230,19 @@ export function EventForm({
 								isDisabled={categories.length === 0}
 								description={
 									categories.length === 0
-										? "Cadastre uma categoria antes de criar uma despesa."
+										? "Cadastre uma categoria compatível antes de criar o evento."
 										: undefined
 								}
 							>
 								{Array.from(
 									new Map(
-										categories.map((category) => [
+										categories.filter((category) =>
+											formData.type === "INCOME"
+												? category.categoryGroup.type === "INCOME"
+												: formData.type === "INVESTMENT"
+													? category.categoryGroup.type === "INVESTMENT"
+													: ["ESSENTIAL", "LIFESTYLE"].includes(category.categoryGroup.type),
+										).map((category) => [
 											category.categoryGroup.id,
 											category.categoryGroup,
 										]),
@@ -255,7 +261,7 @@ export function EventForm({
 									</SelectSection>
 								))}
 							</Select>
-							<Select
+							{formData.type === "EXPENSE" && <Select
 								label="Tipo de Custo"
 								size="sm"
 								selectedKeys={[formData.costType]}
@@ -273,7 +279,7 @@ export function EventForm({
 								<SelectItem key="EXCEPTIONAL" textValue="Excepcional">
 									Excepcional (viagens, emergências)
 								</SelectItem>
-							</Select>
+							</Select>}
 						</>
 					)}
 

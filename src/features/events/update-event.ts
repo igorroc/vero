@@ -66,19 +66,24 @@ export async function updateEvent(
 		}
 
 		const eventType = input.type ?? existing.type
-		if (eventType === "EXPENSE" && input.categoryId !== undefined) {
+		if (input.categoryId !== undefined) {
 			if (!input.categoryId) {
 				return {
 					success: false,
-					error: "Categoria é obrigatória para despesas",
+					error: "Categoria é obrigatória",
 				}
 			}
 
 			const category = await prisma.category.findFirst({
 				where: { id: input.categoryId, userId: user.id },
-				select: { id: true },
+				select: { id: true, categoryGroup: { select: { type: true } } },
 			})
-			if (!category) return { success: false, error: "Categoria inválida" }
+			const isCompatible = category && (
+				(eventType === "INCOME" && category.categoryGroup.type === "INCOME") ||
+				(eventType === "INVESTMENT" && category.categoryGroup.type === "INVESTMENT") ||
+				(eventType === "EXPENSE" && ["ESSENTIAL", "LIFESTYLE"].includes(category.categoryGroup.type))
+			)
+			if (!isCompatible) return { success: false, error: "Categoria inválida" }
 		}
 
 		if (input.type === "EXPENSE" && !input.categoryId && !existing.categoryId) {
@@ -92,7 +97,7 @@ export async function updateEvent(
 			updateData.accountId = input.accountId
 		}
 
-		if (eventType === "EXPENSE" && input.categoryId !== undefined) {
+		if (input.categoryId !== undefined) {
 			updateData.categoryId = input.categoryId
 		}
 
@@ -118,10 +123,9 @@ export async function updateEvent(
 			}
 			updateData.type = input.type
 
-			// Clear costType if not expense
+			// Only expenses retain a cost type.
 			if (input.type !== "EXPENSE") {
 				updateData.costType = null
-				updateData.categoryId = null
 			}
 		}
 

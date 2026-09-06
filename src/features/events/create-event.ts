@@ -52,18 +52,23 @@ export async function createEvent(
 			return { success: false, error: "Account not found" }
 		}
 
-		if (input.type === "EXPENSE" && !input.categoryId) {
-			return { success: false, error: "Categoria é obrigatória para despesas" }
+		if (!input.categoryId) {
+			return { success: false, error: "Categoria é obrigatória" }
 		}
 
 		const category = input.categoryId
 			? await prisma.category.findFirst({
 					where: { id: input.categoryId, userId: user.id },
-					select: { id: true },
+					select: { id: true, categoryGroup: { select: { type: true } } },
 				})
 			: null
 
-		if (input.type === "EXPENSE" && !category) {
+		const isCompatibleCategory = category && (
+			(input.type === "INCOME" && category.categoryGroup.type === "INCOME") ||
+			(input.type === "INVESTMENT" && category.categoryGroup.type === "INVESTMENT") ||
+			(input.type === "EXPENSE" && ["ESSENTIAL", "LIFESTYLE"].includes(category.categoryGroup.type))
+		)
+		if (!isCompatibleCategory) {
 			return { success: false, error: "Categoria inválida" }
 		}
 
@@ -94,7 +99,7 @@ export async function createEvent(
 		const eventData = {
 			userId: user.id,
 			accountId: input.accountId,
-			categoryId: input.type === "EXPENSE" ? category!.id : null,
+			categoryId: category!.id,
 			description: input.description.trim(),
 			amount: amountCents,
 			type: input.type,
