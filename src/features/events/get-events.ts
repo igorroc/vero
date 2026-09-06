@@ -157,6 +157,7 @@ export async function getEventsWithProjection(
 			userId: user.id,
 			accountId: ge.accountId,
 			categoryId: ge.categoryId ?? null,
+			destinationAccountId: null,
 			description: ge.description,
 			amount: ge.amount,
 			type: ge.type,

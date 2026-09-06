@@ -25,6 +25,6 @@ export {
 export { deleteEvent, deleteRecurrence } from "./delete-event"
 
 export {
-	createWithdrawal,
-	type CreateWithdrawalInput,
-} from "./create-withdrawal"
+	createTransfer,
+	type CreateTransferInput,
+} from "./create-transfer"
