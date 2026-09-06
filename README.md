@@ -5,6 +5,7 @@ A modern, production-ready fullstack Next.js template with authentication, datab
 ## Features
 
 ### Core Features
+
 - **Next.js 16** - The latest version of Next.js with App Router
 - **TypeScript** - Full type-safe development
 - **Clean Architecture** - Well-organized folder structure following best practices
@@ -15,6 +16,7 @@ A modern, production-ready fullstack Next.js template with authentication, datab
 - **Form Handling** - Server Actions with loading states and error handling
 
 ### Implemented Pages
+
 - **Home Page** - Welcome page with navigation to auth pages
 - **Login** - User authentication with automatic redirect to profile
 - **Register** - User registration with automatic login
@@ -72,6 +74,7 @@ AUTHENTICATION_SECRET_KEY="random_hash_1234567890ABCDE"
 ```
 
 Replace the values with your own:
+
 - `DATABASE_DB`: Choose a name for your database
 - `DATABASE_PASSWORD`: Set a secure password
 - `AUTHENTICATION_SECRET_KEY`: Generate a random secure string
@@ -143,6 +146,7 @@ This project follows clean architecture principles with a well-organized structu
 ```
 
 **Key Principles:**
+
 - **kebab-case**: All files and folders use kebab-case naming
 - **Feature-based**: Business logic organized by domain (auth, users, etc.)
 - **Clean separation**: UI components separated from business logic
@@ -201,33 +205,37 @@ The template uses NextUI components with Tailwind CSS. You can customize:
 The project structure makes it easy to add new features:
 
 1. **Create a new feature** in `src/features/your-feature/`:
+
 ```typescript
 // src/features/products/get-products.ts
 "use server"
 import db from "@/lib/db"
 
 export async function getProducts() {
-  return await db.product.findMany()
+	return await db.product.findMany()
 }
 ```
 
 2. **Add exports** in `src/features/products/index.ts`:
+
 ```typescript
 export { getProducts } from "./get-products"
 ```
 
 3. **Create UI components** in `src/components/products/`:
+
 ```typescript
 // src/components/products/product-list.tsx
 "use client"
 import { Card } from "@nextui-org/react"
 
 export function ProductList({ products }) {
-  // Your component logic
+	// Your component logic
 }
 ```
 
 4. **Use in pages** with clean imports:
+
 ```typescript
 // src/app/products/page.tsx
 import { getProducts } from "@/features/products"

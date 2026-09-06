@@ -1,25 +1,25 @@
-import {redirect} from "next/navigation";
-import {getUserBySession} from "@/lib/auth";
-import {AppLayout} from "@/components/layout";
-import {getAccountBalances} from "@/features/accounts";
+import { redirect } from "next/navigation"
+import { getUserBySession } from "@/lib/auth"
+import { AppLayout } from "@/components/layout"
+import { getAccountBalances } from "@/features/accounts"
 
 export default async function AppGroupLayout({
-    children,
+	children,
 }: {
-    children: React.ReactNode;
+	children: React.ReactNode
 }) {
-    const user = await getUserBySession();
+	const user = await getUserBySession()
 
-    if (!user) {
-        redirect("/auth/login");
-    }
+	if (!user) {
+		redirect("/auth/login")
+	}
 
-    const accountBalances = await getAccountBalances();
-    const accounts = accountBalances.success ? accountBalances.accounts : [];
+	const accountBalances = await getAccountBalances()
+	const accounts = accountBalances.success ? accountBalances.accounts : []
 
-    return (
-        <AppLayout userName={user.name} userEmail={user.email} accounts={accounts}>
-            {children}
-        </AppLayout>
-    );
+	return (
+		<AppLayout userName={user.name} userEmail={user.email} accounts={accounts}>
+			{children}
+		</AppLayout>
+	)
 }

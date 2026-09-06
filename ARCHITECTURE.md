@@ -65,6 +65,7 @@ src/
 ### 2. Feature-Based Organization
 
 Each feature (auth, users, etc.) contains:
+
 - Server actions for data mutations
 - Related business logic
 - Barrel exports for clean imports
@@ -117,6 +118,7 @@ import { getUserBySession } from "@/lib/auth"
 5. Add pages in `app/` that use the feature
 
 Example:
+
 ```
 features/
 └── products/

@@ -4,7 +4,6 @@ import db from "@/lib/db"
 
 export async function getAllUsers() {
 	try {
-
 		return await db.user.findMany({
 			select: {
 				id: true,

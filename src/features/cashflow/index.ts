@@ -1,1 +1,1 @@
-export { getCashflowProjection } from "./get-cashflow";
+export { getCashflowProjection } from "./get-cashflow"

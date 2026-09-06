@@ -1,9 +1,9 @@
-import type {CategoryGroupType} from "@prisma/client";
+import type { CategoryGroupType } from "@prisma/client"
 
-export type CategoryGroupTypeLabel = Record<CategoryGroupType, string>;
+export type CategoryGroupTypeLabel = Record<CategoryGroupType, string>
 
 export const categoryGroupTypeLabels: CategoryGroupTypeLabel = {
-    ESSENTIAL: "Essencial",
-    LIFESTYLE: "Estilo de vida",
-    INVESTMENT: "Investimentos",
-};
+	ESSENTIAL: "Essencial",
+	LIFESTYLE: "Estilo de vida",
+	INVESTMENT: "Investimentos",
+}
