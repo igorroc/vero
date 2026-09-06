@@ -1,0 +1,63 @@
+enum EventType {
+    INCOME
+    EXPENSE
+    INVESTMENT
+}
+
+enum CostType {
+    RECURRENT // Regular costs: rent, utilities, subscriptions
+    EXCEPTIONAL // One-time costs: wedding, travel, emergencies
+}
+
+enum EventStatus {
+    PLANNED // Future event, affects projections only
+    CONFIRMED // Paid/received, affects real balance
+    SKIPPED // Canceled, no effect
+}
+
+enum EventPriority {
+    REQUIRED // Obrigatório - não pode ser adiado (aluguel, contas essenciais)
+    IMPORTANT // Importante - deveria ser pago, mas tem flexibilidade
+    OPTIONAL // Opcional - pode ser adiado ou cancelado se necessário
+}
+
+enum RecurrenceFrequency {
+    DAILY
+    WEEKLY
+    BIWEEKLY
+    MONTHLY
+    YEARLY
+}
+
+model Event {
+    id          String      @id @default(cuid())
+    userId      String
+    user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+    accountId   String
+    account     Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+    categoryId  String?
+    category    Category?   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+    description String
+    amount      Int // In cents. Positive = money in, Negative = money out
+    type        EventType
+    costType    CostType? // Only for EXPENSE type
+    status      EventStatus @default(PLANNED)
+    priority    EventPriority @default(IMPORTANT)
+    date        DateTime
+
+    isRecurrenceTemplate Boolean              @default(false)
+    recurrenceFrequency  RecurrenceFrequency?
+    recurrenceEndDate    DateTime? // When recurrence stops (null = never)
+    recurrenceId         String? // Links generated events to their template
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([userId])
+    @@index([accountId])
+    @@index([categoryId])
+    @@index([date])
+    @@index([recurrenceId])
+    @@index([status])
+    @@index([priority])
+}

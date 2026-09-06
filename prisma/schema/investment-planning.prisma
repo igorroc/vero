@@ -1,0 +1,26 @@
+enum InvestmentFrequency {
+    WEEKLY
+    BIWEEKLY
+    MONTHLY
+    YEARLY
+}
+
+model InvestmentPlan {
+    id              String              @id @default(cuid())
+    userId          String
+    user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+    accountId       String // Target investment account
+    account         Account             @relation(fields: [accountId], references: [id], onDelete: Cascade)
+    name            String
+    amount          Int // In cents
+    frequency       InvestmentFrequency
+    dayOfExecution  Int                 @default(1) // Day of month/week for execution
+    startDate       DateTime
+    endDate         DateTime?
+    isActive        Boolean             @default(true)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([userId])
+}

@@ -1,0 +1,15 @@
+enum HorizonMode {
+    NEXT_INCOME // Until next income event
+    END_OF_MONTH // Until end of current month
+}
+
+model UserSettings {
+    id           String      @id @default(cuid())
+    userId       String      @unique
+    user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+    safetyBuffer Int         @default(0) // In cents
+    horizonMode  HorizonMode @default(END_OF_MONTH)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}

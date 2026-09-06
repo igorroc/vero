@@ -1,0 +1,23 @@
+enum AccountType {
+    BANK
+    CASH
+    INVESTMENT
+}
+
+model Account {
+    id             String      @id @default(cuid())
+    userId         String
+    user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+    name           String
+    type           AccountType
+    initialBalance Int // In cents (e.g., 100000 = $1000.00)
+    isActive       Boolean     @default(true)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    events          Event[]
+    investmentPlans InvestmentPlan[]
+
+    @@index([userId])
+}
