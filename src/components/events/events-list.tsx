@@ -18,6 +18,7 @@ import {
     Input,
     Select,
     SelectItem,
+    SelectSection,
 } from "@nextui-org/react";
 import {
     getEvents,
@@ -30,6 +31,7 @@ import {
     type UpdateEventInput
 } from "@/features/events";
 import {getAccountBalances, type AccountWithBalance} from "@/features/accounts";
+import {getCategories, type CategoryWithGroup} from "@/features/categories";
 import {formatCurrency, centsToDollars} from "@/types/finance";
 import type {Event} from "@prisma/client";
 import {toast} from "react-toastify";
@@ -56,6 +58,7 @@ type TimeFilter = "all" | "past" | "upcoming" | "today";
 export function EventsList() {
     const [events, setEvents] = useState<Event[]>([]);
     const [accounts, setAccounts] = useState<AccountWithBalance[]>([]);
+    const [categories, setCategories] = useState<CategoryWithGroup[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [timeFilter, setTimeFilter] = useState<TimeFilter>("upcoming");
@@ -65,6 +68,7 @@ export function EventsList() {
     const [editData, setEditData] = useState<{
         id: string;
         accountId: string;
+        categoryId: string;
         description: string;
         amount: string;
         type: "INCOME" | "EXPENSE" | "INVESTMENT";
@@ -87,6 +91,11 @@ export function EventsList() {
         const accountsResult = await getAccountBalances();
         if (accountsResult.success) {
             setAccounts(accountsResult.accounts);
+        }
+
+        const categoriesResult = await getCategories();
+        if (categoriesResult.success) {
+            setCategories(categoriesResult.categories);
         }
 
         // Build date filters
@@ -324,6 +333,7 @@ export function EventsList() {
         setEditData({
             id: targetId,
             accountId: event.accountId,
+            categoryId: event.categoryId || "",
             description: event.description,
             amount: centsToDollars(Math.abs(event.amount)).toString(),
             type: event.type as "INCOME" | "EXPENSE" | "INVESTMENT",
@@ -343,12 +353,17 @@ export function EventsList() {
             toast.error("Descrição é obrigatória");
             return;
         }
+        if (editData.type === "EXPENSE" && !editData.categoryId) {
+            toast.error("Categoria é obrigatória para despesas");
+            return;
+        }
 
         setEditLoading(true);
 
         const input: UpdateEventInput = {
             id: editData.id,
             accountId: editData.accountId,
+            categoryId: editData.type === "EXPENSE" ? editData.categoryId : null,
             description: editData.description,
             amount: parseFloat(editData.amount),
             type: editData.type,
@@ -538,6 +553,7 @@ export function EventsList() {
                     {events.map((event) => {
                         const EventIcon = getEventIcon(event.description, event.type);
                         const colors = getEventColors(event.type, event.description);
+                        const category = categories.find((item) => item.id === event.categoryId);
                         const isOverdue = isPast(event.date) && event.status === "PLANNED";
 
                         return (
@@ -590,14 +606,19 @@ export function EventsList() {
 
                                         {/* Tags row */}
                                         <div className="flex items-center gap-1.5 sm:gap-2 mt-2 flex-wrap">
-                                            <Chip
+                                             <Chip
                                                 size="sm"
                                                 variant="flat"
                                                 color={typeColors[event.type]}
                                                 className="text-[10px] sm:text-xs h-5 sm:h-6"
                                             >
-                                                {typeLabels[event.type]}
-                                            </Chip>
+                                                 {typeLabels[event.type]}
+                                             </Chip>
+                                             {category && (
+                                                 <Chip size="sm" variant="flat" className="text-[10px] sm:text-xs h-5 sm:h-6">
+                                                     {category.categoryGroup.name}: {category.name}
+                                                 </Chip>
+                                             )}
                                             {event.isRecurrenceTemplate && (
                                                 <Chip
                                                     size="sm"
@@ -700,6 +721,7 @@ export function EventsList() {
                 onClose={onClose}
                 onSuccess={loadData}
                 accounts={accounts}
+                categories={categories}
             />
 
             {/* Edit event modal */}
@@ -774,7 +796,7 @@ export function EventsList() {
                                 selectedKeys={editData?.type ? [editData.type] : []}
                                 onSelectionChange={(keys) => {
                                     const value = Array.from(keys)[0] as "INCOME" | "EXPENSE" | "INVESTMENT";
-                                    setEditData(prev => prev ? {...prev, type: value} : null);
+                                    setEditData(prev => prev ? {...prev, type: value, categoryId: value === "EXPENSE" ? prev.categoryId : ""} : null);
                                 }}
                                 isRequired
                                 classNames={{label: "text-sm"}}
@@ -786,23 +808,37 @@ export function EventsList() {
                         </div>
 
                         {editData?.type === "EXPENSE" && (
-                            <Select
-                                label="Tipo de Custo"
-                                size="sm"
-                                selectedKeys={editData?.costType ? [editData.costType] : []}
-                                onSelectionChange={(keys) => {
-                                    const value = Array.from(keys)[0] as "RECURRENT" | "EXCEPTIONAL";
-                                    setEditData(prev => prev ? {...prev, costType: value} : null);
-                                }}
-                                classNames={{label: "text-sm"}}
-                            >
-                                <SelectItem key="RECURRENT" textValue="Recorrente">
-                                    Recorrente (aluguel, contas)
-                                </SelectItem>
-                                <SelectItem key="EXCEPTIONAL" textValue="Excepcional">
-                                    Excepcional (viagens, emergências)
-                                </SelectItem>
-                            </Select>
+                            <>
+                                <Select
+                                    label="Categoria"
+                                    size="sm"
+                                    selectedKeys={editData.categoryId ? [editData.categoryId] : []}
+                                    onSelectionChange={(keys) => setEditData(prev => prev ? {...prev, categoryId: String(Array.from(keys)[0] ?? "")} : null)}
+                                    isRequired
+                                    isDisabled={categories.length === 0}
+                                >
+                                    {Array.from(new Map(categories.map((category) => [category.categoryGroup.id, category.categoryGroup])).values()).map((group) => (
+                                        <SelectSection key={group.id} title={group.name}>
+                                            {categories.filter((category) => category.categoryGroupId === group.id).map((category) => (
+                                                <SelectItem key={category.id}>{category.name}</SelectItem>
+                                            ))}
+                                        </SelectSection>
+                                    ))}
+                                </Select>
+                                <Select
+                                    label="Tipo de Custo"
+                                    size="sm"
+                                    selectedKeys={editData?.costType ? [editData.costType] : []}
+                                    onSelectionChange={(keys) => {
+                                        const value = Array.from(keys)[0] as "RECURRENT" | "EXCEPTIONAL";
+                                        setEditData(prev => prev ? {...prev, costType: value} : null);
+                                    }}
+                                    classNames={{label: "text-sm"}}
+                                >
+                                    <SelectItem key="RECURRENT" textValue="Recorrente">Recorrente (aluguel, contas)</SelectItem>
+                                    <SelectItem key="EXCEPTIONAL" textValue="Excepcional">Excepcional (viagens, emergências)</SelectItem>
+                                </Select>
+                            </>
                         )}
 
                         {editData?.type !== "INCOME" && (

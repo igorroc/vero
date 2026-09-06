@@ -11,10 +11,12 @@ import {
     Input,
     Select,
     SelectItem,
+    SelectSection,
     Switch,
 } from "@nextui-org/react";
 import {createEvent, type CreateEventInput} from "@/features/events";
 import type {AccountWithBalance} from "@/features/accounts";
+import type {CategoryWithGroup} from "@/features/categories";
 import {toast} from "react-toastify";
 
 interface EventFormProps {
@@ -22,12 +24,14 @@ interface EventFormProps {
     onClose: () => void;
     onSuccess: () => void;
     accounts: AccountWithBalance[];
+    categories: CategoryWithGroup[];
 }
 
-export function EventForm({isOpen, onClose, onSuccess, accounts}: EventFormProps) {
+export function EventForm({isOpen, onClose, onSuccess, accounts, categories}: EventFormProps) {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState<{
         accountId: string;
+        categoryId: string;
         description: string;
         amount: string;
         type: "INCOME" | "EXPENSE" | "INVESTMENT";
@@ -38,6 +42,7 @@ export function EventForm({isOpen, onClose, onSuccess, accounts}: EventFormProps
         recurrenceFrequency: string;
     }>({
         accountId: accounts[0]?.id || "",
+        categoryId: "",
         description: "",
         amount: "",
         type: "EXPENSE",
@@ -49,7 +54,7 @@ export function EventForm({isOpen, onClose, onSuccess, accounts}: EventFormProps
     });
 
     const handleSubmit = async () => {
-        if (!formData.accountId || !formData.description || !formData.amount) {
+        if (!formData.accountId || !formData.description || !formData.amount || (formData.type === "EXPENSE" && !formData.categoryId)) {
             toast.error("Por favor, preencha todos os campos obrigatórios");
             return;
         }
@@ -58,6 +63,7 @@ export function EventForm({isOpen, onClose, onSuccess, accounts}: EventFormProps
 
         const input: CreateEventInput = {
             accountId: formData.accountId,
+            categoryId: formData.type === "EXPENSE" ? formData.categoryId : undefined,
             description: formData.description,
             amount: parseFloat(formData.amount),
             type: formData.type,
@@ -79,6 +85,7 @@ export function EventForm({isOpen, onClose, onSuccess, accounts}: EventFormProps
             // Reset form
             setFormData({
                 accountId: accounts[0]?.id || "",
+                categoryId: "",
                 description: "",
                 amount: "",
                 type: "EXPENSE",
@@ -163,7 +170,7 @@ export function EventForm({isOpen, onClose, onSuccess, accounts}: EventFormProps
                             selectedKeys={[formData.type]}
                             onSelectionChange={(keys) => {
                                 const value = Array.from(keys)[0] as "INCOME" | "EXPENSE" | "INVESTMENT";
-                                setFormData({...formData, type: value});
+                                setFormData({...formData, type: value, categoryId: value === "EXPENSE" ? formData.categoryId : ""});
                             }}
                             isRequired
                             classNames={{
@@ -177,27 +184,39 @@ export function EventForm({isOpen, onClose, onSuccess, accounts}: EventFormProps
                     </div>
 
                     {formData.type === "EXPENSE" && (
-                        <Select
-                            label="Tipo de Custo"
-                            size="sm"
-                            selectedKeys={[formData.costType]}
-                            onSelectionChange={(keys) => {
-                                const value = Array.from(keys)[0] as "RECURRENT" | "EXCEPTIONAL";
-                                setFormData({...formData, costType: value});
-                            }}
-                            description="Custos recorrentes são para planejamento de longo prazo."
-                            classNames={{
-                                label: "text-sm",
-                                description: "text-xs",
-                            }}
-                        >
-                            <SelectItem key="RECURRENT" textValue="Recorrente">
-                                Recorrente (aluguel, contas)
-                            </SelectItem>
-                            <SelectItem key="EXCEPTIONAL" textValue="Excepcional">
-                                Excepcional (viagens, emergências)
-                            </SelectItem>
-                        </Select>
+                        <>
+                            <Select
+                                label="Categoria"
+                                size="sm"
+                                selectedKeys={formData.categoryId ? [formData.categoryId] : []}
+                                onSelectionChange={(keys) => setFormData({...formData, categoryId: String(Array.from(keys)[0] ?? "")})}
+                                isRequired
+                                isDisabled={categories.length === 0}
+                                description={categories.length === 0 ? "Cadastre uma categoria antes de criar uma despesa." : undefined}
+                            >
+                                {Array.from(new Map(categories.map((category) => [category.categoryGroup.id, category.categoryGroup])).values()).map((group) => (
+                                    <SelectSection key={group.id} title={group.name}>
+                                        {categories.filter((category) => category.categoryGroupId === group.id).map((category) => (
+                                            <SelectItem key={category.id}>{category.name}</SelectItem>
+                                        ))}
+                                    </SelectSection>
+                                ))}
+                            </Select>
+                            <Select
+                                label="Tipo de Custo"
+                                size="sm"
+                                selectedKeys={[formData.costType]}
+                                onSelectionChange={(keys) => {
+                                    const value = Array.from(keys)[0] as "RECURRENT" | "EXCEPTIONAL";
+                                    setFormData({...formData, costType: value});
+                                }}
+                                description="Custos recorrentes são para planejamento de longo prazo."
+                                classNames={{label: "text-sm", description: "text-xs"}}
+                            >
+                                <SelectItem key="RECURRENT" textValue="Recorrente">Recorrente (aluguel, contas)</SelectItem>
+                                <SelectItem key="EXCEPTIONAL" textValue="Excepcional">Excepcional (viagens, emergências)</SelectItem>
+                            </Select>
+                        </>
                     )}
 
                     {formData.type !== "INCOME" && (

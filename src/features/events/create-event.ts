@@ -14,6 +14,7 @@ import { dollarsToCents } from "@/types/finance";
 
 export interface CreateEventInput {
   accountId: string;
+  categoryId?: string;
   description: string;
   amount: number; // In dollars, positive for income, negative for expense
   type: EventType;
@@ -52,6 +53,21 @@ export async function createEvent(
       return { success: false, error: "Account not found" };
     }
 
+    if (input.type === "EXPENSE" && !input.categoryId) {
+      return { success: false, error: "Categoria é obrigatória para despesas" };
+    }
+
+    const category = input.categoryId
+      ? await prisma.category.findFirst({
+          where: {id: input.categoryId, userId: user.id},
+          select: {id: true},
+        })
+      : null;
+
+    if (input.type === "EXPENSE" && !category) {
+      return { success: false, error: "Categoria inválida" };
+    }
+
     // Validate input
     if (!input.description || input.description.trim().length === 0) {
       return { success: false, error: "Description is required" };
@@ -79,6 +95,7 @@ export async function createEvent(
     const eventData = {
       userId: user.id,
       accountId: input.accountId,
+      categoryId: input.type === "EXPENSE" ? category!.id : null,
       description: input.description.trim(),
       amount: amountCents,
       type: input.type,
@@ -135,6 +152,7 @@ export async function createRecurrenceInstance(
       data: {
         userId: user.id,
         accountId: template.accountId,
+        categoryId: template.categoryId,
         description: template.description,
         amount: template.amount,
         type: template.type,
