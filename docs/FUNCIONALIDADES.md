@@ -307,7 +307,7 @@ Todos os valores são armazenados como **inteiros em centavos** para evitar prob
 - ❌ Leitura de faturas de cartão de crédito
 
 #### Categorização e Análise
-- ❌ Categorias personalizadas para eventos
+- ✅ Categorias personalizadas para despesas, organizadas em grupos predefinidos
 - ❌ Tags ou etiquetas para organização
 - ❌ Relatórios de gastos por categoria
 - ❌ Gráficos e visualizações históricas

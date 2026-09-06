@@ -39,6 +39,7 @@ Mantenha as responsabilidades separadas:
 - Prefira exports nomeados e atualize o `index.ts` do dominio quando ele existir.
 - Preserve os aliases `@/` para imports internos.
 - Nao misture acesso direto ao Prisma em componentes de interface; mantenha-o em actions, features ou infraestrutura de servidor.
+- Arquivos com `"use server"` devem exportar somente funcoes `async`; mova constantes e valores compartilhados para modulos sem essa diretiva. Exports de tipos sao permitidos.
 - Evite alterar arquivos gerados, como `node_modules/` e `.next/`.
 - Nunca exponha ou versiona segredos de `.env`; use `.env.example` para documentar novas variaveis.
 
