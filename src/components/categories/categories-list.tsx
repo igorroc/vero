@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
 	Button,
 	Input,
@@ -9,12 +9,15 @@ import {
 	ModalContent,
 	ModalFooter,
 	ModalHeader,
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
 	Select,
 	SelectItem,
 	Spinner,
 	useDisclosure,
 } from "@nextui-org/react"
-import { Pencil, Plus, Tag, Trash2 } from "lucide-react"
+import { Plus, Tag, Trash2 } from "lucide-react"
 import { toast } from "react-toastify"
 import {
 	categoryGroupTypeLabels,
@@ -35,6 +38,12 @@ export function CategoriesList() {
 	const [groups, setGroups] = useState<CategoryGroupWithCategories[]>([])
 	const [loading, setLoading] = useState(true)
 	const [saving, setSaving] = useState(false)
+	const [quickGroupId, setQuickGroupId] = useState<string | null>(null)
+	const [quickName, setQuickName] = useState("")
+	const quickInputRef = useRef<HTMLInputElement>(null)
+	const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
+	const [editingName, setEditingName] = useState("")
+	const editInputRef = useRef<HTMLInputElement>(null)
 	const [formData, setFormData] = useState<CategoryFormData>({
 		name: "",
 		categoryGroupId: "",
@@ -58,21 +67,6 @@ export function CategoriesList() {
 
 	const openCreate = (categoryGroupId = groups[0]?.id ?? "") => {
 		setFormData({ name: "", categoryGroupId })
-		onOpen()
-	}
-
-	const openEdit = (
-		category: CategoryGroupWithCategories["categories"][number],
-	) => {
-		const group = groups.find((item) =>
-			item.categories.some((itemCategory) => itemCategory.id === category.id),
-		)
-		if (!group) return
-		setFormData({
-			id: category.id,
-			name: category.name,
-			categoryGroupId: group.id,
-		})
 		onOpen()
 	}
 
@@ -107,6 +101,47 @@ export function CategoriesList() {
 		} else {
 			toast.error(result.error)
 		}
+	}
+
+	const handleQuickCreate = async () => {
+		if (!quickGroupId || !quickName.trim()) return
+
+		setSaving(true)
+		const result = await createCategory({
+			name: quickName,
+			categoryGroupId: quickGroupId,
+		})
+		if (result.success) {
+			setQuickName("")
+			await loadGroups()
+		} else {
+			toast.error(result.error)
+		}
+		setSaving(false)
+		if (result.success) requestAnimationFrame(() => quickInputRef.current?.focus())
+	}
+
+	const beginInlineEdit = (
+		category: CategoryGroupWithCategories["categories"][number],
+	) => {
+		setEditingCategoryId(category.id)
+		setEditingName(category.name)
+		requestAnimationFrame(() => editInputRef.current?.focus())
+	}
+
+	const saveInlineEdit = async (categoryId: string, categoryGroupId: string) => {
+		const name = editingName.trim()
+		setEditingCategoryId(null)
+		if (!name) return
+
+		setSaving(true)
+		const result = await updateCategory({ id: categoryId, name, categoryGroupId })
+		if (result.success) {
+			await loadGroups()
+		} else {
+			toast.error(result.error)
+		}
+		setSaving(false)
 	}
 
 	if (loading) {
@@ -146,15 +181,39 @@ export function CategoriesList() {
 												{group.name}
 											</h3>
 										</div>
-										<Button
-											isIconOnly
-											size="sm"
-											variant="light"
-											onPress={() => openCreate(group.id)}
-											aria-label={`Adicionar categoria em ${group.name}`}
+										<Popover
+											isOpen={quickGroupId === group.id}
+											onOpenChange={(isOpen) => {
+												setQuickGroupId(isOpen ? group.id : null)
+												if (isOpen) setQuickName("")
+											}}
+											placement="bottom-end"
 										>
-											<Plus className="h-4 w-4" />
-										</Button>
+											<PopoverTrigger>
+												<Button isIconOnly size="sm" variant="light" aria-label={`Adicionar categoria em ${group.name}`}>
+													<Plus className="h-4 w-4" />
+												</Button>
+											</PopoverTrigger>
+											<PopoverContent className="w-64 p-3">
+												<Input
+													ref={quickInputRef}
+													autoFocus
+													size="sm"
+													placeholder="Nome da categoria"
+													aria-label={`Nova categoria em ${group.name}`}
+													value={quickName}
+													isDisabled={saving}
+													onValueChange={setQuickName}
+													onKeyDown={(event) => {
+														if (event.key === "Enter") {
+															event.preventDefault()
+															handleQuickCreate()
+														}
+													}}
+												/>
+												<p className="mt-2 text-xs text-slate-500">Pressione Enter para adicionar.</p>
+											</PopoverContent>
+										</Popover>
 									</div>
 
 									{group.categories.length === 0 ? (
@@ -168,19 +227,26 @@ export function CategoriesList() {
 													key={category.id}
 													className="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800"
 												>
-													<span className="text-sm text-slate-700 dark:text-slate-300">
-														{category.name}
-													</span>
-													<div className="flex items-center">
-														<Button
-															isIconOnly
+													{editingCategoryId === category.id ? (
+														<Input
+															ref={editInputRef}
+															autoFocus
 															size="sm"
-															variant="light"
-															onPress={() => openEdit(category)}
-															aria-label={`Editar ${category.name}`}
-														>
-															<Pencil className="h-3.5 w-3.5" />
-														</Button>
+															value={editingName}
+															isDisabled={saving}
+															onValueChange={setEditingName}
+															onBlur={() => saveInlineEdit(category.id, group.id)}
+															onKeyDown={(event) => {
+																if (event.key === "Enter") event.currentTarget.blur()
+																if (event.key === "Escape") setEditingCategoryId(null)
+															}}
+														/>
+													) : (
+														<button type="button" className="rounded px-1 text-left text-sm text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-slate-300 dark:hover:bg-slate-800" onClick={() => beginInlineEdit(category)}>
+															{category.name}
+														</button>
+													)}
+													<div className="flex items-center">
 														<Button
 															isIconOnly
 															size="sm"
