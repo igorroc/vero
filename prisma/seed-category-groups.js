@@ -3,6 +3,8 @@ const { PrismaClient } = require("@prisma/client")
 const prisma = new PrismaClient()
 
 const categoryGroups = [
+	{ id: "fixed-income", name: "Renda fixa", type: "INCOME" },
+	{ id: "variable-income", name: "Renda variável", type: "INCOME" },
 	{ id: "housing", name: "Moradia", type: "ESSENTIAL" },
 	{ id: "food", name: "Alimentação", type: "ESSENTIAL" },
 	{ id: "transportation", name: "Transporte", type: "ESSENTIAL" },

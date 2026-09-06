@@ -3,6 +3,7 @@
 // ============================================
 
 enum CategoryGroupType {
+    INCOME
     ESSENTIAL
     LIFESTYLE
     INVESTMENT
@@ -26,6 +27,7 @@ model Category {
     categoryGroup   CategoryGroup @relation(fields: [categoryGroupId], references: [id], onDelete: Restrict)
     name            String
     events          Event[]
+    budgetItems     BudgetItem[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
