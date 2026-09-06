@@ -14,13 +14,21 @@ import {useRouter} from "next/navigation";
 import {logoutAction} from "@/features/auth";
 import Image from "next/image";
 import LogoImage from "@/app/icon.png";
+import {formatCurrency, type Cents} from "@/types/finance";
+
+export interface HeaderAccountBalance {
+    id: string;
+    name: string;
+    currentBalance: Cents;
+}
 
 interface HeaderProps {
     userName?: string;
     userEmail?: string;
+    accounts: HeaderAccountBalance[];
 }
 
-export function Header({userName, userEmail}: HeaderProps) {
+export function Header({userName, userEmail, accounts}: HeaderProps) {
     const router = useRouter();
 
     const getGreeting = () => {
@@ -68,6 +76,30 @@ export function Header({userName, userEmail}: HeaderProps) {
                         {userName ? `Olá, ${userName.split(" ")[0]}!` : "Bem-vindo!"}
                     </h1>
                 </div>
+            </div>
+
+            <div className="hidden md:flex flex-1 min-w-0 justify-end px-6">
+                {accounts.length > 0 && (
+                    <div className="flex max-w-full items-center gap-2 overflow-x-auto py-1">
+                        {accounts.map((account) => (
+                            <div
+                                key={account.id}
+                                className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 dark:border-slate-700 dark:bg-slate-800"
+                            >
+                                <p className="max-w-28 truncate text-xs text-slate-500" title={account.name}>
+                                    {account.name}
+                                </p>
+                                <p className={`text-sm font-semibold ${
+                                    account.currentBalance < 0
+                                        ? "text-red-600 dark:text-red-400"
+                                        : "text-slate-900 dark:text-white"
+                                }`}>
+                                    {formatCurrency(account.currentBalance)}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Right side - Notifications, Profile */}

@@ -1,17 +1,18 @@
 "use client";
 
-import {useState, useEffect} from "react";
+import {useState} from "react";
 import {Sidebar} from "./sidebar";
-import {Header} from "./header";
+import {Header, type HeaderAccountBalance} from "./header";
 import {BottomNav} from "./bottom-nav";
 
 interface AppLayoutProps {
     children: React.ReactNode;
     userName?: string;
     userEmail?: string;
+    accounts: HeaderAccountBalance[];
 }
 
-export function AppLayout({children, userName, userEmail}: AppLayoutProps) {
+export function AppLayout({children, userName, userEmail, accounts}: AppLayoutProps) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     return (
@@ -30,6 +31,7 @@ export function AppLayout({children, userName, userEmail}: AppLayoutProps) {
                 <Header
                     userName={userName}
                     userEmail={userEmail}
+                    accounts={accounts}
                 />
 
                 {/* Page content - extra bottom padding on mobile for bottom nav */}
@@ -39,7 +41,7 @@ export function AppLayout({children, userName, userEmail}: AppLayoutProps) {
             </div>
 
             {/* Bottom navigation - only visible on mobile */}
-            <BottomNav />
+            <BottomNav/>
         </div>
     );
 }
