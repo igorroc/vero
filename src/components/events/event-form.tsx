@@ -94,15 +94,17 @@ export function EventForm({
 				if (result.warning) toast.warning(result.warning)
 				onSuccess()
 				setFormData({
-					accountId: accounts[0]?.id || "",
-					destinationAccountId: "",
-					categoryId: "",
+					accountId: createAnother ? formData.accountId : accounts[0]?.id || "",
+					destinationAccountId: createAnother
+						? formData.destinationAccountId
+						: "",
+					categoryId: createAnother ? formData.categoryId : "",
 					description: "",
 					amount: "",
-					type: "EXPENSE",
+					type: createAnother ? formData.type : "EXPENSE",
 					costType: "RECURRENT",
 					priority: "IMPORTANT",
-					date: formatDateInput(new Date()),
+					date: createAnother ? formData.date : formatDateInput(new Date()),
 					isRecurring: false,
 					recurrenceFrequency: "MONTHLY",
 				})
@@ -137,15 +139,17 @@ export function EventForm({
 			onSuccess()
 			// Reset form
 			setFormData({
-				accountId: accounts[0]?.id || "",
-				destinationAccountId: "",
-				categoryId: "",
+				accountId: createAnother ? formData.accountId : accounts[0]?.id || "",
+				destinationAccountId: createAnother
+					? formData.destinationAccountId
+					: "",
+				categoryId: createAnother ? formData.categoryId : "",
 				description: "",
 				amount: "",
-				type: "EXPENSE",
+				type: createAnother ? formData.type : "EXPENSE",
 				costType: "RECURRENT",
 				priority: "IMPORTANT",
-				date: formatDateInput(new Date()),
+				date: createAnother ? formData.date : formatDateInput(new Date()),
 				isRecurring: false,
 				recurrenceFrequency: "MONTHLY",
 			})
