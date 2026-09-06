@@ -10,6 +10,7 @@ import {
     MoreHorizontal,
     TrendingUp,
     Settings,
+    Tags,
 } from "lucide-react";
 import {
     Dropdown,
@@ -33,6 +34,7 @@ const mainNavItems: NavItem[] = [
 
 const moreNavItems: NavItem[] = [
     {icon: TrendingUp, label: "Investimentos", href: "/investments"},
+    {icon: Tags, label: "Categorias", href: "/categories"},
     {icon: Settings, label: "Configurações", href: "/settings"},
 ];
 
