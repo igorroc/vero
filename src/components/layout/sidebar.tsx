@@ -11,6 +11,8 @@ import {
 	Tags,
 	PiggyBank,
 	Settings,
+	ReceiptText,
+	ChartNoAxesCombined,
 	ChevronLeft,
 	ChevronRight,
 } from "lucide-react"
@@ -29,6 +31,8 @@ const navItems: NavItem[] = [
 	{ icon: Tags, label: "Categorias", href: "/categories" },
 	{ icon: PiggyBank, label: "Contas", href: "/accounts" },
 	{ icon: TrendingUp, label: "Investimentos", href: "/investments" },
+	{ icon: ReceiptText, label: "Orçamentos", href: "/budgets" },
+	{ icon: ChartNoAxesCombined, label: "Relatórios", href: "/reports/budget" },
 	{ icon: Settings, label: "Configurações", href: "/settings" },
 ]
 

@@ -11,6 +11,8 @@ import {
 	TrendingUp,
 	Settings,
 	Tags,
+	ReceiptText,
+	ChartNoAxesCombined,
 } from "lucide-react"
 import {
 	Dropdown,
@@ -35,6 +37,8 @@ const mainNavItems: NavItem[] = [
 const moreNavItems: NavItem[] = [
 	{ icon: TrendingUp, label: "Investimentos", href: "/investments" },
 	{ icon: Tags, label: "Categorias", href: "/categories" },
+	{ icon: ReceiptText, label: "Orçamentos", href: "/budgets" },
+	{ icon: ChartNoAxesCombined, label: "Relatórios", href: "/reports/budget" },
 	{ icon: Settings, label: "Configurações", href: "/settings" },
 ]
 
