@@ -80,9 +80,10 @@ export function Header({ userName, userEmail, accounts }: HeaderProps) {
 				{accounts.length > 0 && (
 					<div className="flex max-w-full items-center gap-2 overflow-x-auto py-1">
 						{accounts.map((account) => (
-							<div
+							<Link
 								key={account.id}
-								className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 dark:border-slate-700 dark:bg-slate-800"
+								href={`/accounts/${account.id}`}
+								className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
 							>
 								<p
 									className="max-w-28 truncate text-xs text-slate-500"
@@ -99,7 +100,7 @@ export function Header({ userName, userEmail, accounts }: HeaderProps) {
 								>
 									{formatCurrency(account.currentBalance)}
 								</p>
-							</div>
+							</Link>
 						))}
 					</div>
 				)}

@@ -6,3 +6,4 @@ export {
 	getAccountBalances,
 	type AccountWithBalance,
 } from "./get-account-balances"
+export { getAccountStatement, type AccountStatement } from "./get-account-statement"

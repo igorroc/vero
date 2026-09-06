@@ -66,8 +66,6 @@ export function DashboardContent() {
 
 	const breakdown = data.spendingLimit.breakdown
 	// Calculate spending used as percentage of available
-	const totalRequiredExpenses =
-		breakdown.requiredExpenses + breakdown.plannedInvestments
 
 	// Calculate income and expenses from net change
 	const netChange = data.projectionSummary.netChange
@@ -277,9 +275,10 @@ export function DashboardContent() {
 									: "text-purple-600 dark:text-purple-400"
 
 						return (
-							<div
+							<Link
 								key={account.id}
-								className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl"
+								href={`/accounts/${account.id}`}
+								className="flex justify-between items-center rounded-xl bg-slate-50 p-3 transition-colors hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800"
 							>
 								<div className="flex items-center gap-3">
 									<div
@@ -309,7 +308,7 @@ export function DashboardContent() {
 								>
 									{formatCurrency(account.currentBalance)}
 								</p>
-							</div>
+							</Link>
 						)
 					})}
 

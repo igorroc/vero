@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import {
 	Button,
 	Chip,
@@ -348,7 +349,10 @@ export function AccountsList() {
 						return (
 							<div key={account.id} className="modern-card p-4">
 								<div className="flex justify-between items-center">
-									<div className="flex items-center gap-4">
+									<Link
+										href={`/accounts/${account.id}`}
+										className="flex min-w-0 items-center gap-4 rounded-lg transition-opacity hover:opacity-75"
+									>
 										<div
 											className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getAccountGradient(account.type)} flex items-center justify-center`}
 										>
@@ -371,7 +375,7 @@ export function AccountsList() {
 												Saldo inicial: {formatCurrency(account.initialBalance)}
 											</p>
 										</div>
-									</div>
+									</Link>
 									<div className="flex items-center gap-4">
 										<span
 											className={`text-2xl font-bold ${
@@ -555,8 +559,7 @@ export function AccountsList() {
 					<ModalBody className="gap-4">
 						<div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
 							<p className="text-sm text-purple-700 dark:text-purple-300">
-								Saindo de:{" "}
-								<strong>{withdrawalData?.fromAccountName}</strong>
+								Saindo de: <strong>{withdrawalData?.fromAccountName}</strong>
 							</p>
 						</div>
 
@@ -579,7 +582,11 @@ export function AccountsList() {
 									<div className="flex justify-between items-center w-full">
 										<span>{account.name}</span>
 										<span className="text-xs text-slate-500">
-										{account.type === "BANK" ? "Banco" : account.type === "CASH" ? "Dinheiro" : "Investimento"}
+											{account.type === "BANK"
+												? "Banco"
+												: account.type === "CASH"
+													? "Dinheiro"
+													: "Investimento"}
 										</span>
 									</div>
 								</SelectItem>
