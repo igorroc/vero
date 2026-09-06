@@ -142,7 +142,11 @@ export function EventsList() {
 		}
 
 		if (result.success) {
-			setEvents(result.events)
+			setEvents(
+				[...result.events].sort(
+					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+				),
+			)
 		} else {
 			setError(result.error)
 		}
