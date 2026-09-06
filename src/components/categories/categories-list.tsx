@@ -129,7 +129,7 @@ export function CategoriesList() {
 				</Button>
 			</div>
 
-			{(["ESSENTIAL", "LIFESTYLE", "INVESTMENT"] as const).map((type) => {
+			{(["INCOME", "ESSENTIAL", "LIFESTYLE", "INVESTMENT"] as const).map((type) => {
 				const groupsByType = groups.filter((group) => group.type === type)
 				return (
 					<section key={type} className="space-y-3">
