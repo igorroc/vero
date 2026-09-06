@@ -109,7 +109,11 @@ export function BudgetsContent() {
 	})
 
 	if (loading) {
-		return <div className="flex min-h-64 items-center justify-center"><Spinner label="Carregando orçamento..." /></div>
+		return (
+			<div className="flex min-h-64 items-center justify-center">
+				<Spinner label="Carregando orçamento..." />
+			</div>
+		)
 	}
 
 	return (
@@ -126,48 +130,110 @@ export function BudgetsContent() {
 					}}
 					className="max-w-xs"
 				/>
-				{!budget && <Button color="primary" onPress={onOpen}>Criar orçamento</Button>}
+				{!budget && (
+					<Button color="primary" onPress={onOpen}>
+						Criar orçamento
+					</Button>
+				)}
 			</div>
 
 			{!budget ? (
 				<div className="modern-card p-8 text-center">
-					<p className="text-slate-500">Nenhum orçamento criado para {monthLabel}.</p>
-					<Button className="mt-4" color="primary" onPress={onOpen}>Criar orçamento</Button>
+					<p className="text-slate-500">
+						Nenhum orçamento criado para {monthLabel}.
+					</p>
+					<Button className="mt-4" color="primary" onPress={onOpen}>
+						Criar orçamento
+					</Button>
 				</div>
 			) : (
 				<>
 					<div className="modern-card p-4">
-						<h2 className="font-semibold capitalize">Orçamento de {monthLabel}</h2>
-						<p className="text-sm text-slate-500">Preencha os valores planejados. Categorias vazias ou com zero não entram no orçamento.</p>
+						<h2 className="font-semibold capitalize">
+							Orçamento de {monthLabel}
+						</h2>
+						<p className="text-sm text-slate-500">
+							Preencha os valores planejados. Categorias vazias ou com zero não
+							entram no orçamento.
+						</p>
 					</div>
 
 					{types.map((type) => {
-						const categoriesByType = categories.filter((category) => category.categoryGroup.type === type)
+						const categoriesByType = categories.filter(
+							(category) => category.categoryGroup.type === type,
+						)
 						if (!categoriesByType.length) return null
 						return (
 							<section key={type} className="modern-card overflow-hidden">
-								<h2 className="border-b p-4 font-semibold">{typeLabels[type]}</h2>
+								<h2 className="border-b p-4 font-semibold">
+									{typeLabels[type]}
+								</h2>
 								{categoriesByType.map((category) => (
-									<div key={category.id} className="grid grid-cols-[1fr_140px] items-center gap-3 border-b p-4 last:border-0">
-										<div><p className="font-medium">{category.name}</p><p className="text-sm text-slate-500">{category.categoryGroup.name}</p></div>
-										<Input aria-label={`Valor de ${category.name}`} type="number" min="0" step="0.01" placeholder="0,00" startContent="R$" value={values[category.id] ?? ""} onValueChange={(value) => setValues((current) => ({ ...current, [category.id]: value }))} />
+									<div
+										key={category.id}
+										className="grid grid-cols-[1fr_140px] items-center gap-3 border-b p-4 last:border-0"
+									>
+										<div>
+											<p className="font-medium">{category.name}</p>
+											<p className="text-sm text-slate-500">
+												{category.categoryGroup.name}
+											</p>
+										</div>
+										<Input
+											aria-label={`Valor de ${category.name}`}
+											type="number"
+											min="0"
+											step="0.01"
+											placeholder="0,00"
+											startContent="R$"
+											value={values[category.id] ?? ""}
+											onValueChange={(value) =>
+												setValues((current) => ({
+													...current,
+													[category.id]: value,
+												}))
+											}
+										/>
 									</div>
 								))}
 							</section>
 						)
 					})}
 
-					<div className="flex justify-end"><Button color="primary" startContent={<Save className="h-4 w-4" />} isLoading={saving} onPress={save}>Salvar orçamento</Button></div>
+					<div className="flex justify-end">
+						<Button
+							color="primary"
+							startContent={<Save className="h-4 w-4" />}
+							isLoading={saving}
+							onPress={save}
+						>
+							Salvar orçamento
+						</Button>
+					</div>
 				</>
 			)}
 
 			<Modal isOpen={isOpen} onClose={onClose}>
 				<ModalContent>
 					<ModalHeader>Criar orçamento</ModalHeader>
-					<ModalBody><p>Escolha como iniciar o orçamento de {monthLabel}.</p></ModalBody>
+					<ModalBody>
+						<p>Escolha como iniciar o orçamento de {monthLabel}.</p>
+					</ModalBody>
 					<ModalFooter>
-						<Button variant="flat" onPress={() => create(false)} isLoading={saving}>Em branco</Button>
-						<Button color="primary" onPress={() => create(true)} isLoading={saving}>Copiar mês anterior</Button>
+						<Button
+							variant="flat"
+							onPress={() => create(false)}
+							isLoading={saving}
+						>
+							Em branco
+						</Button>
+						<Button
+							color="primary"
+							onPress={() => create(true)}
+							isLoading={saving}
+						>
+							Copiar mês anterior
+						</Button>
 					</ModalFooter>
 				</ModalContent>
 			</Modal>

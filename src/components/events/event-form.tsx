@@ -14,7 +14,11 @@ import {
 	SelectSection,
 	Switch,
 } from "@nextui-org/react"
-import { createEvent, createTransfer, type CreateEventInput } from "@/features/events"
+import {
+	createEvent,
+	createTransfer,
+	type CreateEventInput,
+} from "@/features/events"
 import type { AccountWithBalance } from "@/features/accounts"
 import type { CategoryWithGroup } from "@/features/categories"
 import { toast } from "react-toastify"
@@ -132,8 +136,8 @@ export function EventForm({
 			onSuccess()
 			// Reset form
 			setFormData({
-			accountId: accounts[0]?.id || "",
-			destinationAccountId: "",
+				accountId: accounts[0]?.id || "",
+				destinationAccountId: "",
 				categoryId: "",
 				description: "",
 				amount: "",
@@ -262,10 +266,37 @@ export function EventForm({
 
 					{formData.type === "TRANSFER" && (
 						<div className="space-y-2">
-							<Select label="Conta de destino" size="sm" selectedKeys={formData.destinationAccountId ? [formData.destinationAccountId] : []} onSelectionChange={(keys) => setFormData({ ...formData, destinationAccountId: String(Array.from(keys)[0] ?? "") })} isRequired>
-								{accounts.filter((account) => account.id !== formData.accountId).map((account) => <SelectItem key={account.id}>{account.name}</SelectItem>)}
+							<Select
+								label="Conta de destino"
+								size="sm"
+								selectedKeys={
+									formData.destinationAccountId
+										? [formData.destinationAccountId]
+										: []
+								}
+								onSelectionChange={(keys) =>
+									setFormData({
+										...formData,
+										destinationAccountId: String(Array.from(keys)[0] ?? ""),
+									})
+								}
+								isRequired
+							>
+								{accounts
+									.filter((account) => account.id !== formData.accountId)
+									.map((account) => (
+										<SelectItem key={account.id}>{account.name}</SelectItem>
+									))}
 							</Select>
-							{Number(formData.amount) > (accounts.find((account) => account.id === formData.accountId)?.currentBalance ?? 0) / 100 && <p className="text-xs text-amber-600">Esta transferência deixará a conta de origem com saldo negativo.</p>}
+							{Number(formData.amount) >
+								(accounts.find((account) => account.id === formData.accountId)
+									?.currentBalance ?? 0) /
+									100 && (
+								<p className="text-xs text-amber-600">
+									Esta transferência deixará a conta de origem com saldo
+									negativo.
+								</p>
+							)}
 						</div>
 					)}
 
@@ -291,16 +322,20 @@ export function EventForm({
 							>
 								{Array.from(
 									new Map(
-										categories.filter((category) =>
-											formData.type === "INCOME"
-												? category.categoryGroup.type === "INCOME"
-												: formData.type === "INVESTMENT"
-													? category.categoryGroup.type === "INVESTMENT"
-													: ["ESSENTIAL", "LIFESTYLE"].includes(category.categoryGroup.type),
-										).map((category) => [
-											category.categoryGroup.id,
-											category.categoryGroup,
-										]),
+										categories
+											.filter((category) =>
+												formData.type === "INCOME"
+													? category.categoryGroup.type === "INCOME"
+													: formData.type === "INVESTMENT"
+														? category.categoryGroup.type === "INVESTMENT"
+														: ["ESSENTIAL", "LIFESTYLE"].includes(
+																category.categoryGroup.type,
+															),
+											)
+											.map((category) => [
+												category.categoryGroup.id,
+												category.categoryGroup,
+											]),
 									).values(),
 								).map((group) => (
 									<SelectSection key={group.id} title={group.name}>
@@ -316,28 +351,29 @@ export function EventForm({
 									</SelectSection>
 								))}
 							</Select>
-							{formData.type === "EXPENSE" && <Select
-								label="Tipo de Custo"
-								size="sm"
-								selectedKeys={[formData.costType]}
-								onSelectionChange={(keys) => {
-									const value = Array.from(keys)[0] as
-										"RECURRENT" | "EXCEPTIONAL"
-									setFormData({ ...formData, costType: value })
-								}}
-								description="Custos recorrentes são para planejamento de longo prazo."
-								classNames={{ label: "text-sm", description: "text-xs" }}
-							>
-								<SelectItem key="RECURRENT" textValue="Recorrente">
-									Recorrente (aluguel, contas)
-								</SelectItem>
-								<SelectItem key="EXCEPTIONAL" textValue="Excepcional">
-									Excepcional (viagens, emergências)
-								</SelectItem>
-							</Select>}
+							{formData.type === "EXPENSE" && (
+								<Select
+									label="Tipo de Custo"
+									size="sm"
+									selectedKeys={[formData.costType]}
+									onSelectionChange={(keys) => {
+										const value = Array.from(keys)[0] as
+											"RECURRENT" | "EXCEPTIONAL"
+										setFormData({ ...formData, costType: value })
+									}}
+									description="Custos recorrentes são para planejamento de longo prazo."
+									classNames={{ label: "text-sm", description: "text-xs" }}
+								>
+									<SelectItem key="RECURRENT" textValue="Recorrente">
+										Recorrente (aluguel, contas)
+									</SelectItem>
+									<SelectItem key="EXCEPTIONAL" textValue="Excepcional">
+										Excepcional (viagens, emergências)
+									</SelectItem>
+								</Select>
+							)}
 						</>
 					)}
-
 
 					<Input
 						label="Data"
@@ -351,23 +387,25 @@ export function EventForm({
 						}}
 					/>
 
-					{formData.type !== "TRANSFER" && <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 sm:p-4">
-						<div>
-							<p className="font-medium text-sm sm:text-base text-slate-900 dark:text-white">
-								Evento Recorrente
-							</p>
-							<p className="text-xs sm:text-sm text-slate-500">
-								Repete em uma agenda
-							</p>
+					{formData.type !== "TRANSFER" && (
+						<div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 sm:p-4">
+							<div>
+								<p className="font-medium text-sm sm:text-base text-slate-900 dark:text-white">
+									Evento Recorrente
+								</p>
+								<p className="text-xs sm:text-sm text-slate-500">
+									Repete em uma agenda
+								</p>
+							</div>
+							<Switch
+								size="sm"
+								isSelected={formData.isRecurring}
+								onValueChange={(value) =>
+									setFormData({ ...formData, isRecurring: value })
+								}
+							/>
 						</div>
-						<Switch
-							size="sm"
-							isSelected={formData.isRecurring}
-							onValueChange={(value) =>
-								setFormData({ ...formData, isRecurring: value })
-							}
-						/>
-					</div>}
+					)}
 
 					{formData.type !== "TRANSFER" && formData.isRecurring && (
 						<Select

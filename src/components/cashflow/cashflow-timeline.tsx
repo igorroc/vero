@@ -450,12 +450,12 @@ function DayRow({ day, isToday }: DayRowProps) {
 									<div
 										className={`w-2 h-2 rounded-full flex-shrink-0 ${
 											event.type === "INCOME"
-													? "bg-emerald-500"
-													: event.type === "TRANSFER"
-														? "bg-violet-500"
-												: event.type === "INVESTMENT"
-													? "bg-purple-500"
-													: "bg-red-500"
+												? "bg-emerald-500"
+												: event.type === "TRANSFER"
+													? "bg-violet-500"
+													: event.type === "INVESTMENT"
+														? "bg-purple-500"
+														: "bg-red-500"
 										}`}
 									/>
 									<Chip
@@ -463,26 +463,28 @@ function DayRow({ day, isToday }: DayRowProps) {
 										variant="flat"
 										className={`h-5 text-[10px] sm:text-xs ${
 											event.type === "INCOME"
-													? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
-													: event.type === "TRANSFER"
-														? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+												? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
+												: event.type === "TRANSFER"
+													? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
 													: event.type === "INVESTMENT"
-													? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
-													: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+														? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+														: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
 										}`}
 									>
 										{event.type === "INCOME"
-													? "Receita"
-													: event.type === "TRANSFER"
-														? "Transferência"
-											: event.type === "INVESTMENT"
-												? "Invest."
-														: "Despesa"}
+											? "Receita"
+											: event.type === "TRANSFER"
+												? "Transferência"
+												: event.type === "INVESTMENT"
+													? "Invest."
+													: "Despesa"}
 									</Chip>
 								</div>
 								<span className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 truncate">
-										{event.description}
-										{event.type === "TRANSFER" && event.destinationAccountName && ` para ${event.destinationAccountName}`}
+									{event.description}
+									{event.type === "TRANSFER" &&
+										event.destinationAccountName &&
+										` para ${event.destinationAccountName}`}
 								</span>
 								{event.status === "PLANNED" && (
 									<Chip

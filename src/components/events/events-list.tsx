@@ -205,7 +205,10 @@ export function EventsList() {
 		return d < today
 	}
 
-	const typeColors: Record<string, "success" | "danger" | "primary" | "secondary"> = {
+	const typeColors: Record<
+		string,
+		"success" | "danger" | "primary" | "secondary"
+	> = {
 		INCOME: "success",
 		EXPENSE: "danger",
 		INVESTMENT: "primary",
@@ -671,10 +674,25 @@ export function EventsList() {
 													{isToday(event.date)
 														? "Hoje"
 														: formatDate(event.date)}
-											{isOverdue && " • Atrasado"}
-											{event.type === "TRANSFER" && event.destinationAccountId && (
-												<span className="ml-1">• {accounts.find((account) => account.id === event.accountId)?.name} para {accounts.find((account) => account.id === event.destinationAccountId)?.name}</span>
-											)}
+													{isOverdue && " • Atrasado"}
+													{event.type === "TRANSFER" &&
+														event.destinationAccountId && (
+															<span className="ml-1">
+																•{" "}
+																{
+																	accounts.find(
+																		(account) => account.id === event.accountId,
+																	)?.name
+																}{" "}
+																para{" "}
+																{
+																	accounts.find(
+																		(account) =>
+																			account.id === event.destinationAccountId,
+																	)?.name
+																}
+															</span>
+														)}
 												</p>
 											</div>
 
@@ -770,33 +788,38 @@ export function EventsList() {
 													handlePriorityChange(event.id, "OPTIONAL")
 											}}
 										>
-											{event.type !== "TRANSFER" ? <DropdownItem
-												key="edit"
-												startContent={<Pencil className="w-4 h-4" />}
-											>
-												{event.id.startsWith("generated-")
-													? "Editar Modelo"
-													: "Editar"}
-											</DropdownItem> : null}
+											{event.type !== "TRANSFER" ? (
+												<DropdownItem
+													key="edit"
+													startContent={<Pencil className="w-4 h-4" />}
+												>
+													{event.id.startsWith("generated-")
+														? "Editar Modelo"
+														: "Editar"}
+												</DropdownItem>
+											) : null}
 											{event.status === "PLANNED" ? (
 												<DropdownItem key="confirm">Confirmar</DropdownItem>
 											) : null}
 											{event.status === "PLANNED" ? (
 												<DropdownItem key="skip">Ignorar</DropdownItem>
 											) : null}
-											{event.type !== "INCOME" && event.type !== "TRANSFER" &&
+											{event.type !== "INCOME" &&
+											event.type !== "TRANSFER" &&
 											event.priority !== "REQUIRED" ? (
 												<DropdownItem key="priority-required">
 													🔴 Marcar como Obrigatório
 												</DropdownItem>
 											) : null}
-											{event.type !== "INCOME" && event.type !== "TRANSFER" &&
+											{event.type !== "INCOME" &&
+											event.type !== "TRANSFER" &&
 											event.priority !== "IMPORTANT" ? (
 												<DropdownItem key="priority-important">
 													🟡 Marcar como Importante
 												</DropdownItem>
 											) : null}
-											{event.type !== "INCOME" && event.type !== "TRANSFER" &&
+											{event.type !== "INCOME" &&
+											event.type !== "TRANSFER" &&
 											event.priority !== "OPTIONAL" ? (
 												<DropdownItem key="priority-optional">
 													🟢 Marcar como Opcional
@@ -916,7 +939,7 @@ export function EventsList() {
 											? {
 													...prev,
 													type: value,
-											categoryId: "",
+													categoryId: "",
 												}
 											: null,
 									)
@@ -959,16 +982,20 @@ export function EventsList() {
 								>
 									{Array.from(
 										new Map(
-											categories.filter((category) =>
-												editData.type === "INCOME"
-													? category.categoryGroup.type === "INCOME"
-													: editData.type === "INVESTMENT"
-														? category.categoryGroup.type === "INVESTMENT"
-														: ["ESSENTIAL", "LIFESTYLE"].includes(category.categoryGroup.type),
-											).map((category) => [
-												category.categoryGroup.id,
-												category.categoryGroup,
-											]),
+											categories
+												.filter((category) =>
+													editData.type === "INCOME"
+														? category.categoryGroup.type === "INCOME"
+														: editData.type === "INVESTMENT"
+															? category.categoryGroup.type === "INVESTMENT"
+															: ["ESSENTIAL", "LIFESTYLE"].includes(
+																	category.categoryGroup.type,
+																),
+												)
+												.map((category) => [
+													category.categoryGroup.id,
+													category.categoryGroup,
+												]),
 										).values(),
 									).map((group) => (
 										<SelectSection key={group.id} title={group.name}>
@@ -984,26 +1011,28 @@ export function EventsList() {
 										</SelectSection>
 									))}
 								</Select>
-								{editData.type === "EXPENSE" && <Select
-									label="Tipo de Custo"
-									size="sm"
-									selectedKeys={editData?.costType ? [editData.costType] : []}
-									onSelectionChange={(keys) => {
-										const value = Array.from(keys)[0] as
-											"RECURRENT" | "EXCEPTIONAL"
-										setEditData((prev) =>
-											prev ? { ...prev, costType: value } : null,
-										)
-									}}
-									classNames={{ label: "text-sm" }}
-								>
-									<SelectItem key="RECURRENT" textValue="Recorrente">
-										Recorrente (aluguel, contas)
-									</SelectItem>
-									<SelectItem key="EXCEPTIONAL" textValue="Excepcional">
-										Excepcional (viagens, emergências)
-									</SelectItem>
-								</Select>}
+								{editData.type === "EXPENSE" && (
+									<Select
+										label="Tipo de Custo"
+										size="sm"
+										selectedKeys={editData?.costType ? [editData.costType] : []}
+										onSelectionChange={(keys) => {
+											const value = Array.from(keys)[0] as
+												"RECURRENT" | "EXCEPTIONAL"
+											setEditData((prev) =>
+												prev ? { ...prev, costType: value } : null,
+											)
+										}}
+										classNames={{ label: "text-sm" }}
+									>
+										<SelectItem key="RECURRENT" textValue="Recorrente">
+											Recorrente (aluguel, contas)
+										</SelectItem>
+										<SelectItem key="EXCEPTIONAL" textValue="Excepcional">
+											Excepcional (viagens, emergências)
+										</SelectItem>
+									</Select>
+								)}
 							</>
 						)}
 

@@ -78,11 +78,13 @@ export async function updateEvent(
 				where: { id: input.categoryId, userId: user.id },
 				select: { id: true, categoryGroup: { select: { type: true } } },
 			})
-			const isCompatible = category && (
-				(eventType === "INCOME" && category.categoryGroup.type === "INCOME") ||
-				(eventType === "INVESTMENT" && category.categoryGroup.type === "INVESTMENT") ||
-				(eventType === "EXPENSE" && ["ESSENTIAL", "LIFESTYLE"].includes(category.categoryGroup.type))
-			)
+			const isCompatible =
+				category &&
+				((eventType === "INCOME" && category.categoryGroup.type === "INCOME") ||
+					(eventType === "INVESTMENT" &&
+						category.categoryGroup.type === "INVESTMENT") ||
+					(eventType === "EXPENSE" &&
+						["ESSENTIAL", "LIFESTYLE"].includes(category.categoryGroup.type)))
 			if (!isCompatible) return { success: false, error: "Categoria inválida" }
 		}
 

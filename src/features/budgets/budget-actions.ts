@@ -4,10 +4,15 @@ import { Prisma } from "@prisma/client"
 import prisma from "@/lib/db"
 import { getUserBySession } from "@/lib/auth"
 import { dollarsToCents } from "@/types/finance"
-import { buildBudgetReport, type BudgetReport } from "@/lib/engines/budget-report"
+import {
+	buildBudgetReport,
+	type BudgetReport,
+} from "@/lib/engines/budget-report"
 
 export type BudgetWithItems = Prisma.BudgetGetPayload<{
-	include: { items: { include: { category: { include: { categoryGroup: true } } } } }
+	include: {
+		items: { include: { category: { include: { categoryGroup: true } } } }
+	}
 }>
 
 export type BudgetResult =
@@ -15,7 +20,14 @@ export type BudgetResult =
 	| { success: false; error: string }
 
 function isValidPeriod(year: number, month: number) {
-	return Number.isInteger(year) && year >= 2000 && year <= 2100 && Number.isInteger(month) && month >= 1 && month <= 12
+	return (
+		Number.isInteger(year) &&
+		year >= 2000 &&
+		year <= 2100 &&
+		Number.isInteger(month) &&
+		month >= 1 &&
+		month <= 12
+	)
 }
 
 const budgetInclude = {
@@ -25,11 +37,15 @@ const budgetInclude = {
 	},
 } as const
 
-export async function getBudget(year: number, month: number): Promise<BudgetResult> {
+export async function getBudget(
+	year: number,
+	month: number,
+): Promise<BudgetResult> {
 	try {
 		const user = await getUserBySession()
 		if (!user) return { success: false, error: "Não autenticado" }
-		if (!isValidPeriod(year, month)) return { success: false, error: "Período inválido" }
+		if (!isValidPeriod(year, month))
+			return { success: false, error: "Período inválido" }
 		const budget = await prisma.budget.findUnique({
 			where: { userId_year_month: { userId: user.id, year, month } },
 			include: budgetInclude,
@@ -41,16 +57,27 @@ export async function getBudget(year: number, month: number): Promise<BudgetResu
 	}
 }
 
-export async function createBudget(year: number, month: number, copyPrevious: boolean): Promise<BudgetResult> {
+export async function createBudget(
+	year: number,
+	month: number,
+	copyPrevious: boolean,
+): Promise<BudgetResult> {
 	try {
 		const user = await getUserBySession()
 		if (!user) return { success: false, error: "Não autenticado" }
-		if (!isValidPeriod(year, month)) return { success: false, error: "Período inválido" }
+		if (!isValidPeriod(year, month))
+			return { success: false, error: "Período inválido" }
 		const previousYear = month === 1 ? year - 1 : year
 		const previousMonth = month === 1 ? 12 : month - 1
 		const previous = copyPrevious
 			? await prisma.budget.findUnique({
-					where: { userId_year_month: { userId: user.id, year: previousYear, month: previousMonth } },
+					where: {
+						userId_year_month: {
+							userId: user.id,
+							year: previousYear,
+							month: previousMonth,
+						},
+					},
 					select: { items: { select: { categoryId: true, amount: true } } },
 				})
 			: null
@@ -65,7 +92,10 @@ export async function createBudget(year: number, month: number, copyPrevious: bo
 		})
 		return { success: true, budget }
 	} catch (error) {
-		if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+		if (
+			error instanceof Prisma.PrismaClientKnownRequestError &&
+			error.code === "P2002"
+		) {
 			return { success: false, error: "Já existe um orçamento para este mês" }
 		}
 		console.error("Failed to create budget:", error)
@@ -73,17 +103,35 @@ export async function createBudget(year: number, month: number, copyPrevious: bo
 	}
 }
 
-export async function saveBudgetItem(budgetId: string, categoryId: string, amount: number) {
+export async function saveBudgetItem(
+	budgetId: string,
+	categoryId: string,
+	amount: number,
+) {
 	try {
 		const user = await getUserBySession()
 		if (!user) return { success: false, error: "Não autenticado" } as const
 		const amountCents = dollarsToCents(amount)
-		if (!Number.isFinite(amountCents) || amountCents <= 0) return { success: false, error: "Informe um valor maior que zero" } as const
+		if (!Number.isFinite(amountCents) || amountCents <= 0)
+			return {
+				success: false,
+				error: "Informe um valor maior que zero",
+			} as const
 		const [budget, category] = await Promise.all([
-			prisma.budget.findFirst({ where: { id: budgetId, userId: user.id }, select: { id: true } }),
-			prisma.category.findFirst({ where: { id: categoryId, userId: user.id }, select: { id: true } }),
+			prisma.budget.findFirst({
+				where: { id: budgetId, userId: user.id },
+				select: { id: true },
+			}),
+			prisma.category.findFirst({
+				where: { id: categoryId, userId: user.id },
+				select: { id: true },
+			}),
 		])
-		if (!budget || !category) return { success: false, error: "Orçamento ou categoria inválidos" } as const
+		if (!budget || !category)
+			return {
+				success: false,
+				error: "Orçamento ou categoria inválidos",
+			} as const
 		await prisma.budgetItem.upsert({
 			where: { budgetId_categoryId: { budgetId, categoryId } },
 			create: { budgetId, categoryId, amount: amountCents },
@@ -110,9 +158,14 @@ export async function saveBudgetItems(
 		if (!budget) return { success: false, error: "Orçamento inválido" } as const
 
 		const normalizedItems = items
-			.map((item) => ({ categoryId: item.categoryId, amount: dollarsToCents(item.amount) }))
+			.map((item) => ({
+				categoryId: item.categoryId,
+				amount: dollarsToCents(item.amount),
+			}))
 			.filter((item) => item.categoryId && Number.isFinite(item.amount))
-		const categoryIds = [...new Set(normalizedItems.map((item) => item.categoryId))]
+		const categoryIds = [
+			...new Set(normalizedItems.map((item) => item.categoryId)),
+		]
 		const categories = await prisma.category.findMany({
 			where: { userId: user.id, id: { in: categoryIds } },
 			select: { id: true },
@@ -129,8 +182,17 @@ export async function saveBudgetItems(
 					})
 				} else {
 					await tx.budgetItem.upsert({
-						where: { budgetId_categoryId: { budgetId: budget.id, categoryId: item.categoryId } },
-						create: { budgetId: budget.id, categoryId: item.categoryId, amount: item.amount },
+						where: {
+							budgetId_categoryId: {
+								budgetId: budget.id,
+								categoryId: item.categoryId,
+							},
+						},
+						create: {
+							budgetId: budget.id,
+							categoryId: item.categoryId,
+							amount: item.amount,
+						},
 						update: { amount: item.amount },
 					})
 				}
@@ -139,7 +201,10 @@ export async function saveBudgetItems(
 		return { success: true } as const
 	} catch (error) {
 		console.error("Failed to save budget items:", error)
-		return { success: false, error: "Não foi possível salvar o orçamento" } as const
+		return {
+			success: false,
+			error: "Não foi possível salvar o orçamento",
+		} as const
 	}
 }
 
@@ -147,8 +212,15 @@ export async function deleteBudgetItem(budgetItemId: string) {
 	try {
 		const user = await getUserBySession()
 		if (!user) return { success: false, error: "Não autenticado" } as const
-		const item = await prisma.budgetItem.findFirst({ where: { id: budgetItemId, budget: { userId: user.id } }, select: { id: true } })
-		if (!item) return { success: false, error: "Item de orçamento não encontrado" } as const
+		const item = await prisma.budgetItem.findFirst({
+			where: { id: budgetItemId, budget: { userId: user.id } },
+			select: { id: true },
+		})
+		if (!item)
+			return {
+				success: false,
+				error: "Item de orçamento não encontrado",
+			} as const
 		await prisma.budgetItem.delete({ where: { id: item.id } })
 		return { success: true } as const
 	} catch (error) {
@@ -157,7 +229,13 @@ export async function deleteBudgetItem(budgetItemId: string) {
 	}
 }
 
-export async function getBudgetReport(year: number, month: number): Promise<{ success: true; report: BudgetReport | null } | { success: false; error: string }> {
+export async function getBudgetReport(
+	year: number,
+	month: number,
+): Promise<
+	| { success: true; report: BudgetReport | null }
+	| { success: false; error: string }
+> {
 	const budgetResult = await getBudget(year, month)
 	if (!budgetResult.success) return budgetResult
 	if (!budgetResult.budget) return { success: true, report: null }
@@ -167,12 +245,22 @@ export async function getBudgetReport(year: number, month: number): Promise<{ su
 		const startDate = new Date(Date.UTC(year, month - 1, 1))
 		const endDate = new Date(Date.UTC(year, month, 1))
 		const events = await prisma.event.findMany({
-			where: { userId: user.id, status: "CONFIRMED", date: { gte: startDate, lt: endDate }, categoryId: { not: null } },
+			where: {
+				userId: user.id,
+				status: "CONFIRMED",
+				date: { gte: startDate, lt: endDate },
+				categoryId: { not: null },
+			},
 			select: {
 				categoryId: true,
 				amount: true,
 				status: true,
-				category: { select: { name: true, categoryGroup: { select: { name: true, type: true } } } },
+				category: {
+					select: {
+						name: true,
+						categoryGroup: { select: { name: true, type: true } },
+					},
+				},
 			},
 		})
 		return {

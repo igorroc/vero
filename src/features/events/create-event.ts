@@ -63,11 +63,13 @@ export async function createEvent(
 				})
 			: null
 
-		const isCompatibleCategory = category && (
-			(input.type === "INCOME" && category.categoryGroup.type === "INCOME") ||
-			(input.type === "INVESTMENT" && category.categoryGroup.type === "INVESTMENT") ||
-			(input.type === "EXPENSE" && ["ESSENTIAL", "LIFESTYLE"].includes(category.categoryGroup.type))
-		)
+		const isCompatibleCategory =
+			category &&
+			((input.type === "INCOME" && category.categoryGroup.type === "INCOME") ||
+				(input.type === "INVESTMENT" &&
+					category.categoryGroup.type === "INVESTMENT") ||
+				(input.type === "EXPENSE" &&
+					["ESSENTIAL", "LIFESTYLE"].includes(category.categoryGroup.type)))
 		if (!isCompatibleCategory) {
 			return { success: false, error: "Categoria inválida" }
 		}

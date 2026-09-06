@@ -32,18 +32,20 @@ describe("buildCashflowProjection", () => {
 				{ id: "from", name: "Origem", initialBalance: 100000 },
 				{ id: "to", name: "Destino", initialBalance: 500000 },
 			],
-			events: [{
-				id: "transfer-1",
-				description: "Transferência",
-				amount: -25000,
-				type: "TRANSFER",
-				costType: null,
-				status: "PLANNED",
-				priority: "IMPORTANT",
-				date: utcDate(2024, 1, 2),
-				accountId: "from",
-				destinationAccountId: "to",
-			}],
+			events: [
+				{
+					id: "transfer-1",
+					description: "Transferência",
+					amount: -25000,
+					type: "TRANSFER",
+					costType: null,
+					status: "PLANNED",
+					priority: "IMPORTANT",
+					date: utcDate(2024, 1, 2),
+					accountId: "from",
+					destinationAccountId: "to",
+				},
+			],
 			startDate: utcDate(2024, 1, 1),
 			endDate: utcDate(2024, 1, 3),
 		}
@@ -386,23 +388,27 @@ describe("getAccountBalances", () => {
 			{ id: "from", name: "Origem", initialBalance: 100000 },
 			{ id: "to", name: "Destino", initialBalance: 500000 },
 		]
-		const events = [{
-			id: "transfer-1",
-			description: "Transferência",
-			amount: -25000,
-			type: "TRANSFER" as const,
-			costType: null,
-			status: "CONFIRMED" as const,
-			priority: "IMPORTANT" as const,
-			date: utcDate(2024, 1, 5),
-			accountId: "from",
-			destinationAccountId: "to",
-		}]
+		const events = [
+			{
+				id: "transfer-1",
+				description: "Transferência",
+				amount: -25000,
+				type: "TRANSFER" as const,
+				costType: null,
+				status: "CONFIRMED" as const,
+				priority: "IMPORTANT" as const,
+				date: utcDate(2024, 1, 5),
+				accountId: "from",
+				destinationAccountId: "to",
+			},
+		]
 
 		const balances = getAccountBalances(accounts, events, utcDate(2024, 1, 7))
 		expect(balances.get("from")).toBe(75000)
 		expect(balances.get("to")).toBe(525000)
-		expect(getCurrentBalance(accounts, events, utcDate(2024, 1, 7))).toBe(600000)
+		expect(getCurrentBalance(accounts, events, utcDate(2024, 1, 7))).toBe(
+			600000,
+		)
 	})
 
 	it("should calculate balances at a specific date", () => {

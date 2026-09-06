@@ -31,25 +31,41 @@ export async function createTransfer(
 			return { success: false, error: "Informe um valor maior que zero" }
 		}
 		const description = input.description.trim()
-		if (!description) return { success: false, error: "A descrição é obrigatória" }
+		if (!description)
+			return { success: false, error: "A descrição é obrigatória" }
 
 		const accounts = await prisma.account.findMany({
-			where: { userId: user.id, id: { in: [input.fromAccountId, input.toAccountId] } },
+			where: {
+				userId: user.id,
+				id: { in: [input.fromAccountId, input.toAccountId] },
+			},
 			select: {
 				id: true,
 				name: true,
 				initialBalance: true,
 				events: { where: { status: "CONFIRMED" }, select: { amount: true } },
-				incomingTransfers: { where: { status: "CONFIRMED" }, select: { amount: true } },
+				incomingTransfers: {
+					where: { status: "CONFIRMED" },
+					select: { amount: true },
+				},
 			},
 		})
-		const fromAccount = accounts.find((account) => account.id === input.fromAccountId)
-		const toAccount = accounts.find((account) => account.id === input.toAccountId)
-		if (!fromAccount || !toAccount) return { success: false, error: "Conta inválida" }
+		const fromAccount = accounts.find(
+			(account) => account.id === input.fromAccountId,
+		)
+		const toAccount = accounts.find(
+			(account) => account.id === input.toAccountId,
+		)
+		if (!fromAccount || !toAccount)
+			return { success: false, error: "Conta inválida" }
 
-		const sourceBalance = fromAccount.initialBalance +
+		const sourceBalance =
+			fromAccount.initialBalance +
 			fromAccount.events.reduce((sum, event) => sum + event.amount, 0) -
-			fromAccount.incomingTransfers.reduce((sum, event) => sum + event.amount, 0)
+			fromAccount.incomingTransfers.reduce(
+				(sum, event) => sum + event.amount,
+				0,
+			)
 		const event = await prisma.event.create({
 			data: {
 				userId: user.id,
@@ -66,7 +82,10 @@ export async function createTransfer(
 		return {
 			success: true,
 			event,
-			warning: sourceBalance < amount ? "A transferência deixou a conta de origem com saldo negativo." : undefined,
+			warning:
+				sourceBalance < amount
+					? "A transferência deixou a conta de origem com saldo negativo."
+					: undefined,
 		}
 	} catch (error) {
 		console.error("Failed to create transfer:", error)

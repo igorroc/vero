@@ -7,9 +7,33 @@ describe("buildAccountStatement", () => {
 			accountId: "checking",
 			initialBalance: 100000,
 			events: [
-				{ id: "income", description: "Salário", amount: 200000, type: "INCOME", date: new Date("2026-09-01T12:00:00Z"), accountId: "checking", destinationAccountId: null },
-				{ id: "transfer", description: "Reserva", amount: -50000, type: "TRANSFER", date: new Date("2026-09-02T12:00:00Z"), accountId: "savings", destinationAccountId: "checking" },
-				{ id: "expense", description: "Aluguel", amount: -120000, type: "EXPENSE", date: new Date("2026-09-02T13:00:00Z"), accountId: "checking", destinationAccountId: null },
+				{
+					id: "income",
+					description: "Salário",
+					amount: 200000,
+					type: "INCOME",
+					date: new Date("2026-09-01T12:00:00Z"),
+					accountId: "checking",
+					destinationAccountId: null,
+				},
+				{
+					id: "transfer",
+					description: "Reserva",
+					amount: -50000,
+					type: "TRANSFER",
+					date: new Date("2026-09-02T12:00:00Z"),
+					accountId: "savings",
+					destinationAccountId: "checking",
+				},
+				{
+					id: "expense",
+					description: "Aluguel",
+					amount: -120000,
+					type: "EXPENSE",
+					date: new Date("2026-09-02T13:00:00Z"),
+					accountId: "checking",
+					destinationAccountId: null,
+				},
 			],
 		})
 

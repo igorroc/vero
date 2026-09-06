@@ -1,10 +1,7 @@
 import type { Cents } from "@/types/finance"
 
 export type BudgetGroupType =
-	| "INCOME"
-	| "ESSENTIAL"
-	| "LIFESTYLE"
-	| "INVESTMENT"
+	"INCOME" | "ESSENTIAL" | "LIFESTYLE" | "INVESTMENT"
 
 export interface BudgetReportInput {
 	items: Array<{
@@ -45,12 +42,18 @@ export interface BudgetReport {
 	groups: BudgetReportGroup[]
 	income: { budgeted: Cents; actual: Cents }
 	outgoing: { budgeted: Cents; actual: Cents }
-	distribution: Record<Exclude<BudgetGroupType, "INCOME">, { budgeted: number; actual: number }>
+	distribution: Record<
+		Exclude<BudgetGroupType, "INCOME">,
+		{ budgeted: number; actual: number }
+	>
 }
 
 export function buildBudgetReport(input: BudgetReportInput): BudgetReport {
 	const actualByCategory = new Map<string, Cents>()
-	const eventCategories = new Map<string, { categoryName: string; groupName: string; groupType: BudgetGroupType }>()
+	const eventCategories = new Map<
+		string,
+		{ categoryName: string; groupName: string; groupType: BudgetGroupType }
+	>()
 	for (const event of input.events) {
 		if (event.status !== "CONFIRMED" || !event.categoryId) continue
 		actualByCategory.set(
@@ -58,7 +61,11 @@ export function buildBudgetReport(input: BudgetReportInput): BudgetReport {
 			(actualByCategory.get(event.categoryId) ?? 0) + Math.abs(event.amount),
 		)
 		if (event.categoryName && event.groupName && event.groupType) {
-			eventCategories.set(event.categoryId, { categoryName: event.categoryName, groupName: event.groupName, groupType: event.groupType })
+			eventCategories.set(event.categoryId, {
+				categoryName: event.categoryName,
+				groupName: event.groupName,
+				groupType: event.groupType,
+			})
 		}
 	}
 
@@ -86,14 +93,29 @@ export function buildBudgetReport(input: BudgetReportInput): BudgetReport {
 		group.actual += actual
 		groups.set(key, group)
 	}
-	const budgetedCategoryIds = new Set(input.items.map((item) => item.categoryId))
+	const budgetedCategoryIds = new Set(
+		input.items.map((item) => item.categoryId),
+	)
 	for (const [categoryId, actual] of actualByCategory) {
 		if (budgetedCategoryIds.has(categoryId)) continue
 		const category = eventCategories.get(categoryId)
 		if (!category) continue
 		const key = `${category.groupType}:${category.groupName}`
-		const group = groups.get(key) ?? { name: category.groupName, type: category.groupType, items: [], budgeted: 0, actual: 0 }
-		group.items.push({ categoryId, categoryName: category.categoryName, budgeted: 0, actual, difference: -actual, executionPercent: 0 })
+		const group = groups.get(key) ?? {
+			name: category.groupName,
+			type: category.groupType,
+			items: [],
+			budgeted: 0,
+			actual: 0,
+		}
+		group.items.push({
+			categoryId,
+			categoryName: category.categoryName,
+			budgeted: 0,
+			actual,
+			difference: -actual,
+			executionPercent: 0,
+		})
 		group.actual += actual
 		groups.set(key, group)
 	}
@@ -117,7 +139,9 @@ export function buildBudgetReport(input: BudgetReportInput): BudgetReport {
 			}),
 			{ budgeted: 0, actual: 0 },
 		)
-	const distribution = (["ESSENTIAL", "LIFESTYLE", "INVESTMENT"] as const).reduce(
+	const distribution = (
+		["ESSENTIAL", "LIFESTYLE", "INVESTMENT"] as const
+	).reduce(
 		(result, type) => {
 			const total = reportGroups
 				.filter((group) => group.type === type)
@@ -129,8 +153,12 @@ export function buildBudgetReport(input: BudgetReportInput): BudgetReport {
 					{ budgeted: 0, actual: 0 },
 				)
 			result[type] = {
-				budgeted: outgoing.budgeted > 0 ? (total.budgeted / outgoing.budgeted) * 100 : 0,
-				actual: outgoing.actual > 0 ? (total.actual / outgoing.actual) * 100 : 0,
+				budgeted:
+					outgoing.budgeted > 0
+						? (total.budgeted / outgoing.budgeted) * 100
+						: 0,
+				actual:
+					outgoing.actual > 0 ? (total.actual / outgoing.actual) * 100 : 0,
 			}
 			return result
 		},

@@ -74,7 +74,8 @@ export async function getAccountBalances(
 					(sum, event) => sum - event.amount,
 					0,
 				)
-				const currentBalance = account.initialBalance + confirmedTotal + incomingTransfersTotal
+				const currentBalance =
+					account.initialBalance + confirmedTotal + incomingTransfersTotal
 
 				return {
 					id: account.id,
