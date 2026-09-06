@@ -35,7 +35,12 @@ import {
 	type AccountWithBalance,
 } from "@/features/accounts"
 import { getCategories, type CategoryWithGroup } from "@/features/categories"
-import { formatCurrency, centsToDollars, dateFromInput, formatDateInput } from "@/types/finance"
+import {
+	formatCurrency,
+	centsToDollars,
+	dateFromInput,
+	formatDateInput,
+} from "@/types/finance"
 import type { Event } from "@prisma/client"
 import { toast } from "react-toastify"
 import { EventForm } from "./event-form"
@@ -143,18 +148,16 @@ export function EventsList() {
 
 		if (result.success) {
 			setEvents(
-				[...result.events].sort(
-					(a, b) => {
-						const aDay = new Date(a.date).setHours(0, 0, 0, 0)
-						const bDay = new Date(b.date).setHours(0, 0, 0, 0)
-						if (aDay !== bDay) return bDay - aDay
+				[...result.events].sort((a, b) => {
+					const aDay = new Date(a.date).setHours(0, 0, 0, 0)
+					const bDay = new Date(b.date).setHours(0, 0, 0, 0)
+					if (aDay !== bDay) return bDay - aDay
 
-						const aIsIncome = a.amount > 0
-						const bIsIncome = b.amount > 0
-						if (aIsIncome !== bIsIncome) return aIsIncome ? 1 : -1
-						return new Date(b.date).getTime() - new Date(a.date).getTime()
-					},
-				),
+					const aIsIncome = a.amount > 0
+					const bIsIncome = b.amount > 0
+					if (aIsIncome !== bIsIncome) return aIsIncome ? 1 : -1
+					return new Date(b.date).getTime() - new Date(a.date).getTime()
+				}),
 			)
 		} else {
 			setError(result.error)
@@ -257,6 +260,14 @@ export function EventsList() {
 	const getEventIcon = (description: string, type: string) => {
 		const desc = description.toLowerCase()
 		if (
+			desc.includes("transporte") ||
+			desc.includes("uber") ||
+			desc.includes("99") ||
+			desc.includes("carro") ||
+			desc.includes("gasolina")
+		)
+			return Car
+		if (
 			desc.includes("aluguel") ||
 			desc.includes("casa") ||
 			desc.includes("moradia")
@@ -274,13 +285,6 @@ export function EventsList() {
 			desc.includes("alimenta")
 		)
 			return Utensils
-		if (
-			desc.includes("transporte") ||
-			desc.includes("uber") ||
-			desc.includes("carro") ||
-			desc.includes("gasolina")
-		)
-			return Car
 		if (
 			desc.includes("saúde") ||
 			desc.includes("médico") ||
