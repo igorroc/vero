@@ -13,6 +13,7 @@
 		"migrate:reset": "npx prisma migrate reset --force",
 		"migrate:create-only": "npx prisma migrate dev --create-only",
 		"prisma:studio": "npx prisma studio",
+		"seed:category-groups": "node prisma/seed-category-groups.js",
 		"ts-check": "tsc --noEmit",
 		"test": "vitest run",
 		"test:watch": "vitest"
