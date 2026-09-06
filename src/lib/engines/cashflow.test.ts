@@ -26,6 +26,36 @@ describe("buildCashflowProjection", () => {
 		expect(result.days).toHaveLength(5)
 	})
 
+	it("should exclude transfers from consolidated cashflow totals", () => {
+		const input: CashflowInput = {
+			accounts: [
+				{ id: "from", name: "Origem", initialBalance: 100000 },
+				{ id: "to", name: "Destino", initialBalance: 500000 },
+			],
+			events: [{
+				id: "transfer-1",
+				description: "Transferência",
+				amount: -25000,
+				type: "TRANSFER",
+				costType: null,
+				status: "PLANNED",
+				priority: "IMPORTANT",
+				date: utcDate(2024, 1, 2),
+				accountId: "from",
+				destinationAccountId: "to",
+			}],
+			startDate: utcDate(2024, 1, 1),
+			endDate: utcDate(2024, 1, 3),
+		}
+
+		const result = buildCashflowProjection(input)
+		expect(result.days[1].netChange).toBe(0)
+		expect(result.days[1].endingBalance).toBe(600000)
+		expect(result.totalIncome).toBe(0)
+		expect(result.totalExpenses).toBe(0)
+		expect(result.totalInvestments).toBe(0)
+	})
+
 	it("should maintain starting balance with no events", () => {
 		const result = buildCashflowProjection(baseInput)
 
@@ -351,6 +381,30 @@ describe("buildCashflowProjection", () => {
 })
 
 describe("getAccountBalances", () => {
+	it("should move a transfer between accounts without changing the total", () => {
+		const accounts = [
+			{ id: "from", name: "Origem", initialBalance: 100000 },
+			{ id: "to", name: "Destino", initialBalance: 500000 },
+		]
+		const events = [{
+			id: "transfer-1",
+			description: "Transferência",
+			amount: -25000,
+			type: "TRANSFER" as const,
+			costType: null,
+			status: "CONFIRMED" as const,
+			priority: "IMPORTANT" as const,
+			date: utcDate(2024, 1, 5),
+			accountId: "from",
+			destinationAccountId: "to",
+		}]
+
+		const balances = getAccountBalances(accounts, events, utcDate(2024, 1, 7))
+		expect(balances.get("from")).toBe(75000)
+		expect(balances.get("to")).toBe(525000)
+		expect(getCurrentBalance(accounts, events, utcDate(2024, 1, 7))).toBe(600000)
+	})
+
 	it("should calculate balances at a specific date", () => {
 		const accounts = [
 			{ id: "acc-1", name: "Checking", initialBalance: 100000 },

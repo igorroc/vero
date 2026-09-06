@@ -77,6 +77,10 @@ export function buildCashflowProjection(
 		if (account) {
 			account.balance += event.amount
 		}
+		if (event.type === "TRANSFER" && event.destinationAccountId) {
+			const destination = accountMap.get(event.destinationAccountId)
+			if (destination) destination.balance -= event.amount
+		}
 	}
 
 	// Build day-by-day projection
@@ -105,13 +109,13 @@ export function buildCashflowProjection(
 			const account = accountMap.get(event.accountId)
 			if (!account) continue
 
-			// Count the change (both PLANNED and CONFIRMED affect projection)
-			netChange += event.amount
+			// Transfers move money between accounts and never change the consolidated balance.
+			if (event.type !== "TRANSFER") netChange += event.amount
 
 			// Track totals by type
 			if (event.amount > 0 && event.type === "INCOME") {
 				totalIncome += event.amount
-			} else if (event.amount < 0) {
+			} else if (event.type !== "TRANSFER" && event.amount < 0) {
 				if (event.type === "INVESTMENT") {
 					totalInvestments += Math.abs(event.amount)
 				} else {
@@ -129,6 +133,10 @@ export function buildCashflowProjection(
 				priority: event.priority,
 				accountId: event.accountId,
 				accountName: account.name,
+				destinationAccountId: event.destinationAccountId,
+				destinationAccountName: event.destinationAccountId
+					? (accountMap.get(event.destinationAccountId)?.name ?? null)
+					: null,
 			})
 		}
 
@@ -229,6 +237,10 @@ export function getAccountBalances(
 		) {
 			const current = balances.get(event.accountId) || 0
 			balances.set(event.accountId, current + event.amount)
+			if (event.type === "TRANSFER" && event.destinationAccountId) {
+				const destination = balances.get(event.destinationAccountId) || 0
+				balances.set(event.destinationAccountId, destination - event.amount)
+			}
 		}
 	}
 
@@ -265,6 +277,7 @@ export function findCriticalEvents(
 			// Find the event(s) that caused it
 			let runningBalance = day.startingBalance
 			for (const event of day.events) {
+				if (event.type === "TRANSFER") continue
 				runningBalance += event.amount
 				if (runningBalance < 0) {
 					criticalEvents.push(event)
