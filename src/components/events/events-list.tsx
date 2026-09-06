@@ -39,6 +39,7 @@ import { formatCurrency, centsToDollars } from "@/types/finance"
 import type { Event } from "@prisma/client"
 import { toast } from "react-toastify"
 import { EventForm } from "./event-form"
+import { useEventsFilterStore } from "@/stores/events-filter-store"
 import {
 	Plus,
 	MoreVertical,
@@ -57,15 +58,14 @@ import {
 	ArrowDownRight,
 } from "lucide-react"
 
-type TimeFilter = "all" | "past" | "upcoming" | "today"
-
 export function EventsList() {
 	const [events, setEvents] = useState<Event[]>([])
 	const [accounts, setAccounts] = useState<AccountWithBalance[]>([])
 	const [categories, setCategories] = useState<CategoryWithGroup[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
-	const [timeFilter, setTimeFilter] = useState<TimeFilter>("upcoming")
+	const timeFilter = useEventsFilterStore((state) => state.timeFilter)
+	const setTimeFilter = useEventsFilterStore((state) => state.setTimeFilter)
 	const { isOpen, onOpen, onClose } = useDisclosure()
 	const {
 		isOpen: isEditOpen,
@@ -552,7 +552,7 @@ export function EventsList() {
 							selectionMode="single"
 							selectedKeys={[timeFilter]}
 							onSelectionChange={(keys) => {
-								const value = Array.from(keys)[0] as TimeFilter
+								const value = Array.from(keys)[0] as typeof timeFilter
 								setTimeFilter(value)
 							}}
 						>
@@ -578,7 +578,7 @@ export function EventsList() {
 							radius="full"
 							color={timeFilter === filter.key ? "primary" : "default"}
 							variant={timeFilter === filter.key ? "solid" : "flat"}
-							onPress={() => setTimeFilter(filter.key as TimeFilter)}
+							onPress={() => setTimeFilter(filter.key as typeof timeFilter)}
 						>
 							{filter.label}
 						</Button>
