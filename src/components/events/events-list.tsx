@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Fragment, useEffect, useState } from "react"
 import {
 	Button,
 	Chip,
@@ -26,7 +26,6 @@ import {
 	confirmEvent,
 	skipEvent,
 	deleteEvent,
-	updateEventPriority,
 	updateEvent,
 	updateTransfer,
 	type UpdateEventInput,
@@ -61,7 +60,7 @@ import {
 	CreditCard,
 	CircleDollarSign,
 	ChevronDown,
-	ArrowDownRight,
+	ArrowLeftRight,
 } from "lucide-react"
 
 export function EventsList() {
@@ -98,7 +97,6 @@ export function EventsList() {
 		amount: string
 		type: "INCOME" | "EXPENSE" | "INVESTMENT"
 		costType: "RECURRENT" | "EXCEPTIONAL"
-		priority: "REQUIRED" | "IMPORTANT" | "OPTIONAL"
 		date: string
 		isGenerated: boolean
 		templateId?: string
@@ -212,18 +210,18 @@ export function EventsList() {
 
 	const formatDate = (date: Date) => {
 		const d = new Date(date)
-		return d.toLocaleDateString("pt-BR", {
-			weekday: "short",
-			month: "short",
-			day: "numeric",
-			year: "numeric",
-		})
-	}
-
-	const isToday = (date: Date) => {
 		const today = new Date()
-		const d = new Date(date)
-		return d.toDateString() === today.toDateString()
+		const yesterday = new Date(today)
+		yesterday.setDate(yesterday.getDate() - 1)
+
+		if (d.toDateString() === today.toDateString()) return "Hoje"
+		if (d.toDateString() === yesterday.toDateString()) return "Ontem"
+
+		return [
+			String(d.getDate()).padStart(2, "0"),
+			String(d.getMonth() + 1).padStart(2, "0"),
+			d.getFullYear(),
+		].join("/")
 	}
 
 	const isPast = (date: Date) => {
@@ -262,14 +260,10 @@ export function EventsList() {
 		SKIPPED: "Ignorado",
 	}
 
-	const priorityLabels: Record<string, string> = {
-		REQUIRED: "🔴 Obrigatório",
-		IMPORTANT: "🟡 Importante",
-		OPTIONAL: "🟢 Opcional",
-	}
-
 	// Icon and color mapping for event types
 	const getEventIcon = (description: string, type: string) => {
+		if (type === "TRANSFER") return ArrowLeftRight
+
 		const desc = description.toLowerCase()
 		if (
 			desc.includes("transporte") ||
@@ -311,13 +305,11 @@ export function EventsList() {
 		)
 			return Zap
 		if (type === "INVESTMENT") return TrendingUp
-		if (type === "TRANSFER") return ArrowDownRight
 		if (type === "INCOME") return CircleDollarSign
 		return CreditCard
 	}
 
-	const getEventColors = (type: string, description: string) => {
-		const desc = description.toLowerCase()
+	const getEventColors = (type: string) => {
 		if (type === "INCOME")
 			return {
 				bg: "bg-emerald-100 dark:bg-emerald-900/30",
@@ -332,43 +324,6 @@ export function EventsList() {
 			return {
 				bg: "bg-violet-100 dark:bg-violet-900/30",
 				icon: "text-violet-600 dark:text-violet-400",
-			}
-		if (desc.includes("aluguel") || desc.includes("casa"))
-			return {
-				bg: "bg-purple-100 dark:bg-purple-900/30",
-				icon: "text-purple-600 dark:text-purple-400",
-			}
-		if (
-			desc.includes("mercado") ||
-			desc.includes("compra") ||
-			desc.includes("shopping")
-		)
-			return {
-				bg: "bg-cyan-100 dark:bg-cyan-900/30",
-				icon: "text-cyan-600 dark:text-cyan-400",
-			}
-		if (desc.includes("restaurante") || desc.includes("comida"))
-			return {
-				bg: "bg-indigo-100 dark:bg-indigo-900/30",
-				icon: "text-indigo-600 dark:text-indigo-400",
-			}
-		if (
-			desc.includes("transporte") ||
-			desc.includes("uber") ||
-			desc.includes("carro")
-		)
-			return {
-				bg: "bg-amber-100 dark:bg-amber-900/30",
-				icon: "text-amber-600 dark:text-amber-400",
-			}
-		if (
-			desc.includes("energia") ||
-			desc.includes("luz") ||
-			desc.includes("água")
-		)
-			return {
-				bg: "bg-orange-100 dark:bg-orange-900/30",
-				icon: "text-orange-600 dark:text-orange-400",
 			}
 		return {
 			bg: "bg-rose-100 dark:bg-rose-900/30",
@@ -398,30 +353,6 @@ export function EventsList() {
 	}
 
 	const budgetSummary = calculateBudgetSummary()
-
-	const handlePriorityChange = async (
-		eventId: string,
-		priority: "REQUIRED" | "IMPORTANT" | "OPTIONAL",
-	) => {
-		// Check if this is a generated event (from recurrence template)
-		// Generated events have IDs like "generated-{templateId}-{index}"
-		let targetId = eventId
-		if (eventId.startsWith("generated-")) {
-			// Extract template ID from the generated event ID
-			const parts = eventId.split("-")
-			// Format: generated-{templateId}-{index}
-			// Template ID is everything between "generated-" and the last "-{index}"
-			targetId = parts.slice(1, -1).join("-")
-		}
-
-		const result = await updateEventPriority(targetId, priority)
-		if (result.success) {
-			toast.success("Prioridade atualizada")
-			loadData()
-		} else {
-			toast.error(result.error)
-		}
-	}
 
 	const handleEdit = (event: Event) => {
 		if (event.type === "TRANSFER") {
@@ -454,7 +385,6 @@ export function EventsList() {
 			amount: centsToDollars(Math.abs(event.amount)).toString(),
 			type: event.type as "INCOME" | "EXPENSE" | "INVESTMENT",
 			costType: (event.costType as "RECURRENT" | "EXCEPTIONAL") || "RECURRENT",
-			priority: event.priority as "REQUIRED" | "IMPORTANT" | "OPTIONAL",
 			date: formatDateInput(new Date(event.date)),
 			isGenerated,
 			templateId,
@@ -484,7 +414,6 @@ export function EventsList() {
 			amount: parseFloat(editData.amount),
 			type: editData.type,
 			costType: editData.type === "EXPENSE" ? editData.costType : undefined,
-			priority: editData.priority,
 			date: dateFromInput(editData.date),
 		}
 
@@ -689,208 +618,173 @@ export function EventsList() {
 
 			{!error && events.length > 0 && (
 				<div className="space-y-3">
-					{events.map((event) => {
+					{events.map((event, index) => {
 						const EventIcon = getEventIcon(event.description, event.type)
-						const colors = getEventColors(event.type, event.description)
+						const colors = getEventColors(event.type)
 						const category = categories.find(
 							(item) => item.id === event.categoryId,
 						)
+						const sourceAccount = accounts.find(
+							(account) => account.id === event.accountId,
+						)
+						const destinationAccount = accounts.find(
+							(account) => account.id === event.destinationAccountId,
+						)
 						const isOverdue = isPast(event.date) && event.status === "PLANNED"
+						const isNewDate =
+							index === 0 ||
+							formatDateInput(new Date(event.date)) !==
+								formatDateInput(new Date(events[index - 1].date))
 
 						return (
-							<div
-								key={event.id}
-								className={`bg-white dark:bg-slate-900 rounded-2xl sm:rounded-[20px] p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow border border-slate-100 dark:border-slate-800 ${
-									isOverdue ? "ring-2 ring-amber-400/50" : ""
-								}`}
-							>
-								<div className="flex items-center gap-3 sm:gap-4">
-									{/* Icon */}
-									<div
-										className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl sm:rounded-[18px] ${colors.bg} flex items-center justify-center flex-shrink-0`}
-									>
-										<EventIcon
-											className={`w-6 h-6 sm:w-8 sm:h-8 ${colors.icon}`}
-										/>
-									</div>
-
-									{/* Content */}
-									<div className="flex-1 min-w-0">
-										<div className="flex items-start justify-between gap-2">
-											<div className="min-w-0">
-												<h3 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base truncate">
-													{event.description}
-												</h3>
-												<p
-													className={`text-xs sm:text-sm mt-0.5 ${
-														isToday(event.date)
-															? "text-blue-600 font-medium"
-															: isOverdue
-																? "text-amber-600"
-																: "text-slate-500"
-													}`}
-												>
-													{isToday(event.date)
-														? "Hoje"
-														: formatDate(event.date)}
-													{isOverdue && " • Atrasado"}
-													{event.type === "TRANSFER" &&
-														event.destinationAccountId && (
-															<span className="ml-1">
-																•{" "}
-																{
-																	accounts.find(
-																		(account) => account.id === event.accountId,
-																	)?.name
-																}{" "}
-																para{" "}
-																{
-																	accounts.find(
-																		(account) =>
-																			account.id === event.destinationAccountId,
-																	)?.name
-																}
-															</span>
-														)}
-												</p>
-											</div>
-
-											<div className="text-right flex-shrink-0">
-												<p
-													className={`font-semibold text-sm sm:text-base ${
-														event.amount > 0
-															? "text-emerald-600"
-															: "text-slate-900 dark:text-white"
-													}`}
-												>
-													{event.amount > 0 ? "+" : ""}
-													{formatCurrency(event.amount)}
-												</p>
-												<p className="text-xs text-slate-400 mt-0.5 hidden sm:block">
-													{statusLabels[event.status]}
-												</p>
-											</div>
-										</div>
-
-										{/* Tags row */}
-										<div className="flex items-center gap-1.5 sm:gap-2 mt-2 flex-wrap">
-											<Chip
-												size="sm"
-												variant="flat"
-												color={typeColors[event.type]}
-												className="text-[10px] sm:text-xs h-5 sm:h-6"
-											>
-												{typeLabels[event.type]}
-											</Chip>
-											{category && (
-												<Chip
-													size="sm"
-													variant="flat"
-													className="text-[10px] sm:text-xs h-5 sm:h-6"
-												>
-													{category.categoryGroup.name}: {category.name}
-												</Chip>
-											)}
-											{event.isRecurrenceTemplate && (
-												<Chip
-													size="sm"
-													variant="flat"
-													color="secondary"
-													className="text-[10px] sm:text-xs h-5 sm:h-6"
-												>
-													Recorrente
-												</Chip>
-											)}
-											{event.type !== "INCOME" && (
-												<span className="text-[10px] sm:text-xs text-slate-500">
-													{priorityLabels[event.priority]}
-												</span>
-											)}
-
-											{/* Mobile status chip */}
-											<Chip
-												size="sm"
-												variant="bordered"
-												color={statusColors[event.status]}
-												className="text-[10px] sm:text-xs h-5 sm:h-6 sm:hidden ml-auto"
-											>
-												{statusLabels[event.status]}
-											</Chip>
-										</div>
-									</div>
-
-									{/* Actions menu */}
-									<Dropdown>
-										<DropdownTrigger>
-											<Button
-												isIconOnly
-												variant="light"
-												size="sm"
-												radius="full"
-												className="flex-shrink-0"
-											>
-												<MoreVertical className="w-4 h-4 sm:w-5 sm:h-5" />
-											</Button>
-										</DropdownTrigger>
-										<DropdownMenu
-											aria-label="Ações do evento"
-											onAction={(key) => {
-												if (key === "edit") handleEdit(event)
-												if (key === "confirm") handleConfirm(event.id)
-												if (key === "skip") handleSkip(event.id)
-												if (key === "delete") handleDelete(event.id)
-												if (key === "priority-required")
-													handlePriorityChange(event.id, "REQUIRED")
-												if (key === "priority-important")
-													handlePriorityChange(event.id, "IMPORTANT")
-												if (key === "priority-optional")
-													handlePriorityChange(event.id, "OPTIONAL")
-											}}
+							<Fragment key={event.id}>
+								{isNewDate && (
+									<h3 className="pt-3 text-sm font-semibold text-slate-600 dark:text-slate-300 first:pt-0">
+										{formatDate(event.date)}
+									</h3>
+								)}
+								<div
+									className={`bg-white dark:bg-slate-900 rounded-2xl sm:rounded-[20px] p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow border border-slate-100 dark:border-slate-800 ${
+										isOverdue ? "ring-2 ring-amber-400/50" : ""
+									}`}
+								>
+									<div className="flex items-center gap-3 sm:gap-4">
+										{/* Icon */}
+										<div
+											className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl sm:rounded-[18px] ${colors.bg} flex items-center justify-center flex-shrink-0`}
 										>
-											<DropdownItem
-												key="edit"
-												startContent={<Pencil className="w-4 h-4" />}
+											<EventIcon
+												className={`w-6 h-6 sm:w-8 sm:h-8 ${colors.icon}`}
+											/>
+										</div>
+
+										{/* Content */}
+										<div className="flex-1 min-w-0">
+											<div className="flex items-start justify-between gap-2">
+												<div className="min-w-0">
+													<h3 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base truncate">
+														{event.description}
+													</h3>
+													<p
+														className={`text-xs sm:text-sm mt-0.5 ${
+															isOverdue ? "text-amber-600" : "text-slate-500"
+														}`}
+													>
+														{event.type === "TRANSFER"
+															? `De ${sourceAccount?.name ?? "conta de origem"} para ${destinationAccount?.name ?? "conta de destino"}`
+															: event.type === "INCOME"
+																? `Entrou em: ${sourceAccount?.name ?? "conta não encontrada"}`
+																: `Saiu de: ${sourceAccount?.name ?? "conta não encontrada"}`}
+														{isOverdue && " • Atrasado"}
+													</p>
+												</div>
+
+												<div className="text-right flex-shrink-0">
+													<p
+														className={`font-semibold text-sm sm:text-base ${
+															event.amount > 0
+																? "text-emerald-600"
+																: "text-slate-900 dark:text-white"
+														}`}
+													>
+														{event.amount > 0 ? "+" : ""}
+														{formatCurrency(event.amount)}
+													</p>
+													<p className="text-xs text-slate-400 mt-0.5 hidden sm:block">
+														{statusLabels[event.status]}
+													</p>
+												</div>
+											</div>
+
+											{/* Tags row */}
+											<div className="flex items-center gap-1.5 sm:gap-2 mt-2 flex-wrap">
+												<Chip
+													size="sm"
+													variant="flat"
+													color={typeColors[event.type]}
+													className="text-[10px] sm:text-xs h-5 sm:h-6"
+												>
+													{typeLabels[event.type]}
+												</Chip>
+												{category && (
+													<Chip
+														size="sm"
+														variant="flat"
+														className="text-[10px] sm:text-xs h-5 sm:h-6"
+													>
+														{category.categoryGroup.name}: {category.name}
+													</Chip>
+												)}
+												{event.isRecurrenceTemplate && (
+													<Chip
+														size="sm"
+														variant="flat"
+														color="secondary"
+														className="text-[10px] sm:text-xs h-5 sm:h-6"
+													>
+														Recorrente
+													</Chip>
+												)}
+												{/* Mobile status chip */}
+												<Chip
+													size="sm"
+													variant="bordered"
+													color={statusColors[event.status]}
+													className="text-[10px] sm:text-xs h-5 sm:h-6 sm:hidden ml-auto"
+												>
+													{statusLabels[event.status]}
+												</Chip>
+											</div>
+										</div>
+
+										{/* Actions menu */}
+										<Dropdown>
+											<DropdownTrigger>
+												<Button
+													isIconOnly
+													variant="light"
+													size="sm"
+													radius="full"
+													className="flex-shrink-0"
+												>
+													<MoreVertical className="w-4 h-4 sm:w-5 sm:h-5" />
+												</Button>
+											</DropdownTrigger>
+											<DropdownMenu
+												aria-label="Ações do evento"
+												onAction={(key) => {
+													if (key === "edit") handleEdit(event)
+													if (key === "confirm") handleConfirm(event.id)
+													if (key === "skip") handleSkip(event.id)
+													if (key === "delete") handleDelete(event.id)
+												}}
 											>
-												{event.id.startsWith("generated-") ? "Editar Modelo" : "Editar"}
-											</DropdownItem>
-											{event.status === "PLANNED" ? (
-												<DropdownItem key="confirm">Confirmar</DropdownItem>
-											) : null}
-											{event.status === "PLANNED" ? (
-												<DropdownItem key="skip">Ignorar</DropdownItem>
-											) : null}
-											{event.type !== "INCOME" &&
-											event.type !== "TRANSFER" &&
-											event.priority !== "REQUIRED" ? (
-												<DropdownItem key="priority-required">
-													🔴 Marcar como Obrigatório
+												<DropdownItem
+													key="edit"
+													startContent={<Pencil className="w-4 h-4" />}
+												>
+													{event.id.startsWith("generated-")
+														? "Editar Modelo"
+														: "Editar"}
 												</DropdownItem>
-											) : null}
-											{event.type !== "INCOME" &&
-											event.type !== "TRANSFER" &&
-											event.priority !== "IMPORTANT" ? (
-												<DropdownItem key="priority-important">
-													🟡 Marcar como Importante
+												{event.status === "PLANNED" ? (
+													<DropdownItem key="confirm">Confirmar</DropdownItem>
+												) : null}
+												{event.status === "PLANNED" ? (
+													<DropdownItem key="skip">Ignorar</DropdownItem>
+												) : null}
+												<DropdownItem
+													key="delete"
+													className="text-danger"
+													color="danger"
+												>
+													Excluir
 												</DropdownItem>
-											) : null}
-											{event.type !== "INCOME" &&
-											event.type !== "TRANSFER" &&
-											event.priority !== "OPTIONAL" ? (
-												<DropdownItem key="priority-optional">
-													🟢 Marcar como Opcional
-												</DropdownItem>
-											) : null}
-											<DropdownItem
-												key="delete"
-												className="text-danger"
-												color="danger"
-											>
-												Excluir
-											</DropdownItem>
-										</DropdownMenu>
-									</Dropdown>
+											</DropdownMenu>
+										</Dropdown>
+									</div>
 								</div>
-							</div>
+							</Fragment>
 						)
 					})}
 				</div>
@@ -1131,7 +1025,9 @@ export function EventsList() {
 							label="Descrição"
 							value={transferEditData?.description ?? ""}
 							onValueChange={(description) =>
-								setTransferEditData((current) => current ? { ...current, description } : null)
+								setTransferEditData((current) =>
+									current ? { ...current, description } : null,
+								)
 							}
 							isRequired
 						/>
@@ -1143,7 +1039,9 @@ export function EventsList() {
 							startContent="R$"
 							value={transferEditData?.amount ?? ""}
 							onValueChange={(amount) =>
-								setTransferEditData((current) => current ? { ...current, amount } : null)
+								setTransferEditData((current) =>
+									current ? { ...current, amount } : null,
+								)
 							}
 							isRequired
 						/>
@@ -1152,14 +1050,24 @@ export function EventsList() {
 							type="date"
 							value={transferEditData?.date ?? ""}
 							onValueChange={(date) =>
-								setTransferEditData((current) => current ? { ...current, date } : null)
+								setTransferEditData((current) =>
+									current ? { ...current, date } : null,
+								)
 							}
 							isRequired
 						/>
 					</ModalBody>
 					<ModalFooter>
-						<Button variant="flat" onPress={onTransferEditClose}>Cancelar</Button>
-						<Button color="primary" onPress={handleTransferUpdate} isLoading={editLoading}>Salvar alterações</Button>
+						<Button variant="flat" onPress={onTransferEditClose}>
+							Cancelar
+						</Button>
+						<Button
+							color="primary"
+							onPress={handleTransferUpdate}
+							isLoading={editLoading}
+						>
+							Salvar alterações
+						</Button>
 					</ModalFooter>
 				</ModalContent>
 			</Modal>
