@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation"
 import {
 	LayoutDashboard,
 	Wallet,
-	CalendarDays,
 	PiggyBank,
 	MoreHorizontal,
 	TrendingUp,
@@ -29,16 +28,15 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
 	{ icon: LayoutDashboard, label: "Home", href: "/dashboard" },
-	// { icon: CalendarDays, label: "Fluxo", href: "/cashflow" },
-	{ icon: Wallet, label: "Eventos", href: "/events" },
-	{ icon: PiggyBank, label: "Contas", href: "/accounts" },
+	{ icon: Wallet, label: "Lançamentos", href: "/events" },
+	{ icon: ChartNoAxesCombined, label: "Relatórios", href: "/reports/budget" },
 ]
 
 const moreNavItems: NavItem[] = [
-	{ icon: TrendingUp, label: "Investimentos", href: "/investments" },
+	{ icon: PiggyBank, label: "Contas", href: "/accounts" },
 	{ icon: Tags, label: "Categorias", href: "/categories" },
 	{ icon: ReceiptText, label: "Orçamentos", href: "/budgets" },
-	{ icon: ChartNoAxesCombined, label: "Relatórios", href: "/reports/budget" },
+	{ icon: TrendingUp, label: "Investimentos", href: "/investments" },
 	{ icon: Settings, label: "Configurações", href: "/settings" },
 ]
 
