@@ -52,6 +52,11 @@ export interface BudgetReport {
 	>
 }
 
+export interface BudgetInsight {
+	tone: "success" | "warning" | "danger"
+	message: string
+}
+
 export function buildBudgetReport(input: BudgetReportInput): BudgetReport {
 	const actualByCategory = new Map<string, Cents>()
 	const eventCategories = new Map<
@@ -213,4 +218,49 @@ export function buildBudgetReport(input: BudgetReportInput): BudgetReport {
 	)
 
 	return { groups: reportGroups, income, outgoing, allocation, distribution }
+}
+
+export function buildBudgetInsight(report: BudgetReport): BudgetInsight {
+	const exceededAllocation = (
+		["ESSENTIAL", "LIFESTYLE", "INVESTMENT"] as const
+	).find(
+		(type) => report.allocation[type].actual > report.allocation[type].target,
+	)
+	if (exceededAllocation) {
+		const labels = {
+			ESSENTIAL: "Essencial",
+			LIFESTYLE: "Estilo de vida",
+			INVESTMENT: "Investimentos",
+		}
+		const allocation = report.allocation[exceededAllocation]
+		return {
+			tone: "warning",
+			message: `${labels[exceededAllocation]} já representa ${allocation.actual.toFixed(1)}% das entradas realizadas. A meta é até ${allocation.target}%.`,
+		}
+	}
+
+	if (report.outgoing.actual > report.outgoing.budgeted) {
+		return {
+			tone: "danger",
+			message:
+				"As saídas realizadas ultrapassaram o orçamento. Revise os grupos com maior diferença para ajustar o restante do mês.",
+		}
+	}
+
+	if (
+		report.income.budgeted > 0 &&
+		report.income.actual < report.income.budgeted
+	) {
+		return {
+			tone: "warning",
+			message:
+				"As receitas realizadas ainda estão abaixo do planejado. Evite antecipar gastos até confirmar as próximas entradas.",
+		}
+	}
+
+	return {
+		tone: "success",
+		message:
+			"O mês está dentro do orçamento até agora. Mantenha o ritmo e acompanhe os próximos eventos planejados.",
+	}
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { buildBudgetReport } from "./budget-report"
+import { buildBudgetInsight, buildBudgetReport } from "./budget-report"
 
 describe("buildBudgetReport", () => {
 	it("consolida apenas eventos confirmados e calcula a distribuicao das saidas", () => {
@@ -83,5 +83,6 @@ describe("buildBudgetReport", () => {
 			budgeted: 20,
 			actual: 20,
 		})
+		expect(buildBudgetInsight(result)).toMatchObject({ tone: "success" })
 	})
 })

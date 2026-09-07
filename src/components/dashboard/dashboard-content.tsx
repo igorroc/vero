@@ -8,11 +8,7 @@ import {
 	Calendar,
 	AlertTriangle,
 	ChevronRight,
-	Landmark,
-	Banknote,
-	PiggyBank,
 	Target,
-	CreditCard,
 } from "lucide-react"
 import { getDashboardData, type DashboardData } from "@/features/dashboard"
 import { formatCurrency } from "@/types/finance"
@@ -65,16 +61,13 @@ export function DashboardContent() {
 	}
 
 	const breakdown = data.spendingLimit.breakdown
-	// Calculate spending used as percentage of available
-
-	// Calculate income and expenses from net change
-	const netChange = data.projectionSummary.netChange
-	// If net change is positive, we have more income than expenses
-	// Use avgDailySpend * 30 as an estimate of total expenses
-	const estimatedTotalExpenses = Math.abs(
-		data.projectionSummary.avgDailySpend * 30,
-	)
-	const estimatedTotalIncome = netChange + estimatedTotalExpenses
+	const monthlyBudget = data.monthlyBudget
+	const insightColors =
+		monthlyBudget?.insight.tone === "success"
+			? "bg-emerald-50 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-200"
+			: monthlyBudget?.insight.tone === "danger"
+				? "bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-200"
+				: "bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200"
 
 	return (
 		<div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
@@ -93,7 +86,7 @@ export function DashboardContent() {
 						Saldo disponível
 					</p>
 					<p className="text-3xl sm:text-4xl font-bold mt-1 tracking-tight">
-						{formatCurrency(data.totalBalance)}
+						{formatCurrency(data.availableBalance)}
 					</p>
 
 					<Link
@@ -102,23 +95,6 @@ export function DashboardContent() {
 					>
 						Ver detalhes <ChevronRight className="w-4 h-4" />
 					</Link>
-				</div>
-			</div>
-
-			{/* Budget Card */}
-			<div className="bg-gradient-to-r from-indigo-900 to-indigo-800 rounded-2xl p-4 sm:p-5 text-white">
-				<div className="flex justify-between items-center">
-					<div>
-						<p className="text-indigo-200 text-xs sm:text-sm font-medium">
-							Orçamento do período
-						</p>
-						<p className="text-xs text-indigo-300 mt-0.5">
-							Disponível para gastar
-						</p>
-					</div>
-					<p className="text-xl sm:text-2xl font-bold">
-						{formatCurrency(breakdown.availableForSpending)}
-					</p>
 				</div>
 			</div>
 
@@ -201,134 +177,54 @@ export function DashboardContent() {
 				</div>
 			)}
 
-			{/* Cash Section Title */}
-			<h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white pt-2">
-				Resumo
-			</h2>
-
-			{/* Income & Expense Cards - Figma Style */}
-			<div className="grid grid-cols-2 gap-3 sm:gap-4">
-				{/* Income Card */}
-				<div className="bg-cyan-100 dark:bg-cyan-900/30 rounded-2xl sm:rounded-3xl p-4 sm:p-5 relative overflow-hidden">
-					<div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/80 dark:bg-slate-800 flex items-center justify-center mb-8 sm:mb-12">
-						<Landmark className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-600 dark:text-cyan-400" />
-					</div>
-					<div>
-						<p className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-							{formatCurrency(estimatedTotalIncome)}
-						</p>
-						<p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-							Receitas
-						</p>
-					</div>
-				</div>
-
-				{/* Expense Card */}
-				<div className="bg-pink-100 dark:bg-pink-900/30 rounded-2xl sm:rounded-3xl p-4 sm:p-5 relative overflow-hidden">
-					<div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/80 dark:bg-slate-800 flex items-center justify-center mb-8 sm:mb-12">
-						<CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-pink-600 dark:text-pink-400" />
-					</div>
-					<div>
-						<p className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-							{formatCurrency(estimatedTotalExpenses)}
-						</p>
-						<p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-							Despesas
-						</p>
-					</div>
-				</div>
-			</div>
-
-			{/* Accounts Section */}
-			<div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100 dark:border-slate-800">
-				<div className="flex justify-between items-center mb-4">
-					<h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">
-						Contas
-					</h2>
-					<Link
-						href="/accounts"
-						className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
-					>
-						Ver todas <ChevronRight className="w-4 h-4" />
-					</Link>
-				</div>
-
-				<div className="space-y-3">
-					{data.accounts.slice(0, 3).map((account) => {
-						const AccountIcon =
-							account.type === "BANK"
-								? Landmark
-								: account.type === "CASH"
-									? Banknote
-									: TrendingUp
-						const bgColor =
-							account.type === "BANK"
-								? "bg-blue-100 dark:bg-blue-900/30"
-								: account.type === "CASH"
-									? "bg-emerald-100 dark:bg-emerald-900/30"
-									: "bg-purple-100 dark:bg-purple-900/30"
-						const iconColor =
-							account.type === "BANK"
-								? "text-blue-600 dark:text-blue-400"
-								: account.type === "CASH"
-									? "text-emerald-600 dark:text-emerald-400"
-									: "text-purple-600 dark:text-purple-400"
-
-						return (
-							<Link
-								key={account.id}
-								href={`/accounts/${account.id}`}
-								className="flex justify-between items-center rounded-xl bg-slate-50 p-3 transition-colors hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800"
-							>
-								<div className="flex items-center gap-3">
-									<div
-										className={`w-10 h-10 rounded-xl ${bgColor} flex items-center justify-center`}
-									>
-										<AccountIcon className={`w-5 h-5 ${iconColor}`} />
-									</div>
-									<div>
-										<p className="font-medium text-sm text-slate-900 dark:text-white">
-											{account.name}
-										</p>
-										<p className="text-xs text-slate-500">
-											{account.type === "CASH"
-												? "Dinheiro"
-												: account.type === "BANK"
-													? "Banco"
-													: "Investimento"}
-										</p>
-									</div>
-								</div>
-								<p
-									className={`font-bold text-sm ${
-										account.currentBalance >= 0
-											? "text-slate-900 dark:text-white"
-											: "text-red-600"
-									}`}
-								>
-									{formatCurrency(account.currentBalance)}
-								</p>
-							</Link>
-						)
-					})}
-
-					{data.accounts.length === 0 && (
-						<div className="text-center py-6">
-							<p className="text-slate-500 text-sm">Nenhuma conta cadastrada</p>
-							<Button
-								as={Link}
-								href="/accounts"
-								color="primary"
-								size="sm"
-								radius="full"
-								className="mt-3"
-							>
-								Adicionar Conta
-							</Button>
+			{monthlyBudget && (
+				<section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+					<div className="mb-4 flex items-center justify-between">
+						<div>
+							<h2 className="text-base font-semibold text-slate-900 dark:text-white sm:text-lg">
+								Como vai o mês
+							</h2>
+							<p className="text-xs text-slate-500 sm:text-sm">
+								Orçamento versus realizado
+							</p>
 						</div>
-					)}
-				</div>
-			</div>
+						<Link
+							href="/reports/budget"
+							className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+						>
+							Ver relatório <ChevronRight className="h-4 w-4" />
+						</Link>
+					</div>
+					<div className="grid gap-3 sm:grid-cols-2">
+						<div className="rounded-xl bg-emerald-50 p-3 dark:bg-emerald-900/20">
+							<p className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+								Receitas realizadas
+							</p>
+							<p className="mt-1 text-lg font-semibold text-emerald-800 dark:text-emerald-200">
+								{formatCurrency(monthlyBudget.income.actual)}
+							</p>
+							<p className="text-xs text-emerald-700 dark:text-emerald-300">
+								Orçado: {formatCurrency(monthlyBudget.income.budgeted)}
+							</p>
+						</div>
+						<div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">
+							<p className="text-xs font-medium text-slate-600 dark:text-slate-300">
+								Saídas realizadas
+							</p>
+							<p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+								{formatCurrency(monthlyBudget.outgoing.actual)}
+							</p>
+							<p className="text-xs text-slate-500">
+								Orçado: {formatCurrency(monthlyBudget.outgoing.budgeted)}
+							</p>
+						</div>
+					</div>
+					<div className={`mt-3 flex gap-3 rounded-xl p-3 ${insightColors}`}>
+						<TrendingUp className="h-5 w-5 shrink-0" />
+						<p className="text-sm">{monthlyBudget.insight.message}</p>
+					</div>
+				</section>
+			)}
 
 			{/* Upcoming Events */}
 			<div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100 dark:border-slate-800">
@@ -418,43 +314,6 @@ export function DashboardContent() {
 						})}
 					</div>
 				)}
-			</div>
-
-			{/* Quick Actions */}
-			<div className="grid grid-cols-2 gap-3">
-				<Link
-					href="/cashflow"
-					className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-shadow"
-				>
-					<div className="flex items-center gap-3">
-						<div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-							<Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-						</div>
-						<div>
-							<p className="font-semibold text-sm text-slate-900 dark:text-white">
-								Fluxo de Caixa
-							</p>
-							<p className="text-xs text-slate-500">Dia a dia</p>
-						</div>
-					</div>
-				</Link>
-
-				<Link
-					href="/investments"
-					className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-shadow"
-				>
-					<div className="flex items-center gap-3">
-						<div className="p-2.5 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
-							<PiggyBank className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-						</div>
-						<div>
-							<p className="font-semibold text-sm text-slate-900 dark:text-white">
-								Investimentos
-							</p>
-							<p className="text-xs text-slate-500">Metas</p>
-						</div>
-					</div>
-				</Link>
 			</div>
 		</div>
 	)

@@ -11,6 +11,11 @@ import {
 	calculateSpendingLimitAuto,
 	type SpendingLimitResult,
 } from "@/lib/engines/spending-limit"
+import { getBudgetReport } from "@/features/budgets"
+import {
+	buildBudgetInsight,
+	type BudgetInsight,
+} from "@/lib/engines/budget-report"
 import {
 	buildCashflowProjection,
 	getProjectionSummary,
@@ -27,8 +32,13 @@ import { addDays, startOfDay } from "@/types/finance"
 
 export interface DashboardData {
 	// Balance info
-	totalBalance: Cents
+	availableBalance: Cents
 	accounts: AccountWithBalance[]
+	monthlyBudget: {
+		income: { budgeted: Cents; actual: Cents }
+		outgoing: { budgeted: Cents; actual: Cents }
+		insight: BudgetInsight
+	} | null
 
 	// Spending limit
 	spendingLimit: SpendingLimitResult
@@ -89,16 +99,29 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 			})
 		}
 
-		// Get account balances
-		const balancesResult = await getAccountBalances()
+		const today = new Date()
+		const [balancesResult, budgetResult] = await Promise.all([
+			getAccountBalances(),
+			getBudgetReport(today.getFullYear(), today.getMonth() + 1),
+		])
 		if (!balancesResult.success) {
 			return { success: false, error: balancesResult.error }
 		}
 
-		const { accounts, totalBalance } = balancesResult
+		const { accounts } = balancesResult
+		const availableBalance = accounts
+			.filter((account) => account.type !== "INVESTMENT")
+			.reduce((total, account) => total + account.currentBalance, 0)
+		const monthlyBudget =
+			budgetResult.success && budgetResult.report
+				? {
+						income: budgetResult.report.income,
+						outgoing: budgetResult.report.outgoing,
+						insight: buildBudgetInsight(budgetResult.report),
+					}
+				: null
 
 		// Get events for projection (next 90 days)
-		const today = new Date()
 		const projectionEnd = addDays(today, 90)
 
 		const eventsResult = await getEventsWithProjection(today, projectionEnd)
@@ -117,7 +140,7 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 
 		// Calculate spending limit
 		const spendingLimit = calculateSpendingLimitAuto(
-			totalBalance,
+			availableBalance,
 			eventsForCalculation,
 			settings.horizonMode,
 			settings.safetyBuffer,
@@ -181,8 +204,9 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 		return {
 			success: true,
 			data: {
-				totalBalance,
+				availableBalance,
 				accounts,
+				monthlyBudget,
 				spendingLimit,
 				upcomingEvents,
 				projectionSummary,
