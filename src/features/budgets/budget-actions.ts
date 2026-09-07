@@ -157,12 +157,17 @@ export async function saveBudgetItems(
 		})
 		if (!budget) return { success: false, error: "Orçamento inválido" } as const
 
-		const normalizedItems = items
-			.map((item) => ({
-				categoryId: item.categoryId,
-				amount: dollarsToCents(item.amount),
-			}))
-			.filter((item) => item.categoryId && Number.isFinite(item.amount))
+		const normalizedItemsByCategory = new Map<string, number>()
+		for (const item of items) {
+			const amount = dollarsToCents(item.amount)
+			if (item.categoryId && Number.isFinite(amount)) {
+				normalizedItemsByCategory.set(item.categoryId, amount)
+			}
+		}
+		const normalizedItems = Array.from(
+			normalizedItemsByCategory,
+			([categoryId, amount]) => ({ categoryId, amount }),
+		)
 		const categoryIds = [
 			...new Set(normalizedItems.map((item) => item.categoryId)),
 		]
@@ -174,14 +179,22 @@ export async function saveBudgetItems(
 			return { success: false, error: "Categoria inválida" } as const
 		}
 
-		await prisma.$transaction(async (tx) => {
-			for (const item of normalizedItems) {
-				if (item.amount <= 0) {
-					await tx.budgetItem.deleteMany({
-						where: { budgetId: budget.id, categoryId: item.categoryId },
-					})
-				} else {
-					await tx.budgetItem.upsert({
+		const itemsToDelete = normalizedItems.filter((item) => item.amount <= 0)
+		if (itemsToDelete.length > 0) {
+			await prisma.budgetItem.deleteMany({
+				where: {
+					budgetId: budget.id,
+					categoryId: { in: itemsToDelete.map((item) => item.categoryId) },
+				},
+			})
+		}
+
+		const itemsToSave = normalizedItems.filter((item) => item.amount > 0)
+		for (let index = 0; index < itemsToSave.length; index += 25) {
+			const batch = itemsToSave.slice(index, index + 25)
+			await prisma.$transaction(
+				batch.map((item) =>
+					prisma.budgetItem.upsert({
 						where: {
 							budgetId_categoryId: {
 								budgetId: budget.id,
@@ -194,10 +207,10 @@ export async function saveBudgetItems(
 							amount: item.amount,
 						},
 						update: { amount: item.amount },
-					})
-				}
-			}
-		})
+					}),
+				),
+			)
+		}
 		return { success: true } as const
 	} catch (error) {
 		console.error("Failed to save budget items:", error)
