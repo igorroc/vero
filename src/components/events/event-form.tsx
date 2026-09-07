@@ -22,7 +22,7 @@ import {
 import type { AccountWithBalance } from "@/features/accounts"
 import type { CategoryWithGroup } from "@/features/categories"
 import { toast } from "react-toastify"
-import { dateFromInput, formatDateInput } from "@/types/finance"
+import { dateFromInput, formatCurrency, formatDateInput } from "@/types/finance"
 
 interface EventFormProps {
 	isOpen: boolean
@@ -66,6 +66,22 @@ export function EventForm({
 		isRecurring: false,
 		recurrenceFrequency: "MONTHLY",
 	})
+	const selectedAccount = accounts.find(
+		(account) => account.id === formData.accountId,
+	)
+	const amountCents = (() => {
+		const [wholePart, decimalPart = ""] = formData.amount.replace(",", ".").split(".")
+		const wholeCents = Number(wholePart) * 100
+		const decimalCents = Number(decimalPart.padEnd(2, "0").slice(0, 2))
+		return Number.isFinite(wholeCents) && Number.isFinite(decimalCents)
+			? wholeCents + decimalCents
+			: 0
+	})()
+	const willMakeAccountNegative =
+		formData.type !== "INCOME" &&
+		amountCents > 0 &&
+		selectedAccount !== undefined &&
+		selectedAccount.currentBalance - amountCents < 0
 
 	const handleSubmit = async () => {
 		if (
@@ -203,6 +219,11 @@ export function EventForm({
 							</SelectItem>
 						))}
 					</Select>
+					{selectedAccount && (
+						<p className="text-xs text-slate-500 dark:text-slate-400">
+							Saldo atual: {formatCurrency(selectedAccount.currentBalance)}
+						</p>
+					)}
 
 					<Input
 						label="Descrição"
@@ -269,6 +290,12 @@ export function EventForm({
 						</Select>
 					</div>
 
+					{willMakeAccountNegative && (
+						<p className="text-xs text-amber-600 dark:text-amber-400">
+							Esta operação deixará a conta com saldo negativo.
+						</p>
+					)}
+
 					{formData.type === "TRANSFER" && (
 						<div className="space-y-2">
 							<Select
@@ -293,15 +320,6 @@ export function EventForm({
 										<SelectItem key={account.id}>{account.name}</SelectItem>
 									))}
 							</Select>
-							{Number(formData.amount) >
-								(accounts.find((account) => account.id === formData.accountId)
-									?.currentBalance ?? 0) /
-									100 && (
-								<p className="text-xs text-amber-600">
-									Esta transferência deixará a conta de origem com saldo
-									negativo.
-								</p>
-							)}
 						</div>
 					)}
 
