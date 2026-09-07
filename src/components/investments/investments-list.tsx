@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import {
 	Button,
-	Chip,
 	Spinner,
 	Modal,
 	ModalContent,
@@ -14,10 +13,6 @@ import {
 	Select,
 	SelectItem,
 	useDisclosure,
-	Dropdown,
-	DropdownTrigger,
-	DropdownMenu,
-	DropdownItem,
 } from "@nextui-org/react"
 import {
 	getInvestmentPlans,
@@ -34,16 +29,11 @@ import {
 import { formatCurrency } from "@/types/finance"
 import type { InvestmentPlan } from "@prisma/client"
 import { toast } from "react-toastify"
-import {
-	Plus,
-	MoreVertical,
-	TrendingUp,
-	PiggyBank,
-	AlertTriangle,
-} from "lucide-react"
+import { Plus, TrendingUp, PiggyBank, AlertTriangle } from "lucide-react"
 import { StatCard } from "@/components/ui/stat-card"
+import { InvestmentPlanCard } from "./investment-plan-card"
 
-type InvestmentPlanWithAccount = InvestmentPlan & {
+export type InvestmentPlanWithAccount = InvestmentPlan & {
 	account: { name: string; type: string }
 }
 
@@ -276,65 +266,13 @@ export function InvestmentsList() {
 			{!error && plans.length > 0 && (
 				<div className="space-y-4">
 					{plans.map((plan) => (
-						<div
+						<InvestmentPlanCard
 							key={plan.id}
-							className={`modern-card p-4 ${!plan.isActive ? "opacity-60" : ""}`}
-						>
-							<div className="flex justify-between items-center">
-								<div className="space-y-1">
-									<div className="flex items-center gap-2">
-										<span className="font-semibold text-lg text-slate-900 dark:text-white">
-											{plan.name}
-										</span>
-										{!plan.isActive && (
-											<Chip size="sm" variant="flat">
-												Pausado
-											</Chip>
-										)}
-									</div>
-									<div className="flex items-center gap-2 text-sm text-slate-500">
-										<span>{plan.account.name}</span>
-										<span>|</span>
-										<span>{getFrequencyLabel(plan.frequency)}</span>
-										<span>|</span>
-										<span>Dia {plan.dayOfExecution}</span>
-									</div>
-								</div>
-								<div className="flex items-center gap-4">
-									<div className="text-right">
-										<p className="text-xl font-bold text-purple-600">
-											{formatCurrency(plan.amount)}
-										</p>
-										<p className="text-xs text-slate-500">
-											por {getFrequencyLabel(plan.frequency).toLowerCase()}
-										</p>
-									</div>
-									<Dropdown>
-										<DropdownTrigger>
-											<Button isIconOnly variant="light" size="sm">
-												<MoreVertical className="w-4 h-4" />
-											</Button>
-										</DropdownTrigger>
-										<DropdownMenu>
-											<DropdownItem
-												key="toggle"
-												onPress={() => handleToggleActive(plan)}
-											>
-												{plan.isActive ? "Pausar" : "Ativar"}
-											</DropdownItem>
-											<DropdownItem
-												key="delete"
-												className="text-danger"
-												color="danger"
-												onPress={() => handleDelete(plan.id)}
-											>
-												Excluir
-											</DropdownItem>
-										</DropdownMenu>
-									</Dropdown>
-								</div>
-							</div>
-						</div>
+							plan={plan}
+							getFrequencyLabel={getFrequencyLabel}
+							onToggleActive={handleToggleActive}
+							onDelete={handleDelete}
+						/>
 					))}
 				</div>
 			)}
