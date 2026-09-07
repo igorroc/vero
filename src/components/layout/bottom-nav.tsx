@@ -29,7 +29,7 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
 	{ icon: LayoutDashboard, label: "Home", href: "/dashboard" },
-	{ icon: CalendarDays, label: "Fluxo", href: "/cashflow" },
+	// { icon: CalendarDays, label: "Fluxo", href: "/cashflow" },
 	{ icon: Wallet, label: "Eventos", href: "/events" },
 	{ icon: PiggyBank, label: "Contas", href: "/accounts" },
 ]
