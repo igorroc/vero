@@ -52,6 +52,7 @@ model Event {
     recurrenceFrequency  RecurrenceFrequency?
     recurrenceEndDate    DateTime? // When recurrence stops (null = never)
     recurrenceId         String? // Links generated events to their template
+    debtPayment          DebtPayment?
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt

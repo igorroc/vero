@@ -15,4 +15,5 @@ model User {
     settings        UserSettings?
     notifications   Notification[]
     budgets         Budget[]
+    debts           Debt[]
 }
