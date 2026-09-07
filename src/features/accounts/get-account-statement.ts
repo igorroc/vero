@@ -7,7 +7,7 @@ import {
 	buildAccountStatement,
 	type StatementDay,
 } from "@/lib/engines/account-statement"
-import { startOfDay, type Cents } from "@/types/finance"
+import { endOfDay, type Cents } from "@/types/finance"
 
 export interface AccountStatement {
 	account: {
@@ -38,7 +38,7 @@ export async function getAccountStatement(
 			where: {
 				userId: user.id,
 				status: "CONFIRMED",
-				date: { lte: startOfDay(new Date()) },
+				date: { lte: endOfDay(new Date()) },
 				OR: [{ accountId }, { destinationAccountId: accountId }],
 			},
 			select: {

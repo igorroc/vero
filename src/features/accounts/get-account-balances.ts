@@ -2,8 +2,7 @@
 
 import prisma from "@/lib/db"
 import { getUserBySession } from "@/lib/auth"
-import type { Cents } from "@/types/finance"
-import { startOfDay } from "@/types/finance"
+import { endOfDay, type Cents } from "@/types/finance"
 import { AccountType } from "@prisma/client"
 
 export interface AccountWithBalance {
@@ -31,7 +30,7 @@ export async function getAccountBalances(
 			return { success: false, error: "Not authenticated" }
 		}
 
-		const targetDate = startOfDay(asOfDate)
+		const targetDate = endOfDay(asOfDate)
 
 		// Get all active accounts
 		const accounts = await prisma.account.findMany({
