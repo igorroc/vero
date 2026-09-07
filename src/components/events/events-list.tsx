@@ -49,7 +49,6 @@ import {
 	MoreVertical,
 	Calendar,
 	Pencil,
-	ShoppingBag,
 	Utensils,
 	Car,
 	Home,
@@ -60,6 +59,12 @@ import {
 	CircleDollarSign,
 	ChevronDown,
 	ArrowLeftRight,
+	Banknote,
+	BadgePercent,
+	Music,
+	Phone,
+	ReceiptText,
+	ShoppingCart,
 } from "lucide-react"
 
 export function EventsList() {
@@ -245,6 +250,20 @@ export function EventsList() {
 		if (type === "TRANSFER") return ArrowLeftRight
 
 		const desc = description.toLowerCase()
+		if (desc.includes("salário") || desc.includes("salario") || desc.includes("renda"))
+			return Banknote
+		if (desc.includes("correção monetária") || desc.includes("correcao monetaria"))
+			return BadgePercent
+		if (
+			desc.includes("fatura") ||
+			desc.includes("financiamento") ||
+			desc.includes("dívida") ||
+			desc.includes("divida")
+		)
+			return ReceiptText
+		if (desc.includes("telefone")) return Phone
+		if (desc.includes("curso") || desc.includes("bateria")) return Music
+		if (desc.includes("dízimo") || desc.includes("dizimo")) return Heart
 		if (
 			desc.includes("transporte") ||
 			desc.includes("uber") ||
@@ -262,9 +281,11 @@ export function EventsList() {
 		if (
 			desc.includes("mercado") ||
 			desc.includes("compra") ||
-			desc.includes("shopping")
+			desc.includes("shopping") ||
+			desc.includes("açougue") ||
+			desc.includes("acougue")
 		)
-			return ShoppingBag
+			return ShoppingCart
 		if (
 			desc.includes("restaurante") ||
 			desc.includes("comida") ||
