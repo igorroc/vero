@@ -42,6 +42,10 @@ export interface BudgetReport {
 	groups: BudgetReportGroup[]
 	income: { budgeted: Cents; actual: Cents }
 	outgoing: { budgeted: Cents; actual: Cents }
+	allocation: Record<
+		Exclude<BudgetGroupType, "INCOME">,
+		{ target: number; budgeted: number; actual: number }
+	>
 	distribution: Record<
 		Exclude<BudgetGroupType, "INCOME">,
 		{ budgeted: number; actual: number }
@@ -181,6 +185,32 @@ export function buildBudgetReport(input: BudgetReportInput): BudgetReport {
 		},
 		{} as BudgetReport["distribution"],
 	)
+	const allocationTargets = {
+		ESSENTIAL: 50,
+		LIFESTYLE: 30,
+		INVESTMENT: 20,
+	} as const
+	const allocation = (["ESSENTIAL", "LIFESTYLE", "INVESTMENT"] as const).reduce(
+		(result, type) => {
+			const total = reportGroups
+				.filter((group) => group.type === type)
+				.reduce(
+					(sum, group) => ({
+						budgeted: sum.budgeted + group.budgeted,
+						actual: sum.actual + group.actual,
+					}),
+					{ budgeted: 0, actual: 0 },
+				)
+			result[type] = {
+				target: allocationTargets[type],
+				budgeted:
+					income.budgeted > 0 ? (total.budgeted / income.budgeted) * 100 : 0,
+				actual: income.actual > 0 ? (total.actual / income.actual) * 100 : 0,
+			}
+			return result
+		},
+		{} as BudgetReport["allocation"],
+	)
 
-	return { groups: reportGroups, income, outgoing, distribution }
+	return { groups: reportGroups, income, outgoing, allocation, distribution }
 }

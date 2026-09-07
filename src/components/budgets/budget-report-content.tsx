@@ -43,118 +43,202 @@ export function BudgetReportContent() {
 		)
 	return (
 		<div className="space-y-6">
-			<Input
-				type="month"
-				label="Mês do relatório"
-				value={`${year}-${String(month).padStart(2, "0")}`}
-				onValueChange={(value) => {
-					const [nextYear, nextMonth] = value.split("-").map(Number)
-					setYear(nextYear)
-					setMonth(nextMonth)
-				}}
-				className="max-w-xs"
-			/>
+			<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+				<div>
+					<p className="text-sm font-medium text-primary">
+						Planejamento mensal
+					</p>
+					<h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+						Relatório de orçamento
+					</h1>
+					<p className="text-sm text-slate-500">
+						Acompanhe o plano, o realizado e os limites por tipo de gasto.
+					</p>
+				</div>
+				<Input
+					type="month"
+					label="Mês do relatório"
+					value={`${year}-${String(month).padStart(2, "0")}`}
+					onValueChange={(value) => {
+						const [nextYear, nextMonth] = value.split("-").map(Number)
+						setYear(nextYear)
+						setMonth(nextMonth)
+					}}
+					className="max-w-xs"
+				/>
+			</div>
 			{!report ? (
 				<div className="modern-card p-8 text-center text-slate-500">
 					Nenhum orçamento criado para este mês.
 				</div>
 			) : (
 				<>
-					<div className="grid gap-4 md:grid-cols-2">
-						<Summary
-							title="Receitas"
-							type="INCOME"
-							budgeted={report.income.budgeted}
-							actual={report.income.actual}
-						/>
-						<Summary
-							title="Saídas"
-							type="ESSENTIAL"
-							budgeted={report.outgoing.budgeted}
-							actual={report.outgoing.actual}
-						/>
-					</div>
-					{reportTypes.map((type) => {
-						const groups = report.groups.filter((group) => group.type === type)
-						if (groups.length === 0) return null
-						const budgeted = groups.reduce(
-							(total, group) => total + group.budgeted,
-							0,
-						)
-						const actual = groups.reduce(
-							(total, group) => total + group.actual,
-							0,
-						)
-						const isExpanded = expandedTypes.has(type)
+					<section aria-labelledby="overview-heading">
+						<h2
+							id="overview-heading"
+							className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200"
+						>
+							Visão geral
+						</h2>
+						<div className="grid gap-4 md:grid-cols-2">
+							<Summary
+								title="Receitas"
+								type="INCOME"
+								budgeted={report.income.budgeted}
+								actual={report.income.actual}
+							/>
+							<Summary
+								title="Saídas"
+								type="ESSENTIAL"
+								budgeted={report.outgoing.budgeted}
+								actual={report.outgoing.actual}
+							/>
+						</div>
+					</section>
+					<section aria-labelledby="types-heading" className="space-y-3">
+						<div>
+							<h2
+								id="types-heading"
+								className="text-sm font-semibold text-slate-700 dark:text-slate-200"
+							>
+								Detalhamento por tipo
+							</h2>
+							<p className="text-sm text-slate-500">
+								Abra um tipo para ver os grupos e, em seguida, suas categorias.
+							</p>
+						</div>
+						{reportTypes.map((type) => {
+							const groups = report.groups.filter(
+								(group) => group.type === type,
+							)
+							if (groups.length === 0) return null
+							const budgeted = groups.reduce(
+								(total, group) => total + group.budgeted,
+								0,
+							)
+							const actual = groups.reduce(
+								(total, group) => total + group.actual,
+								0,
+							)
+							const isExpanded = expandedTypes.has(type)
+							const allocation =
+								type === "INCOME" ? null : report.allocation[type]
 
-						return (
-							<section key={type} className="modern-card overflow-hidden">
-								<button
-									type="button"
-									className="grid w-full grid-cols-[1fr_auto] items-center gap-3 p-4 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
-									aria-expanded={isExpanded}
-									onClick={() =>
-										setExpandedTypes((current) => {
-											const next = new Set(current)
-											if (next.has(type)) next.delete(type)
-											else next.add(type)
-											return next
-										})
-									}
-								>
-									<div>
-										<h2 className="font-semibold">{typeLabels[type]}</h2>
-										<p className="text-xs text-slate-500">
-											{groups.length} grupo{groups.length !== 1 ? "s" : ""}
-										</p>
-									</div>
-									<div className="flex items-center gap-4">
-										<div className="hidden text-right text-xs sm:block">
-											<p className="text-slate-500">Orçado</p>
-											<p className="font-medium">{formatCurrency(budgeted)}</p>
+							return (
+								<section key={type} className="modern-card overflow-hidden">
+									<button
+										type="button"
+										className="grid w-full grid-cols-[1fr_auto] items-center gap-3 p-4 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+										aria-expanded={isExpanded}
+										onClick={() =>
+											setExpandedTypes((current) => {
+												const next = new Set(current)
+												if (next.has(type)) next.delete(type)
+												else next.add(type)
+												return next
+											})
+										}
+									>
+										<div>
+											<p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+												Tipo de planejamento
+											</p>
+											<h2 className="font-semibold">{typeLabels[type]}</h2>
+											{allocation ? (
+												<AllocationSummary
+													target={allocation.target}
+													budgeted={allocation.budgeted}
+													actual={allocation.actual}
+												/>
+											) : (
+												<p className="text-xs text-slate-500">
+													{groups.length} grupo{groups.length !== 1 ? "s" : ""}
+												</p>
+											)}
 										</div>
-										<div className="hidden text-right text-xs sm:block">
-											<p className="text-slate-500">Realizado</p>
-											<p className="font-medium">{formatCurrency(actual)}</p>
-										</div>
-										<DifferenceIndicator
-											type={type}
-											difference={budgeted - actual}
-										/>
-										<ChevronDown
-											className={`h-4 w-4 text-slate-400 transition-transform ${
-												isExpanded ? "rotate-180" : ""
-											}`}
-										/>
-									</div>
-								</button>
-								{isExpanded && (
-									<div className="border-t">
-										{groups.map((group) => (
-											<CategoryGroup
-												key={`${group.type}-${group.name}`}
-												group={group}
-												isExpanded={expandedGroups.has(
-													`${group.type}-${group.name}`,
-												)}
-												onToggle={() =>
-													setExpandedGroups((current) => {
-														const groupKey = `${group.type}-${group.name}`
-														const next = new Set(current)
-														if (next.has(groupKey)) next.delete(groupKey)
-														else next.add(groupKey)
-														return next
-													})
-												}
+										<div className="flex items-center gap-4">
+											<div className="hidden text-right text-xs sm:block">
+												<p className="text-slate-500">Orçado</p>
+												<p className="font-medium">
+													{formatCurrency(budgeted)}
+												</p>
+											</div>
+											<div className="hidden text-right text-xs sm:block">
+												<p className="text-slate-500">Realizado</p>
+												<p className="font-medium">{formatCurrency(actual)}</p>
+											</div>
+											<DifferenceIndicator
+												type={type}
+												difference={budgeted - actual}
 											/>
-										))}
-									</div>
-								)}
-							</section>
-						)
-					})}
+											<ChevronDown
+												className={`h-4 w-4 text-slate-400 transition-transform ${
+													isExpanded ? "rotate-180" : ""
+												}`}
+											/>
+										</div>
+									</button>
+									{isExpanded && (
+										<div className="space-y-2 border-t bg-slate-50/70 p-2 dark:bg-slate-800/30 sm:p-3">
+											{groups.map((group) => (
+												<CategoryGroup
+													key={`${group.type}-${group.name}`}
+													group={group}
+													isExpanded={expandedGroups.has(
+														`${group.type}-${group.name}`,
+													)}
+													onToggle={() =>
+														setExpandedGroups((current) => {
+															const groupKey = `${group.type}-${group.name}`
+															const next = new Set(current)
+															if (next.has(groupKey)) next.delete(groupKey)
+															else next.add(groupKey)
+															return next
+														})
+													}
+												/>
+											))}
+										</div>
+									)}
+								</section>
+							)
+						})}
+					</section>
 				</>
 			)}
+		</div>
+	)
+}
+
+function AllocationSummary({
+	target,
+	budgeted,
+	actual,
+}: {
+	target: number
+	budgeted: number
+	actual: number
+}) {
+	const budgetedAboveTarget = budgeted > target
+	const actualAboveTarget = actual > target
+
+	return (
+		<div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+			<span className="text-slate-500">Meta: até {target}% das entradas</span>
+			<span
+				className={
+					budgetedAboveTarget ? "font-medium text-red-600" : "text-slate-600"
+				}
+			>
+				Orçado: {budgeted.toFixed(1)}%
+			</span>
+			<span
+				className={
+					actualAboveTarget ? "font-medium text-red-600" : "text-slate-600"
+				}
+			>
+				Realizado: {actual.toFixed(1)}%
+			</span>
 		</div>
 	)
 }
@@ -171,14 +255,17 @@ function CategoryGroup({
 	const difference = group.budgeted - group.actual
 
 	return (
-		<div className="border-b last:border-0">
+		<div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
 			<button
 				type="button"
-				className="grid w-full grid-cols-[1fr_auto] items-center gap-3 p-4 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+				className="grid w-full grid-cols-[1fr_auto] items-center gap-3 p-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 sm:p-4"
 				aria-expanded={isExpanded}
 				onClick={onToggle}
 			>
 				<div>
+					<p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+						Grupo de categorias
+					</p>
 					<h3 className="font-medium">{group.name}</h3>
 					<p className="text-xs text-slate-500">
 						{group.items.length} categoria{group.items.length !== 1 ? "s" : ""}
@@ -202,8 +289,8 @@ function CategoryGroup({
 				</div>
 			</button>
 			{isExpanded && (
-				<div>
-					<div className="grid grid-cols-[1fr_auto_auto_auto] gap-3 border-y p-3 text-xs text-slate-500">
+				<div className="border-t bg-slate-50/70 p-2 dark:bg-slate-800/30 sm:p-3">
+					<div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] gap-3 px-3 pb-2 text-[11px] font-medium uppercase tracking-wide text-slate-400">
 						<span>Categoria</span>
 						<span>Orçado</span>
 						<span>Realizado</span>
@@ -212,14 +299,14 @@ function CategoryGroup({
 					{group.items.map((item) => (
 						<div
 							key={item.categoryId}
-							className="grid grid-cols-[1fr_auto_auto_auto] gap-3 border-b p-3 text-sm last:border-0"
+							className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-3 rounded-lg bg-white p-3 text-sm shadow-sm dark:bg-slate-900"
 						>
-							<span>
-								{item.categoryName}
-								<small className="ml-2 text-slate-400">
-									{item.executionPercent.toFixed(0)}%
-								</small>
-							</span>
+							<div className="min-w-0 border-l-2 border-slate-200 pl-3 dark:border-slate-700">
+								<p className="truncate font-medium">{item.categoryName}</p>
+								<p className="text-xs text-slate-500">
+									Execução: {item.executionPercent.toFixed(0)}%
+								</p>
+							</div>
 							<span>{formatCurrency(item.budgeted)}</span>
 							<span>{formatCurrency(item.actual)}</span>
 							<DifferenceIndicator

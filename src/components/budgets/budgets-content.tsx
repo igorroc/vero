@@ -21,7 +21,7 @@ import {
 	type BudgetWithItems,
 } from "@/features/budgets"
 import { getCategories, type CategoryWithGroup } from "@/features/categories"
-import { centsToDollars } from "@/types/finance"
+import { centsToDollars, formatCurrency } from "@/types/finance"
 
 const types = ["INCOME", "ESSENTIAL", "LIFESTYLE", "INVESTMENT"] as const
 
@@ -30,6 +30,29 @@ const typeLabels = {
 	ESSENTIAL: "Essencial",
 	LIFESTYLE: "Estilo de vida",
 	INVESTMENT: "Investimentos",
+}
+
+const allocationTargets = {
+	ESSENTIAL: 50,
+	LIFESTYLE: 30,
+	INVESTMENT: 20,
+} as const
+
+function amountInputToCents(value: string): number {
+	const normalized = value.trim().replace(",", ".")
+	if (!normalized) return 0
+
+	const [wholePart, decimalPart = "", ...remainingParts] = normalized.split(".")
+	if (
+		remainingParts.length > 0 ||
+		!/^\d+$/.test(wholePart) ||
+		!/^\d*$/.test(decimalPart)
+	)
+		return 0
+
+	const cents =
+		Number(wholePart) * 100 + Number(decimalPart.padEnd(2, "0").slice(0, 2))
+	return Number.isSafeInteger(cents) ? cents : 0
 }
 
 export function BudgetsContent() {
@@ -107,6 +130,19 @@ export function BudgetsContent() {
 		month: "long",
 		year: "numeric",
 	})
+	const typeTotals = types.reduce(
+		(totals, type) => {
+			totals[type] = categories
+				.filter((category) => category.categoryGroup.type === type)
+				.reduce(
+					(total, category) =>
+						total + amountInputToCents(values[category.id] ?? ""),
+					0,
+				)
+			return totals
+		},
+		{} as Record<(typeof types)[number], number>,
+	)
 
 	if (loading) {
 		return (
@@ -196,6 +232,11 @@ export function BudgetsContent() {
 										/>
 									</div>
 								))}
+								<TypeTotal
+									type={type}
+									total={typeTotals[type]}
+									incomeTotal={typeTotals.INCOME}
+								/>
 							</section>
 						)
 					})}
@@ -237,6 +278,54 @@ export function BudgetsContent() {
 					</ModalFooter>
 				</ModalContent>
 			</Modal>
+		</div>
+	)
+}
+
+function TypeTotal({
+	type,
+	total,
+	incomeTotal,
+}: {
+	type: (typeof types)[number]
+	total: number
+	incomeTotal: number
+}) {
+	if (type === "INCOME") {
+		return (
+			<div className="flex items-center justify-between bg-slate-50 p-4 dark:bg-slate-800/50">
+				<span className="text-sm font-medium">Total de receitas</span>
+				<span className="font-semibold">{formatCurrency(total)}</span>
+			</div>
+		)
+	}
+
+	const target = allocationTargets[type]
+	const percentage = incomeTotal > 0 ? (total / incomeTotal) * 100 : 0
+	const isAboveTarget = percentage > target
+
+	return (
+		<div className="flex flex-col gap-1 bg-slate-50 p-4 text-sm dark:bg-slate-800/50 sm:flex-row sm:items-center sm:justify-between">
+			<div>
+				<p className="font-medium">Total de {typeLabels[type].toLowerCase()}</p>
+				<p className="text-xs text-slate-500">
+					Meta: até {target}% das receitas
+				</p>
+			</div>
+			<div className="text-right">
+				<p className="font-semibold">{formatCurrency(total)}</p>
+				<p
+					className={
+						isAboveTarget
+							? "text-xs font-medium text-red-600"
+							: "text-xs text-slate-500"
+					}
+				>
+					{incomeTotal > 0
+						? `${percentage.toFixed(1)}% das receitas`
+						: "Cadastre receitas para comparar"}
+				</p>
+			</div>
 		</div>
 	)
 }

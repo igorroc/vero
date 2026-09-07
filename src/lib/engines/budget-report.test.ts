@@ -68,5 +68,20 @@ describe("buildBudgetReport", () => {
 			budgeted: 25,
 			actual: expect.closeTo(33.33333333333333),
 		})
+		expect(result.allocation.ESSENTIAL).toEqual({
+			target: 50,
+			budgeted: 40,
+			actual: 40,
+		})
+		expect(result.allocation.LIFESTYLE).toEqual({
+			target: 30,
+			budgeted: 20,
+			actual: 0,
+		})
+		expect(result.allocation.INVESTMENT).toEqual({
+			target: 20,
+			budgeted: 20,
+			actual: 20,
+		})
 	})
 })
