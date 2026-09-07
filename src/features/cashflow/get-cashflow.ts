@@ -56,11 +56,15 @@ export async function getCashflowProjection(
 		const projection = buildCashflowProjection({
 			accounts: [
 				...accounts.map((a) => ({
-				id: a.id,
-				name: a.name,
-				initialBalance: a.currentBalance, // Use current balance
+					id: a.id,
+					name: a.name,
+					initialBalance: a.currentBalance, // Use current balance
 				})),
-				{ id: "debt-projection", name: "Dívidas (conta a definir)", initialBalance: 0 },
+				{
+					id: "debt-projection",
+					name: "Dívidas (conta a definir)",
+					initialBalance: 0,
+				},
 			],
 			events: eventsResult.events
 				.filter((e) => e.status !== "SKIPPED")
@@ -76,18 +80,20 @@ export async function getCashflowProjection(
 					accountId: e.accountId,
 					destinationAccountId: e.destinationAccountId,
 				}))
-				.concat(debtInstallments.map((installment) => ({
-					id: `debt-${installment.id}`,
-					description: `Parcela de dívida - ${installment.debt.creditor}`,
-					amount: -installment.plannedAmount,
-					type: "EXPENSE" as const,
-					costType: "RECURRENT" as const,
-					status: "PLANNED" as const,
-					priority: "REQUIRED" as const,
-					date: installment.dueDate,
-					accountId: "debt-projection",
-					destinationAccountId: null,
-				}))),
+				.concat(
+					debtInstallments.map((installment) => ({
+						id: `debt-${installment.id}`,
+						description: `Parcela de dívida - ${installment.debt.creditor}`,
+						amount: -installment.plannedAmount,
+						type: "EXPENSE" as const,
+						costType: "RECURRENT" as const,
+						status: "PLANNED" as const,
+						priority: "REQUIRED" as const,
+						date: installment.dueDate,
+						accountId: "debt-projection",
+						destinationAccountId: null,
+					})),
+				),
 			startDate: today,
 			endDate,
 			safetyBuffer,

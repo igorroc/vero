@@ -138,19 +138,23 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 		})
 
 		// Map events for spending limit calculation
-		const eventsForCalculation = eventsResult.events.map((e) => ({
-			amount: e.amount,
-			type: e.type,
-			status: e.status,
-			priority: e.priority,
-			date: e.date,
-		})).concat(debtInstallments.map((installment) => ({
-			amount: -installment.plannedAmount,
-			type: "EXPENSE" as const,
-			status: "PLANNED" as const,
-			priority: "REQUIRED" as const,
-			date: installment.dueDate,
-		})))
+		const eventsForCalculation = eventsResult.events
+			.map((e) => ({
+				amount: e.amount,
+				type: e.type,
+				status: e.status,
+				priority: e.priority,
+				date: e.date,
+			}))
+			.concat(
+				debtInstallments.map((installment) => ({
+					amount: -installment.plannedAmount,
+					type: "EXPENSE" as const,
+					status: "PLANNED" as const,
+					priority: "REQUIRED" as const,
+					date: installment.dueDate,
+				})),
+			)
 
 		// Calculate spending limit
 		const spendingLimit = calculateSpendingLimitAuto(
@@ -177,26 +181,36 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 				type: e.type,
 				status: e.status,
 			}))
-			.concat(debtInstallments
-				.filter((installment) => startOfDay(installment.dueDate).getTime() <= startOfDay(upcomingEnd).getTime())
-				.map((installment) => ({
-					id: `debt-${installment.id}`,
-					description: `Parcela de dívida - ${installment.debt.creditor}`,
-					amount: -installment.plannedAmount,
-					date: installment.dueDate,
-					type: "EXPENSE",
-					status: "PLANNED",
-				})))
+			.concat(
+				debtInstallments
+					.filter(
+						(installment) =>
+							startOfDay(installment.dueDate).getTime() <=
+							startOfDay(upcomingEnd).getTime(),
+					)
+					.map((installment) => ({
+						id: `debt-${installment.id}`,
+						description: `Parcela de dívida - ${installment.debt.creditor}`,
+						amount: -installment.plannedAmount,
+						date: installment.dueDate,
+						type: "EXPENSE",
+						status: "PLANNED",
+					})),
+			)
 
 		// Build cashflow projection input
 		const cashflowInput = {
 			accounts: [
 				...accounts.map((a) => ({
-				id: a.id,
-				name: a.name,
-				initialBalance: a.currentBalance, // Use current balance as starting point
+					id: a.id,
+					name: a.name,
+					initialBalance: a.currentBalance, // Use current balance as starting point
 				})),
-				{ id: "debt-projection", name: "Dívidas (conta a definir)", initialBalance: 0 },
+				{
+					id: "debt-projection",
+					name: "Dívidas (conta a definir)",
+					initialBalance: 0,
+				},
 			],
 			events: eventsResult.events
 				.filter((e) => e.status !== "SKIPPED")
@@ -212,18 +226,20 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 					accountId: e.accountId,
 					destinationAccountId: e.destinationAccountId,
 				}))
-				.concat(debtInstallments.map((installment) => ({
-					id: `debt-${installment.id}`,
-					description: `Parcela de dívida - ${installment.debt.creditor}`,
-					amount: -installment.plannedAmount,
-					type: "EXPENSE" as const,
-					costType: "RECURRENT" as const,
-					status: "PLANNED" as const,
-					priority: "REQUIRED" as const,
-					date: installment.dueDate,
-					accountId: "debt-projection",
-					destinationAccountId: null,
-				}))),
+				.concat(
+					debtInstallments.map((installment) => ({
+						id: `debt-${installment.id}`,
+						description: `Parcela de dívida - ${installment.debt.creditor}`,
+						amount: -installment.plannedAmount,
+						type: "EXPENSE" as const,
+						costType: "RECURRENT" as const,
+						status: "PLANNED" as const,
+						priority: "REQUIRED" as const,
+						date: installment.dueDate,
+						accountId: "debt-projection",
+						destinationAccountId: null,
+					})),
+				),
 			startDate: today,
 			endDate: addDays(today, 30),
 			safetyBuffer: settings.safetyBuffer,

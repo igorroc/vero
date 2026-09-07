@@ -98,7 +98,8 @@ export async function createEvent(
 		}
 
 		// Create the event
-		const isPastEvent = startOfDay(input.date).getTime() < startOfDay(new Date()).getTime()
+		const isPastEvent =
+			startOfDay(input.date).getTime() < startOfDay(new Date()).getTime()
 		const eventData = {
 			userId: user.id,
 			accountId: input.accountId,

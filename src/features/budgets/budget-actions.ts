@@ -286,19 +286,28 @@ export async function getBudgetReport(
 				plannedAmount: true,
 				debt: {
 					select: {
-						category: { select: { id: true, name: true, categoryGroup: { select: { name: true, type: true } } } },
+						category: {
+							select: {
+								id: true,
+								name: true,
+								categoryGroup: { select: { name: true, type: true } },
+							},
+						},
 					},
 				},
 			},
 		})
 		const budgetItems = new Map(
-			budgetResult.budget.items.map((item) => [item.categoryId, {
-				categoryId: item.categoryId,
-				categoryName: item.category.name,
-				groupName: item.category.categoryGroup.name,
-				groupType: item.category.categoryGroup.type,
-				amount: item.amount,
-			}]),
+			budgetResult.budget.items.map((item) => [
+				item.categoryId,
+				{
+					categoryId: item.categoryId,
+					categoryName: item.category.name,
+					groupName: item.category.categoryGroup.name,
+					groupType: item.category.categoryGroup.type,
+					amount: item.amount,
+				},
+			]),
 		)
 		for (const installment of debtInstallments) {
 			const category = installment.debt.category

@@ -250,9 +250,16 @@ export function EventsList() {
 		if (type === "TRANSFER") return ArrowLeftRight
 
 		const desc = description.toLowerCase()
-		if (desc.includes("salário") || desc.includes("salario") || desc.includes("renda"))
+		if (
+			desc.includes("salário") ||
+			desc.includes("salario") ||
+			desc.includes("renda")
+		)
 			return Banknote
-		if (desc.includes("correção monetária") || desc.includes("correcao monetaria"))
+		if (
+			desc.includes("correção monetária") ||
+			desc.includes("correcao monetaria")
+		)
 			return BadgePercent
 		if (
 			desc.includes("fatura") ||

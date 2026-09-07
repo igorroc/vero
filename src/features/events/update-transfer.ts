@@ -16,14 +16,20 @@ export async function updateTransfer(input: UpdateTransferInput) {
 		const user = await getUserBySession()
 		if (!user) return { success: false, error: "Não autenticado" } as const
 		const description = input.description.trim()
-		if (!description) return { success: false, error: "A descrição é obrigatória" } as const
+		if (!description)
+			return { success: false, error: "A descrição é obrigatória" } as const
 		const amount = dollarsToCents(Math.abs(input.amount))
-		if (!Number.isFinite(amount) || amount <= 0) return { success: false, error: "Informe um valor maior que zero" } as const
+		if (!Number.isFinite(amount) || amount <= 0)
+			return {
+				success: false,
+				error: "Informe um valor maior que zero",
+			} as const
 		const transfer = await prisma.event.findFirst({
 			where: { id: input.id, userId: user.id, type: "TRANSFER" },
 			select: { id: true },
 		})
-		if (!transfer) return { success: false, error: "Transferência não encontrada" } as const
+		if (!transfer)
+			return { success: false, error: "Transferência não encontrada" } as const
 		await prisma.event.update({
 			where: { id: transfer.id },
 			data: { description, amount: -amount, date: input.date },
@@ -31,6 +37,9 @@ export async function updateTransfer(input: UpdateTransferInput) {
 		return { success: true } as const
 	} catch (error) {
 		console.error("Failed to update transfer:", error)
-		return { success: false, error: "Não foi possível atualizar a transferência" } as const
+		return {
+			success: false,
+			error: "Não foi possível atualizar a transferência",
+		} as const
 	}
 }

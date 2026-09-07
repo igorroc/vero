@@ -23,7 +23,8 @@ export function buildDebtInstallmentPlan(
 
 	return Array.from({ length: installmentCount }, (_, index) => ({
 		number: index + 1,
-		plannedAmount: baseAmount + (index === installmentCount - 1 ? remainder : 0),
+		plannedAmount:
+			baseAmount + (index === installmentCount - 1 ? remainder : 0),
 		dueDate: addMonthsKeepingDay(firstDueDate, index),
 	}))
 }
@@ -43,7 +44,9 @@ export function distributeRemainingDebt(
 }
 
 function addMonthsKeepingDay(date: Date, months: number): Date {
-	const result = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1))
+	const result = new Date(
+		Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1),
+	)
 	const lastDay = new Date(
 		Date.UTC(result.getUTCFullYear(), result.getUTCMonth() + 1, 0),
 	).getUTCDate()
