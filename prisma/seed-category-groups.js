@@ -9,6 +9,7 @@ const categoryGroups = [
 	{ id: "food", name: "Alimentação", type: "ESSENTIAL" },
 	{ id: "transportation", name: "Transporte", type: "ESSENTIAL" },
 	{ id: "health", name: "Saúde", type: "ESSENTIAL" },
+	{ id: "debts", name: "Dívidas", type: "ESSENTIAL" },
 	{ id: "personal-care", name: "Cuidados pessoais", type: "LIFESTYLE" },
 	{ id: "leisure", name: "Lazer", type: "LIFESTYLE" },
 	{ id: "education", name: "Educação", type: "LIFESTYLE" },
