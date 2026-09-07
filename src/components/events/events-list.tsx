@@ -668,19 +668,6 @@ export function EventsList() {
 														{isOverdue && " • Atrasado"}
 													</p>
 												</div>
-
-												<div className="text-right flex-shrink-0">
-													<p
-														className={`font-semibold text-sm sm:text-base ${
-															event.amount > 0
-																? "text-emerald-600"
-																: "text-slate-900 dark:text-white"
-														}`}
-													>
-														{event.amount > 0 ? "+" : ""}
-														{formatCurrency(event.amount)}
-													</p>
-												</div>
 											</div>
 
 											{/* Tags row */}
@@ -707,51 +694,65 @@ export function EventsList() {
 											</div>
 										</div>
 
-										{/* Actions menu */}
-										<Dropdown>
-											<DropdownTrigger>
-												<Button
-													isIconOnly
-													variant="light"
-													size="sm"
-													radius="full"
-													className="flex-shrink-0"
+										<div className="flex items-center gap-1.5 sm:gap-2 mt-2 flex-wrap">
+											<div className="text-right flex-shrink-0">
+												<p
+													className={`font-semibold text-sm sm:text-base ${
+														event.amount > 0
+															? "text-emerald-600"
+															: "text-slate-900 dark:text-white"
+													}`}
 												>
-													<MoreVertical className="w-4 h-4 sm:w-5 sm:h-5" />
-												</Button>
-											</DropdownTrigger>
-											<DropdownMenu
-												aria-label="Ações do evento"
-												onAction={(key) => {
-													if (key === "edit") handleEdit(event)
-													if (key === "confirm") handleConfirm(event.id)
-													if (key === "skip") handleSkip(event.id)
-													if (key === "delete") handleDelete(event.id)
-												}}
-											>
-												<DropdownItem
-													key="edit"
-													startContent={<Pencil className="w-4 h-4" />}
+													{event.amount > 0 ? "+" : ""}
+													{formatCurrency(event.amount)}
+												</p>
+											</div>
+											{/* Actions menu */}
+											<Dropdown>
+												<DropdownTrigger>
+													<Button
+														isIconOnly
+														variant="light"
+														size="sm"
+														radius="full"
+														className="flex-shrink-0"
+													>
+														<MoreVertical className="w-4 h-4 sm:w-5 sm:h-5" />
+													</Button>
+												</DropdownTrigger>
+												<DropdownMenu
+													aria-label="Ações do evento"
+													onAction={(key) => {
+														if (key === "edit") handleEdit(event)
+														if (key === "confirm") handleConfirm(event.id)
+														if (key === "skip") handleSkip(event.id)
+														if (key === "delete") handleDelete(event.id)
+													}}
 												>
-													{event.id.startsWith("generated-")
-														? "Editar Modelo"
-														: "Editar"}
-												</DropdownItem>
-												{event.status === "PLANNED" ? (
-													<DropdownItem key="confirm">Confirmar</DropdownItem>
-												) : null}
-												{event.status === "PLANNED" ? (
-													<DropdownItem key="skip">Ignorar</DropdownItem>
-												) : null}
-												<DropdownItem
-													key="delete"
-													className="text-danger"
-													color="danger"
-												>
-													Excluir
-												</DropdownItem>
-											</DropdownMenu>
-										</Dropdown>
+													<DropdownItem
+														key="edit"
+														startContent={<Pencil className="w-4 h-4" />}
+													>
+														{event.id.startsWith("generated-")
+															? "Editar Modelo"
+															: "Editar"}
+													</DropdownItem>
+													{event.status === "PLANNED" ? (
+														<DropdownItem key="confirm">Confirmar</DropdownItem>
+													) : null}
+													{event.status === "PLANNED" ? (
+														<DropdownItem key="skip">Ignorar</DropdownItem>
+													) : null}
+													<DropdownItem
+														key="delete"
+														className="text-danger"
+														color="danger"
+													>
+														Excluir
+													</DropdownItem>
+												</DropdownMenu>
+											</Dropdown>
+										</div>
 									</div>
 								</div>
 							</Fragment>
