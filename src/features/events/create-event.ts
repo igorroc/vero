@@ -98,8 +98,8 @@ export async function createEvent(
 		}
 
 		// Create the event
-		const isPastEvent =
-			startOfDay(input.date).getTime() < startOfDay(new Date()).getTime()
+		const isTodayOrPastEvent =
+			startOfDay(input.date).getTime() <= startOfDay(new Date()).getTime()
 		const eventData = {
 			userId: user.id,
 			accountId: input.accountId,
@@ -109,7 +109,7 @@ export async function createEvent(
 			type: input.type,
 			costType:
 				input.type === "EXPENSE" ? (input.costType ?? "RECURRENT") : null,
-			status: isPastEvent ? "CONFIRMED" : (input.status ?? "PLANNED"),
+			status: isTodayOrPastEvent ? "CONFIRMED" : (input.status ?? "PLANNED"),
 			priority: input.priority ?? "IMPORTANT",
 			date: input.date,
 			isRecurrenceTemplate: input.isRecurring ?? false,

@@ -216,35 +216,6 @@ export function EventsList() {
 		return d < today
 	}
 
-	const typeColors: Record<
-		string,
-		"success" | "danger" | "primary" | "secondary"
-	> = {
-		INCOME: "success",
-		EXPENSE: "danger",
-		INVESTMENT: "primary",
-		TRANSFER: "secondary",
-	}
-
-	const typeLabels: Record<string, string> = {
-		INCOME: "Receita",
-		EXPENSE: "Despesa",
-		INVESTMENT: "Investimento",
-		TRANSFER: "Transferência",
-	}
-
-	const statusColors: Record<string, "default" | "success" | "warning"> = {
-		PLANNED: "warning",
-		CONFIRMED: "success",
-		SKIPPED: "default",
-	}
-
-	const statusLabels: Record<string, string> = {
-		PLANNED: "Planejado",
-		CONFIRMED: "Confirmado",
-		SKIPPED: "Ignorado",
-	}
-
 	// Icon and color mapping for event types
 	const getEventIcon = (description: string, type: string) => {
 		if (type === "TRANSFER") return ArrowLeftRight
@@ -337,6 +308,13 @@ export function EventsList() {
 			bg: "bg-rose-100 dark:bg-rose-900/30",
 			icon: "text-rose-600 dark:text-rose-400",
 		}
+	}
+
+	const getStatusBorder = (status: string) => {
+		if (status === "CONFIRMED") return ""
+		if (status === "PLANNED")
+			return "border-l-4 border-l-amber-400 dark:border-l-amber-400"
+		return "border-l-4 border-l-slate-300 dark:border-l-slate-600"
 	}
 
 	// Calculate budget summary
@@ -649,9 +627,16 @@ export function EventsList() {
 									</h3>
 								)}
 								<div
-									className={`bg-white dark:bg-slate-900 rounded-2xl sm:rounded-[20px] p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow border border-slate-100 dark:border-slate-800 ${
+									className={`bg-white dark:bg-slate-900 rounded-2xl sm:rounded-[20px] p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow border border-slate-100 dark:border-slate-800 ${getStatusBorder(event.status)} ${
 										isOverdue ? "ring-2 ring-amber-400/50" : ""
 									}`}
+									title={
+										event.status === "CONFIRMED"
+											? "Confirmado"
+											: event.status === "PLANNED"
+												? "Planejado"
+												: "Ignorado"
+									}
 								>
 									<div className="flex items-center gap-3 sm:gap-4">
 										{/* Icon */}
@@ -695,22 +680,11 @@ export function EventsList() {
 														{event.amount > 0 ? "+" : ""}
 														{formatCurrency(event.amount)}
 													</p>
-													<p className="text-xs text-slate-400 mt-0.5 hidden sm:block">
-														{statusLabels[event.status]}
-													</p>
 												</div>
 											</div>
 
 											{/* Tags row */}
 											<div className="flex items-center gap-1.5 sm:gap-2 mt-2 flex-wrap">
-												<Chip
-													size="sm"
-													variant="flat"
-													color={typeColors[event.type]}
-													className="text-[10px] sm:text-xs h-5 sm:h-6"
-												>
-													{typeLabels[event.type]}
-												</Chip>
 												{category && (
 													<Chip
 														size="sm"
@@ -730,15 +704,6 @@ export function EventsList() {
 														Recorrente
 													</Chip>
 												)}
-												{/* Mobile status chip */}
-												<Chip
-													size="sm"
-													variant="bordered"
-													color={statusColors[event.status]}
-													className="text-[10px] sm:text-xs h-5 sm:h-6 sm:hidden ml-auto"
-												>
-													{statusLabels[event.status]}
-												</Chip>
 											</div>
 										</div>
 

@@ -294,7 +294,7 @@ function CategoryGroup({
 			</button>
 			{isExpanded && (
 				<div className="border-t bg-slate-50/70 p-2 dark:bg-slate-800/30 sm:p-3">
-					<div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] gap-3 px-3 pb-2 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+					<div className="hidden grid-cols-[minmax(0,1fr)_auto_auto_auto] gap-3 px-3 pb-2 text-[11px] font-medium uppercase tracking-wide text-slate-400 sm:grid">
 						<span>Categoria</span>
 						<span>Orçado</span>
 						<span>Realizado</span>
@@ -303,20 +303,37 @@ function CategoryGroup({
 					{group.items.map((item) => (
 						<div
 							key={item.categoryId}
-							className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-3 rounded-lg bg-white p-3 text-sm shadow-sm dark:bg-slate-900"
+							className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-lg bg-white p-3 text-sm shadow-sm dark:bg-slate-900 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-center"
 						>
-							<div className="min-w-0 border-l-2 border-slate-200 pl-3 dark:border-slate-700">
+							<div className="col-span-2 min-w-0 border-l-2 border-slate-200 pl-3 dark:border-slate-700 sm:col-span-1">
 								<p className="truncate font-medium">{item.categoryName}</p>
 								<p className="text-xs text-slate-500">
 									Execução: {item.executionPercent.toFixed(0)}%
 								</p>
 							</div>
-							<span>{formatCurrency(item.budgeted)}</span>
-							<span>{formatCurrency(item.actual)}</span>
-							<DifferenceIndicator
-								type={group.type}
-								difference={item.difference}
-							/>
+							<div className="sm:contents">
+								<span className="flex flex-col gap-0.5 sm:block">
+									<span className="text-[11px] font-medium uppercase tracking-wide text-slate-400 sm:hidden">
+										Orçado
+									</span>
+									{formatCurrency(item.budgeted)}
+								</span>
+								<span className="flex flex-col gap-0.5 sm:block">
+									<span className="text-[11px] font-medium uppercase tracking-wide text-slate-400 sm:hidden">
+										Realizado
+									</span>
+									{formatCurrency(item.actual)}
+								</span>
+								<div className="col-span-2 flex flex-col gap-0.5 sm:col-span-1 sm:block">
+									<span className="text-[11px] font-medium uppercase tracking-wide text-slate-400 sm:hidden">
+										Diferença
+									</span>
+									<DifferenceIndicator
+										type={group.type}
+										difference={item.difference}
+									/>
+								</div>
+							</div>
 						</div>
 					))}
 				</div>

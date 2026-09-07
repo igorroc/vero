@@ -312,6 +312,7 @@ function TypeTotal({
 
 	const target = allocationTargets[type]
 	const percentage = incomeTotal > 0 ? (total / incomeTotal) * 100 : 0
+	const targetAmount = Math.round((incomeTotal * target) / 100)
 	const isAboveTarget = percentage > target
 
 	return (
@@ -319,7 +320,7 @@ function TypeTotal({
 			<div>
 				<p className="font-medium">Total de {typeLabels[type].toLowerCase()}</p>
 				<p className="text-xs text-slate-500">
-					Meta: até {target}% das receitas
+					Meta ideal: até {target}% das receitas ({formatCurrency(targetAmount)})
 				</p>
 			</div>
 			<div className="text-right">

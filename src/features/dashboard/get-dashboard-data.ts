@@ -165,12 +165,14 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 			today,
 		)
 
-		// Get upcoming events (next 7 days)
-		const upcomingEnd = addDays(today, 7)
+		// Upcoming events start tomorrow; events due today belong to today's activity.
+		const upcomingStart = addDays(startOfDay(today), 1)
+		const upcomingEnd = addDays(startOfDay(today), 7)
 		const upcomingEvents = eventsResult.events
 			.filter(
 				(e) =>
-					startOfDay(e.date).getTime() <= startOfDay(upcomingEnd).getTime() &&
+					startOfDay(e.date).getTime() >= upcomingStart.getTime() &&
+					startOfDay(e.date).getTime() <= upcomingEnd.getTime() &&
 					e.status !== "SKIPPED",
 			)
 			.map((e) => ({
@@ -185,8 +187,10 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 				debtInstallments
 					.filter(
 						(installment) =>
+							startOfDay(installment.dueDate).getTime() >=
+								upcomingStart.getTime() &&
 							startOfDay(installment.dueDate).getTime() <=
-							startOfDay(upcomingEnd).getTime(),
+								startOfDay(upcomingEnd).getTime(),
 					)
 					.map((installment) => ({
 						id: `debt-${installment.id}`,
@@ -197,6 +201,7 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 						status: "PLANNED",
 					})),
 			)
+			.sort((a, b) => a.date.getTime() - b.date.getTime())
 
 		// Build cashflow projection input
 		const cashflowInput = {
