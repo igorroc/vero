@@ -13,7 +13,7 @@ model Debt {
     creditor         String
     description      String
     totalAmount      Int        // In cents, total outstanding when the debt was registered
-    installmentCount Int
+    installmentCount Int        @default(0) // Number of generated installments
     status           DebtStatus @default(ACTIVE)
     installments     DebtInstallment[]
 
