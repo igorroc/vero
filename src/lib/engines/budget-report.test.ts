@@ -52,6 +52,13 @@ describe("buildBudgetReport", () => {
 
 		expect(result.income).toEqual({ budgeted: 500000, actual: 500000 })
 		expect(result.outgoing).toEqual({ budgeted: 400000, actual: 300000 })
+		expect(result.groups.map((group) => group.type)).toEqual([
+			"INCOME",
+			"ESSENTIAL",
+			"ESSENTIAL",
+			"LIFESTYLE",
+			"INVESTMENT",
+		])
 		expect(result.distribution.ESSENTIAL).toEqual({
 			budgeted: 50,
 			actual: expect.closeTo(66.66666666666666),

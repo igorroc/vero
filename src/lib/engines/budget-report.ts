@@ -120,7 +120,24 @@ export function buildBudgetReport(input: BudgetReportInput): BudgetReport {
 		groups.set(key, group)
 	}
 
+	const groupOrder: Record<BudgetGroupType, number> = {
+		INCOME: 0,
+		ESSENTIAL: 1,
+		LIFESTYLE: 2,
+		INVESTMENT: 3,
+	}
 	const reportGroups = Array.from(groups.values())
+		.map((group) => ({
+			...group,
+			items: [...group.items].sort((a, b) =>
+				a.categoryName.localeCompare(b.categoryName, "pt-BR"),
+			),
+		}))
+		.sort(
+			(a, b) =>
+				groupOrder[a.type] - groupOrder[b.type] ||
+				a.name.localeCompare(b.name, "pt-BR"),
+		)
 	const income = reportGroups
 		.filter((group) => group.type === "INCOME")
 		.reduce(
