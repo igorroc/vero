@@ -4,11 +4,12 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button, Chip, Spinner } from "@nextui-org/react"
 import {
-	ArrowDownLeft,
+	ArrowLeftRight,
 	ArrowLeft,
-	ArrowRightLeft,
-	ArrowUpRight,
+	CircleDollarSign,
+	CreditCard,
 	Landmark,
+	TrendingUp,
 } from "lucide-react"
 import { getAccountStatement, type AccountStatement } from "@/features/accounts"
 import { formatCurrency } from "@/types/finance"
@@ -113,10 +114,21 @@ export function AccountStatementContent({ accountId }: { accountId: string }) {
 							const isCredit = entry.amount > 0
 							const isTransfer = entry.type === "TRANSFER"
 							const Icon = isTransfer
-								? ArrowRightLeft
-								: isCredit
-									? ArrowDownLeft
-									: ArrowUpRight
+								? ArrowLeftRight
+								: entry.type === "INCOME"
+									? CircleDollarSign
+									: entry.type === "INVESTMENT"
+										? TrendingUp
+										: CreditCard
+							const iconColors = isTransfer
+								? isCredit
+									? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30"
+									: "bg-rose-100 text-rose-600 dark:bg-rose-900/30"
+								: entry.type === "INCOME"
+									? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30"
+									: entry.type === "INVESTMENT"
+										? "bg-blue-100 text-blue-600 dark:bg-blue-900/30"
+										: "bg-rose-100 text-rose-600 dark:bg-rose-900/30"
 							const label = isTransfer
 								? entry.isIncomingTransfer
 									? "Transferência recebida"
@@ -133,7 +145,7 @@ export function AccountStatementContent({ accountId }: { accountId: string }) {
 								>
 									<div className="flex min-w-0 items-center gap-3">
 										<div
-											className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${isCredit ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30" : "bg-rose-100 text-rose-600 dark:bg-rose-900/30"}`}
+											className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconColors}`}
 										>
 											<Icon className="h-5 w-5" />
 										</div>

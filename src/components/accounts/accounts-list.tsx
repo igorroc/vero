@@ -30,7 +30,12 @@ import {
 	type UpdateAccountInput,
 } from "@/features/accounts"
 import { createTransfer, type CreateTransferInput } from "@/features/events"
-import { dateFromInput, formatCurrency, centsToDollars, formatDateInput } from "@/types/finance"
+import {
+	dateFromInput,
+	formatCurrency,
+	centsToDollars,
+	formatDateInput,
+} from "@/types/finance"
 import { toast } from "react-toastify"
 import {
 	Plus,
@@ -47,7 +52,6 @@ import { StatCard } from "@/components/ui/stat-card"
 
 export function AccountsList() {
 	const [accounts, setAccounts] = useState<AccountWithBalance[]>([])
-	const [totalBalance, setTotalBalance] = useState(0)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 	const { isOpen, onOpen, onClose } = useDisclosure()
@@ -124,7 +128,6 @@ export function AccountsList() {
 
 		if (result.success) {
 			setAccounts(result.accounts)
-			setTotalBalance(result.totalBalance)
 		} else {
 			setError(result.error)
 		}
@@ -272,6 +275,21 @@ export function AccountsList() {
 	const destinationAccounts = accounts.filter(
 		(account) => account.id !== withdrawalData?.fromAccountId,
 	)
+	const regularAccounts = accounts.filter(
+		(account) => account.type !== "INVESTMENT",
+	)
+	const investmentAccounts = accounts.filter(
+		(account) => account.type === "INVESTMENT",
+	)
+	const regularBalance = regularAccounts.reduce(
+		(total, account) => total + account.currentBalance,
+		0,
+	)
+	const investmentBalance = investmentAccounts.reduce(
+		(total, account) => total + account.currentBalance,
+		0,
+	)
+	const displayedAccounts = [...regularAccounts, ...investmentAccounts]
 
 	const typeColors: Record<string, "primary" | "secondary" | "success"> = {
 		BANK: "primary",
@@ -295,14 +313,29 @@ export function AccountsList() {
 
 	return (
 		<div className="space-y-6">
-			{/* Total balance card */}
-			<StatCard
-				title="Saldo Total"
-				value={formatCurrency(totalBalance)}
-				subtitle={`${accounts.length} conta(s) cadastrada(s)`}
-				icon={Wallet}
-				gradient={totalBalance >= 0 ? "blue" : "red"}
-			/>
+			<div className="grid gap-4 sm:grid-cols-2">
+				<StatCard
+					title="Saldo em Contas"
+					value={formatCurrency(regularBalance)}
+					subtitle={`${regularAccounts.length} conta(s) disponível(is)`}
+					icon={Wallet}
+					gradient={regularBalance >= 0 ? "blue" : "red"}
+				/>
+				{investmentAccounts.length > 0 && (
+					<div className="modern-card flex items-center justify-between p-5 text-slate-600 dark:text-slate-300">
+						<div>
+							<p className="text-sm font-medium">Investimentos</p>
+							<p className="text-2xl font-semibold">
+								{formatCurrency(investmentBalance)}
+							</p>
+							<p className="text-xs text-slate-500">
+								{investmentAccounts.length} conta(s) de investimento
+							</p>
+						</div>
+						<TrendingUp className="h-6 w-6 text-slate-400" />
+					</div>
+				)}
+			</div>
 
 			{/* Header */}
 			<div className="flex justify-end">
@@ -344,87 +377,106 @@ export function AccountsList() {
 			{/* Accounts list */}
 			{!error && accounts.length > 0 && (
 				<div className="grid gap-4">
-					{accounts.map((account) => {
+					{displayedAccounts.map((account, index) => {
 						const AccountIcon = getAccountIcon(account.type)
+						const isInvestment = account.type === "INVESTMENT"
+						const isFirstInvestment =
+							isInvestment && index === regularAccounts.length
 						return (
-							<div key={account.id} className="modern-card p-4">
-								<div className="flex justify-between items-center">
-									<Link
-										href={`/accounts/${account.id}`}
-										className="flex min-w-0 items-center gap-4 rounded-lg transition-opacity hover:opacity-75"
-									>
-										<div
-											className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getAccountGradient(account.type)} flex items-center justify-center`}
+							<div key={account.id} className="contents">
+								{isFirstInvestment && (
+									<div className="col-span-full mt-4 border-t border-slate-200 pt-5 dark:border-slate-800">
+										<p className="text-sm font-medium text-slate-500">
+											Contas de investimento
+										</p>
+									</div>
+								)}
+								<div
+									className={`modern-card p-4 ${
+										isInvestment
+											? "opacity-75 transition-opacity hover:opacity-100"
+											: ""
+									}`}
+								>
+									<div className="flex justify-between items-center">
+										<Link
+											href={`/accounts/${account.id}`}
+											className="flex min-w-0 items-center gap-4 rounded-lg transition-opacity hover:opacity-75"
 										>
-											<AccountIcon className="w-6 h-6 text-white" />
-										</div>
-										<div>
-											<div className="flex items-center gap-2 mb-1">
-												<Chip
-													color={typeColors[account.type]}
-													variant="flat"
-													size="sm"
-												>
-													{typeLabels[account.type]}
-												</Chip>
-											</div>
-											<p className="font-semibold text-lg text-slate-900 dark:text-white">
-												{account.name}
-											</p>
-											<p className="text-sm text-slate-500">
-												Saldo inicial: {formatCurrency(account.initialBalance)}
-											</p>
-										</div>
-									</Link>
-									<div className="flex items-center gap-4">
-										<span
-											className={`text-2xl font-bold ${
-												account.currentBalance < 0
-													? "text-red-600"
-													: "text-slate-900 dark:text-white"
-											}`}
-										>
-											{formatCurrency(account.currentBalance)}
-										</span>
-										<Dropdown>
-											<DropdownTrigger>
-												<Button isIconOnly variant="light" size="sm">
-													<MoreVertical className="w-4 h-4" />
-												</Button>
-											</DropdownTrigger>
-											<DropdownMenu
-												aria-label="Ações da conta"
-												onAction={(key) => {
-													if (key === "edit") handleEdit(account)
-													if (key === "transfer") handleWithdrawal(account)
-													if (key === "delete") handleDelete(account.id)
-												}}
+											<div
+												className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getAccountGradient(account.type)} flex items-center justify-center`}
 											>
-												<DropdownItem
-													key="edit"
-													startContent={<Pencil className="w-4 h-4" />}
-												>
-													Editar
-												</DropdownItem>
-												{accounts.length > 1 ? (
-													<DropdownItem
-														key="transfer"
-														startContent={
-															<ArrowRightLeft className="w-4 h-4" />
-														}
+												<AccountIcon className="w-6 h-6 text-white" />
+											</div>
+											<div>
+												<div className="flex items-center gap-2 mb-1">
+													<Chip
+														color={typeColors[account.type]}
+														variant="flat"
+														size="sm"
 													>
-														Transferir
-													</DropdownItem>
-												) : null}
-												<DropdownItem
-													key="delete"
-													className="text-danger"
-													color="danger"
+														{typeLabels[account.type]}
+													</Chip>
+												</div>
+												<p className="font-semibold text-lg text-slate-900 dark:text-white">
+													{account.name}
+												</p>
+												<p className="text-sm text-slate-500">
+													Saldo inicial:{" "}
+													{formatCurrency(account.initialBalance)}
+												</p>
+											</div>
+										</Link>
+										<div className="flex items-center gap-4">
+											<span
+												className={`text-2xl font-bold ${
+													account.currentBalance < 0
+														? "text-red-600"
+														: "text-slate-900 dark:text-white"
+												}`}
+											>
+												{formatCurrency(account.currentBalance)}
+											</span>
+											<Dropdown>
+												<DropdownTrigger>
+													<Button isIconOnly variant="light" size="sm">
+														<MoreVertical className="w-4 h-4" />
+													</Button>
+												</DropdownTrigger>
+												<DropdownMenu
+													aria-label="Ações da conta"
+													onAction={(key) => {
+														if (key === "edit") handleEdit(account)
+														if (key === "transfer") handleWithdrawal(account)
+														if (key === "delete") handleDelete(account.id)
+													}}
 												>
-													Excluir
-												</DropdownItem>
-											</DropdownMenu>
-										</Dropdown>
+													<DropdownItem
+														key="edit"
+														startContent={<Pencil className="w-4 h-4" />}
+													>
+														Editar
+													</DropdownItem>
+													{accounts.length > 1 ? (
+														<DropdownItem
+															key="transfer"
+															startContent={
+																<ArrowRightLeft className="w-4 h-4" />
+															}
+														>
+															Transferir
+														</DropdownItem>
+													) : null}
+													<DropdownItem
+														key="delete"
+														className="text-danger"
+														color="danger"
+													>
+														Excluir
+													</DropdownItem>
+												</DropdownMenu>
+											</Dropdown>
+										</div>
 									</div>
 								</div>
 							</div>

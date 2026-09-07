@@ -34,9 +34,24 @@ export interface StatementDay {
 export function buildAccountStatement(
 	input: AccountStatementInput,
 ): StatementDay[] {
-	const orderedEvents = [...input.events].sort(
-		(a, b) => a.date.getTime() - b.date.getTime(),
-	)
+	const getAmountForAccount = (
+		event: AccountStatementInput["events"][number],
+	) =>
+		event.type === "TRANSFER" && event.destinationAccountId === input.accountId
+			? -event.amount
+			: event.amount
+
+	const orderedEvents = [...input.events].sort((a, b) => {
+		const dayDifference =
+			startOfDay(a.date).getTime() - startOfDay(b.date).getTime()
+		if (dayDifference !== 0) return dayDifference
+
+		const aIsCredit = getAmountForAccount(a) > 0
+		const bIsCredit = getAmountForAccount(b) > 0
+		if (aIsCredit !== bIsCredit) return aIsCredit ? -1 : 1
+
+		return a.date.getTime() - b.date.getTime()
+	})
 	const days = new Map<string, StatementDay>()
 	let balance = input.initialBalance
 
@@ -44,7 +59,7 @@ export function buildAccountStatement(
 		const isIncomingTransfer =
 			event.type === "TRANSFER" &&
 			event.destinationAccountId === input.accountId
-		const amount = isIncomingTransfer ? -event.amount : event.amount
+		const amount = getAmountForAccount(event)
 		balance += amount
 		const date = startOfDay(event.date)
 		const dateKey = formatDateISO(date)

@@ -42,4 +42,39 @@ describe("buildAccountStatement", () => {
 		expect(statement[0].entries[0].amount).toBe(50000)
 		expect(statement[0].entries[1].balanceAfter).toBe(230000)
 	})
+
+	it("applies credits before debits on the same day", () => {
+		const statement = buildAccountStatement({
+			accountId: "checking",
+			initialBalance: 0,
+			events: [
+				{
+					id: "expense",
+					description: "Aluguel",
+					amount: -120000,
+					type: "EXPENSE",
+					date: new Date("2026-09-02T08:00:00Z"),
+					accountId: "checking",
+					destinationAccountId: null,
+				},
+				{
+					id: "income",
+					description: "Salário",
+					amount: 200000,
+					type: "INCOME",
+					date: new Date("2026-09-02T12:00:00Z"),
+					accountId: "checking",
+					destinationAccountId: null,
+				},
+			],
+		})
+
+		expect(statement[0].entries.map((entry) => entry.id)).toEqual([
+			"income",
+			"expense",
+		])
+		expect(statement[0].entries.map((entry) => entry.balanceAfter)).toEqual([
+			200000, 80000,
+		])
+	})
 })
