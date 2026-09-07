@@ -21,7 +21,10 @@ import {
 	type BudgetWithItems,
 } from "@/features/budgets"
 import { getCategories, type CategoryWithGroup } from "@/features/categories"
+
+import { calculateBudgetPlanAdjustment } from "@/lib/engines/budget-report"
 import { centsToDollars, formatCurrency } from "@/types/finance"
+import { BudgetPlanWarning } from "./budget-plan-warning"
 
 const types = ["INCOME", "ESSENTIAL", "LIFESTYLE", "INVESTMENT"] as const
 
@@ -143,6 +146,11 @@ export function BudgetsContent() {
 		},
 		{} as Record<(typeof types)[number], number>,
 	)
+	const planAdjustment = calculateBudgetPlanAdjustment(typeTotals.INCOME, {
+		ESSENTIAL: typeTotals.ESSENTIAL,
+		LIFESTYLE: typeTotals.LIFESTYLE,
+		INVESTMENT: typeTotals.INVESTMENT,
+	})
 
 	if (loading) {
 		return (
@@ -240,6 +248,8 @@ export function BudgetsContent() {
 							</section>
 						)
 					})}
+
+					{planAdjustment && <BudgetPlanWarning adjustment={planAdjustment} />}
 
 					<div className="flex justify-end">
 						<Button

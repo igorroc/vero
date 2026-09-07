@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { buildBudgetInsight, buildBudgetReport } from "./budget-report"
+import {
+	buildBudgetInsight,
+	buildBudgetReport,
+	calculateBudgetPlanAdjustment,
+} from "./budget-report"
 
 describe("buildBudgetReport", () => {
 	it("consolida apenas eventos confirmados e calcula a distribuicao das saidas", () => {
@@ -84,5 +88,22 @@ describe("buildBudgetReport", () => {
 			actual: 20,
 		})
 		expect(buildBudgetInsight(result)).toMatchObject({ tone: "success" })
+	})
+
+	it("recomenda reducoes proporcionais quando as saidas superam as entradas", () => {
+		expect(
+			calculateBudgetPlanAdjustment(100000, {
+				ESSENTIAL: 60000,
+				LIFESTYLE: 40000,
+				INVESTMENT: 30000,
+			}),
+		).toEqual({
+			shortfall: 30000,
+			reductions: {
+				ESSENTIAL: 13846,
+				LIFESTYLE: 9230,
+				INVESTMENT: 6924,
+			},
+		})
 	})
 })

@@ -7,6 +7,7 @@ import { getBudgetReport } from "@/features/budgets"
 import type { BudgetGroupType, BudgetReport } from "@/lib/engines/budget-report"
 import { formatCurrency } from "@/types/finance"
 import { toast } from "react-toastify"
+import { BudgetPlanWarning } from "./budget-plan-warning"
 
 const reportTypes = ["INCOME", "ESSENTIAL", "LIFESTYLE", "INVESTMENT"] as const
 
@@ -95,6 +96,9 @@ export function BudgetReportContent() {
 							/>
 						</div>
 					</section>
+					{report.planAdjustment && (
+						<BudgetPlanWarning adjustment={report.planAdjustment} />
+					)}
 					<section aria-labelledby="types-heading" className="space-y-3">
 						<div>
 							<h2

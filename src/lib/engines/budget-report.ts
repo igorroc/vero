@@ -3,6 +3,14 @@ import type { Cents } from "@/types/finance"
 export type BudgetGroupType =
 	"INCOME" | "ESSENTIAL" | "LIFESTYLE" | "INVESTMENT"
 
+export type BudgetOutgoingType = Exclude<BudgetGroupType, "INCOME">
+
+const outgoingTypes: BudgetOutgoingType[] = [
+	"ESSENTIAL",
+	"LIFESTYLE",
+	"INVESTMENT",
+]
+
 export interface BudgetReportInput {
 	items: Array<{
 		categoryId: string
@@ -42,6 +50,7 @@ export interface BudgetReport {
 	groups: BudgetReportGroup[]
 	income: { budgeted: Cents; actual: Cents }
 	outgoing: { budgeted: Cents; actual: Cents }
+	planAdjustment: BudgetPlanAdjustment | null
 	allocation: Record<
 		Exclude<BudgetGroupType, "INCOME">,
 		{ target: number; budgeted: number; actual: number }
@@ -52,9 +61,40 @@ export interface BudgetReport {
 	>
 }
 
+export interface BudgetPlanAdjustment {
+	shortfall: Cents
+	reductions: Record<BudgetOutgoingType, Cents>
+}
+
 export interface BudgetInsight {
 	tone: "success" | "warning" | "danger"
 	message: string
+}
+
+export function calculateBudgetPlanAdjustment(
+	incomeBudgeted: Cents,
+	outgoingByType: Record<BudgetOutgoingType, Cents>,
+): BudgetPlanAdjustment | null {
+	const outgoingBudgeted = outgoingTypes.reduce(
+		(total, type) => total + outgoingByType[type],
+		0,
+	)
+	if (outgoingBudgeted <= incomeBudgeted) return null
+
+	const shortfall = outgoingBudgeted - incomeBudgeted
+	let allocatedReduction = 0
+	const reductions = {} as Record<BudgetOutgoingType, Cents>
+
+	for (const [index, type] of outgoingTypes.entries()) {
+		const reduction =
+			index === outgoingTypes.length - 1
+				? shortfall - allocatedReduction
+				: Math.floor((shortfall * outgoingByType[type]) / outgoingBudgeted)
+		reductions[type] = reduction
+		allocatedReduction += reduction
+	}
+
+	return { shortfall, reductions }
 }
 
 export function buildBudgetReport(input: BudgetReportInput): BudgetReport {
@@ -165,6 +205,19 @@ export function buildBudgetReport(input: BudgetReportInput): BudgetReport {
 			}),
 			{ budgeted: 0, actual: 0 },
 		)
+	const outgoingByType = outgoingTypes.reduce(
+		(result, type) => {
+			result[type] = reportGroups
+				.filter((group) => group.type === type)
+				.reduce((total, group) => total + group.budgeted, 0)
+			return result
+		},
+		{} as Record<BudgetOutgoingType, Cents>,
+	)
+	const planAdjustment = calculateBudgetPlanAdjustment(
+		income.budgeted,
+		outgoingByType,
+	)
 	const distribution = (
 		["ESSENTIAL", "LIFESTYLE", "INVESTMENT"] as const
 	).reduce(
@@ -217,7 +270,14 @@ export function buildBudgetReport(input: BudgetReportInput): BudgetReport {
 		{} as BudgetReport["allocation"],
 	)
 
-	return { groups: reportGroups, income, outgoing, allocation, distribution }
+	return {
+		groups: reportGroups,
+		income,
+		outgoing,
+		planAdjustment,
+		allocation,
+		distribution,
+	}
 }
 
 export function buildBudgetInsight(report: BudgetReport): BudgetInsight {
