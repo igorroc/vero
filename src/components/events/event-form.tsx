@@ -70,7 +70,9 @@ export function EventForm({
 		(account) => account.id === formData.accountId,
 	)
 	const amountCents = (() => {
-		const [wholePart, decimalPart = ""] = formData.amount.replace(",", ".").split(".")
+		const [wholePart, decimalPart = ""] = formData.amount
+			.replace(",", ".")
+			.split(".")
 		const wholeCents = Number(wholePart) * 100
 		const decimalCents = Number(decimalPart.padEnd(2, "0").slice(0, 2))
 		return Number.isFinite(wholeCents) && Number.isFinite(decimalCents)
@@ -192,7 +194,9 @@ export function EventForm({
 			}}
 		>
 			<ModalContent>
-				<ModalHeader className="text-lg sm:text-xl">Novo Evento</ModalHeader>
+				<ModalHeader className="text-lg sm:text-xl">
+					Novo Lançamento
+				</ModalHeader>
 				<ModalBody className="gap-3 sm:gap-4">
 					<Select
 						label="Conta"
@@ -454,7 +458,7 @@ export function EventForm({
 					<div className="flex items-center justify-between rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">
 						<div>
 							<p className="font-medium text-sm text-slate-900 dark:text-white">
-								Criar um novo evento
+								Criar um novo lançamento
 							</p>
 							<p className="text-xs text-slate-500">
 								Mantém este formulário aberto após salvar.
@@ -481,7 +485,7 @@ export function EventForm({
 						isLoading={loading}
 						className="w-full sm:w-auto order-1 sm:order-2"
 					>
-						Criar Evento
+						Criar Lançamento
 					</Button>
 				</ModalFooter>
 			</ModalContent>

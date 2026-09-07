@@ -276,16 +276,45 @@ export async function getBudgetReport(
 				},
 			},
 		})
+		const debtInstallments = await prisma.debtInstallment.findMany({
+			where: {
+				debt: { userId: user.id, status: "ACTIVE" },
+				dueDate: { gte: startDate, lt: endDate },
+				plannedAmount: { gt: 0 },
+			},
+			select: {
+				plannedAmount: true,
+				debt: {
+					select: {
+						category: { select: { id: true, name: true, categoryGroup: { select: { name: true, type: true } } } },
+					},
+				},
+			},
+		})
+		const budgetItems = new Map(
+			budgetResult.budget.items.map((item) => [item.categoryId, {
+				categoryId: item.categoryId,
+				categoryName: item.category.name,
+				groupName: item.category.categoryGroup.name,
+				groupType: item.category.categoryGroup.type,
+				amount: item.amount,
+			}]),
+		)
+		for (const installment of debtInstallments) {
+			const category = installment.debt.category
+			const existing = budgetItems.get(category.id)
+			budgetItems.set(category.id, {
+				categoryId: category.id,
+				categoryName: category.name,
+				groupName: category.categoryGroup.name,
+				groupType: category.categoryGroup.type,
+				amount: (existing?.amount ?? 0) + installment.plannedAmount,
+			})
+		}
 		return {
 			success: true,
 			report: buildBudgetReport({
-				items: budgetResult.budget.items.map((item) => ({
-					categoryId: item.categoryId,
-					categoryName: item.category.name,
-					groupName: item.category.categoryGroup.name,
-					groupType: item.category.categoryGroup.type,
-					amount: item.amount,
-				})),
+				items: Array.from(budgetItems.values()),
 				events: events.map((event) => ({
 					categoryId: event.categoryId,
 					amount: event.amount,

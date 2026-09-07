@@ -22,7 +22,6 @@ import {
 } from "@nextui-org/react"
 import {
 	getEvents,
-	getEventsWithProjection,
 	confirmEvent,
 	skipEvent,
 	deleteEvent,
@@ -69,8 +68,8 @@ export function EventsList() {
 	const [categories, setCategories] = useState<CategoryWithGroup[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
-	const timeFilter = useEventsFilterStore((state) => state.timeFilter)
-	const setTimeFilter = useEventsFilterStore((state) => state.setTimeFilter)
+	const statusFilter = useEventsFilterStore((state) => state.statusFilter)
+	const setStatusFilter = useEventsFilterStore((state) => state.setStatusFilter)
 	const { isOpen, onOpen, onClose } = useDisclosure()
 	const {
 		isOpen: isEditOpen,
@@ -104,7 +103,7 @@ export function EventsList() {
 
 	useEffect(() => {
 		loadData()
-	}, [timeFilter])
+	}, [statusFilter])
 
 	const loadData = async () => {
 		setLoading(true)
@@ -121,36 +120,17 @@ export function EventsList() {
 			setCategories(categoriesResult.categories)
 		}
 
-		// Build date filters
-		const today = new Date()
-		today.setHours(0, 0, 0, 0)
-
 		let result
 
-		switch (timeFilter) {
-			case "past": {
-				const endDate = new Date(today)
-				endDate.setDate(endDate.getDate() - 1)
-				result = await getEvents({ endDate })
+		switch (statusFilter) {
+			case "pending":
+				result = await getEvents({ status: "PLANNED" })
 				break
-			}
-			case "today": {
-				// Use projection to include recurring events for today
-				const endOfToday = new Date(today)
-				endOfToday.setHours(23, 59, 59, 999)
-				result = await getEventsWithProjection(today, endOfToday)
+			case "confirmed":
+				result = await getEvents({ status: "CONFIRMED" })
 				break
-			}
-			case "upcoming": {
-				// Use projection to include recurring events (next 90 days)
-				const futureDate = new Date(today)
-				futureDate.setDate(futureDate.getDate() + 60)
-				result = await getEventsWithProjection(today, futureDate)
-				break
-			}
 			case "all":
 			default: {
-				// For "all", show stored events (not generated)
 				result = await getEvents({})
 				break
 			}
@@ -529,25 +509,23 @@ export function EventsList() {
 								className="w-full justify-between"
 								endContent={<ChevronDown className="w-4 h-4" />}
 							>
-								{timeFilter === "all" && "Todos os eventos"}
-								{timeFilter === "past" && "Eventos passados"}
-								{timeFilter === "today" && "Eventos de hoje"}
-								{timeFilter === "upcoming" && "Próximos eventos"}
+								{statusFilter === "all" && "Todos os lançamentos"}
+								{statusFilter === "pending" && "Lançamentos pendentes"}
+								{statusFilter === "confirmed" && "Lançamentos confirmados"}
 							</Button>
 						</DropdownTrigger>
 						<DropdownMenu
 							aria-label="Filtro de tempo"
 							selectionMode="single"
-							selectedKeys={[timeFilter]}
+							selectedKeys={[statusFilter]}
 							onSelectionChange={(keys) => {
-								const value = Array.from(keys)[0] as typeof timeFilter
-								setTimeFilter(value)
+								const value = Array.from(keys)[0] as typeof statusFilter
+								setStatusFilter(value)
 							}}
 						>
-							<DropdownItem key="all">Todos os eventos</DropdownItem>
-							<DropdownItem key="past">Eventos passados</DropdownItem>
-							<DropdownItem key="today">Eventos de hoje</DropdownItem>
-							<DropdownItem key="upcoming">Próximos eventos</DropdownItem>
+							<DropdownItem key="all">Todos os lançamentos</DropdownItem>
+							<DropdownItem key="pending">Pendentes</DropdownItem>
+							<DropdownItem key="confirmed">Confirmados</DropdownItem>
 						</DropdownMenu>
 					</Dropdown>
 				</div>
@@ -556,17 +534,16 @@ export function EventsList() {
 				<div className="hidden sm:flex gap-2 flex-wrap">
 					{[
 						{ key: "all", label: "Todos" },
-						{ key: "past", label: "Passados" },
-						{ key: "today", label: "Hoje" },
-						{ key: "upcoming", label: "Próximos" },
+						{ key: "pending", label: "Pendentes" },
+						{ key: "confirmed", label: "Confirmados" },
 					].map((filter) => (
 						<Button
 							key={filter.key}
 							size="sm"
 							radius="full"
-							color={timeFilter === filter.key ? "primary" : "default"}
-							variant={timeFilter === filter.key ? "solid" : "flat"}
-							onPress={() => setTimeFilter(filter.key as typeof timeFilter)}
+							color={statusFilter === filter.key ? "primary" : "default"}
+							variant={statusFilter === filter.key ? "solid" : "flat"}
+							onPress={() => setStatusFilter(filter.key as typeof statusFilter)}
 						>
 							{filter.label}
 						</Button>
@@ -580,14 +557,14 @@ export function EventsList() {
 					className="w-full sm:w-auto"
 					startContent={<Plus className="w-4 h-4" />}
 				>
-					Novo Evento
+					Novo Lançamento
 				</Button>
 			</div>
 
 			{/* Section title */}
 			<div className="flex items-center justify-between">
 				<h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">
-					Seus Eventos
+					Seus Lançamentos
 				</h2>
 				<span className="text-xs sm:text-sm text-slate-500">
 					{events.length} {events.length === 1 ? "evento" : "eventos"}
@@ -609,7 +586,7 @@ export function EventsList() {
 					<div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
 						<Calendar className="w-8 h-8 sm:w-10 sm:h-10 text-slate-400" />
 					</div>
-					<p className="text-slate-500 mb-4">Nenhum evento encontrado.</p>
+					<p className="text-slate-500 mb-4">Nenhum lançamento encontrado.</p>
 					<Button color="primary" radius="full" onPress={onOpen}>
 						Criar seu primeiro evento
 					</Button>

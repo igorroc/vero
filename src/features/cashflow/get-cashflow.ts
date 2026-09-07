@@ -43,14 +43,25 @@ export async function getCashflowProjection(
 		if (!eventsResult.success) {
 			return { success: false, error: eventsResult.error }
 		}
+		const debtInstallments = await prisma.debtInstallment.findMany({
+			where: {
+				debt: { userId: user.id, status: "ACTIVE" },
+				dueDate: { gte: today, lte: endDate },
+				plannedAmount: { gt: 0 },
+			},
+			include: { debt: { select: { creditor: true } } },
+		})
 
 		// Build projection
 		const projection = buildCashflowProjection({
-			accounts: accounts.map((a) => ({
+			accounts: [
+				...accounts.map((a) => ({
 				id: a.id,
 				name: a.name,
 				initialBalance: a.currentBalance, // Use current balance
-			})),
+				})),
+				{ id: "debt-projection", name: "Dívidas (conta a definir)", initialBalance: 0 },
+			],
 			events: eventsResult.events
 				.filter((e) => e.status !== "SKIPPED")
 				.map((e) => ({
@@ -64,7 +75,19 @@ export async function getCashflowProjection(
 					date: e.date,
 					accountId: e.accountId,
 					destinationAccountId: e.destinationAccountId,
-				})),
+				}))
+				.concat(debtInstallments.map((installment) => ({
+					id: `debt-${installment.id}`,
+					description: `Parcela de dívida - ${installment.debt.creditor}`,
+					amount: -installment.plannedAmount,
+					type: "EXPENSE" as const,
+					costType: "RECURRENT" as const,
+					status: "PLANNED" as const,
+					priority: "REQUIRED" as const,
+					date: installment.dueDate,
+					accountId: "debt-projection",
+					destinationAccountId: null,
+				}))),
 			startDate: today,
 			endDate,
 			safetyBuffer,

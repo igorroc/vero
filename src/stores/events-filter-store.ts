@@ -3,19 +3,19 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
-export type EventsTimeFilter = "all" | "past" | "upcoming" | "today"
+export type EventsStatusFilter = "all" | "pending" | "confirmed"
 
 interface EventsFilterStore {
-	timeFilter: EventsTimeFilter
-	setTimeFilter: (timeFilter: EventsTimeFilter) => void
+	statusFilter: EventsStatusFilter
+	setStatusFilter: (statusFilter: EventsStatusFilter) => void
 }
 
 export const useEventsFilterStore = create<EventsFilterStore>()(
 	persist(
 		(set) => ({
-			timeFilter: "upcoming",
-			setTimeFilter: (timeFilter) => set({ timeFilter }),
+			statusFilter: "pending",
+			setStatusFilter: (statusFilter) => set({ statusFilter }),
 		}),
-		{ name: "vero-events-filter" },
+		{ name: "vero-events-status-filter" },
 	),
 )

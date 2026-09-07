@@ -12,6 +12,7 @@ import {
 	Settings,
 	ReceiptText,
 	ChartNoAxesCombined,
+	HandCoins,
 	ChevronLeft,
 	ChevronRight,
 } from "lucide-react"
@@ -46,6 +47,7 @@ const navGroups: NavGroup[] = [
 		items: [
 			{ icon: Wallet, label: "Lançamentos", href: "/events" },
 			{ icon: TrendingUp, label: "Investimentos", href: "/investments" },
+			{ icon: HandCoins, label: "Dívidas", href: "/debts" },
 		],
 	},
 	{
@@ -150,20 +152,6 @@ export function Sidebar({ collapsed, onCollapsedChange }: SidebarProps) {
 					</div>
 				))}
 			</nav>
-
-			{/* Bottom section */}
-			{!collapsed && (
-				<div className="absolute bottom-4 left-4 right-4">
-					<div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 rounded-xl p-4">
-						<p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-							Seu Copiloto Financeiro
-						</p>
-						<p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-							Planeje seu futuro com confiança
-						</p>
-					</div>
-				</div>
-			)}
 		</aside>
 	)
 }

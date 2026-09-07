@@ -2,7 +2,8 @@ import type { Metadata } from "next"
 import { EventsList } from "@/components/events"
 
 export const metadata: Metadata = {
-	title: "Eventos | Vero",
+	title: "Lançamentos | Vero",
+	description: "Gerencie seus lançamentos financeiros.",
 }
 
 export default function EventsPage() {
@@ -11,10 +12,10 @@ export default function EventsPage() {
 			{/* Mobile-friendly header */}
 			<div className="mb-4 sm:mb-6">
 				<h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
-					Eventos
+					Lançamentos
 				</h1>
 				<p className="text-sm text-slate-500 mt-1">
-					Gerencie seus eventos financeiros
+					Registre e acompanhe suas movimentações financeiras
 				</p>
 			</div>
 			<EventsList />
