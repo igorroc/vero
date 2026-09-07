@@ -4,30 +4,25 @@ import { useEffect, useState } from "react"
 import {
 	Spinner,
 	Button,
-	Chip,
 	Dropdown,
 	DropdownTrigger,
 	DropdownMenu,
 	DropdownItem,
 } from "@nextui-org/react"
 import { getCashflowProjection } from "@/features/cashflow"
-import {
-	formatCurrency,
-	type CashflowProjection,
-	type CashflowDay,
-} from "@/types/finance"
+import { formatCurrency, type CashflowProjection } from "@/types/finance"
 import {
 	TrendingUp,
 	TrendingDown,
 	PiggyBank,
 	AlertTriangle,
 	ChevronDown,
-	ChevronRight,
 	Calendar,
 	ArrowUpRight,
 	ArrowDownRight,
 	Wallet,
 } from "lucide-react"
+import { CashflowDayRow } from "./cashflow-day-row"
 
 export function CashflowTimeline() {
 	const [projection, setProjection] = useState<CashflowProjection | null>(null)
@@ -306,210 +301,14 @@ export function CashflowTimeline() {
 				</div>
 				<div className="divide-y divide-slate-100 dark:divide-slate-800">
 					{projection.days.map((day) => (
-						<DayRow key={day.dateKey} day={day} isToday={isToday(day.date)} />
-					))}
-				</div>
-			</div>
-		</div>
-	)
-}
-
-interface DayRowProps {
-	day: CashflowDay
-	isToday: boolean
-}
-
-function DayRow({ day, isToday }: DayRowProps) {
-	const [expanded, setExpanded] = useState(false)
-
-	return (
-		<div
-			className={`${
-				day.isNegative
-					? "bg-red-50/50 dark:bg-red-900/10"
-					: day.isCritical
-						? "bg-amber-50/50 dark:bg-amber-900/10"
-						: isToday
-							? "bg-indigo-50/50 dark:bg-indigo-900/10"
-							: ""
-			}`}
-		>
-			{/* Main row */}
-			<div
-				className="flex justify-between items-center p-3 sm:p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors active:bg-slate-100 dark:active:bg-slate-800"
-				onClick={() => day.events.length > 0 && setExpanded(!expanded)}
-			>
-				<div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-					{/* Date indicator */}
-					<div
-						className={`flex-shrink-0 w-10 sm:w-12 h-10 sm:h-12 rounded-xl flex flex-col items-center justify-center ${
-							isToday
-								? "bg-indigo-600 text-white"
-								: day.isNegative
-									? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-									: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
-						}`}
-					>
-						<span className="text-[10px] sm:text-xs uppercase font-medium leading-none">
-							{isToday
-								? "Hoje"
-								: new Date(day.date)
-										.toLocaleDateString("pt-BR", { weekday: "short" })
-										.replace(".", "")}
-						</span>
-						<span className="text-sm sm:text-lg font-bold leading-tight">
-							{new Date(day.date).getDate()}
-						</span>
-					</div>
-
-					{/* Events info */}
-					<div className="min-w-0 flex-1">
-						<div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-							{day.events.length > 0 && (
-								<span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-									{day.events.length} evento{day.events.length > 1 ? "s" : ""}
-								</span>
-							)}
-							{day.events.length === 0 && (
-								<span className="text-xs sm:text-sm text-slate-400 dark:text-slate-500">
-									Sem eventos
-								</span>
-							)}
-							{day.isNegative && (
-								<Chip
-									color="danger"
-									size="sm"
-									variant="flat"
-									className="h-5 text-[10px] sm:text-xs"
-								>
-									Negativo
-								</Chip>
-							)}
-							{day.isCritical && !day.isNegative && (
-								<Chip
-									color="warning"
-									size="sm"
-									variant="flat"
-									className="h-5 text-[10px] sm:text-xs"
-								>
-									Baixo
-								</Chip>
-							)}
-						</div>
-						{day.netChange !== 0 && (
-							<span
-								className={`text-xs sm:text-sm font-medium ${
-									day.netChange > 0
-										? "text-emerald-600 dark:text-emerald-400"
-										: "text-red-600 dark:text-red-400"
-								}`}
-							>
-								{day.netChange > 0 ? "+" : ""}
-								{formatCurrency(day.netChange)}
-							</span>
-						)}
-					</div>
-				</div>
-
-				{/* Balance and chevron */}
-				<div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-					<div className="text-right">
-						<p className="text-[10px] sm:text-xs text-slate-500 hidden sm:block">
-							Saldo
-						</p>
-						<span
-							className={`text-sm sm:text-base font-bold ${
-								day.endingBalance < 0
-									? "text-red-600 dark:text-red-400"
-									: "text-slate-900 dark:text-white"
-							}`}
-						>
-							{formatCurrency(day.endingBalance)}
-						</span>
-					</div>
-					{day.events.length > 0 && (
-						<ChevronRight
-							className={`w-4 h-4 sm:w-5 sm:h-5 text-slate-400 transition-transform ${
-								expanded ? "rotate-90" : ""
-							}`}
+						<CashflowDayRow
+							key={day.dateKey}
+							day={day}
+							isToday={isToday(day.date)}
 						/>
-					)}
-				</div>
-			</div>
-
-			{/* Expanded events */}
-			{expanded && day.events.length > 0 && (
-				<div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 px-3 sm:px-4 py-2 sm:py-3 space-y-2">
-					{day.events.map((event) => (
-						<div
-							key={event.id}
-							className="flex justify-between items-start sm:items-center gap-2 py-1.5"
-						>
-							<div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 min-w-0 flex-1">
-								<div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-									<div
-										className={`w-2 h-2 rounded-full flex-shrink-0 ${
-											event.type === "INCOME"
-												? "bg-emerald-500"
-												: event.type === "TRANSFER"
-													? "bg-violet-500"
-													: event.type === "INVESTMENT"
-														? "bg-purple-500"
-														: "bg-red-500"
-										}`}
-									/>
-									<Chip
-										size="sm"
-										variant="flat"
-										className={`h-5 text-[10px] sm:text-xs ${
-											event.type === "INCOME"
-												? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
-												: event.type === "TRANSFER"
-													? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
-													: event.type === "INVESTMENT"
-														? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
-														: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
-										}`}
-									>
-										{event.type === "INCOME"
-											? "Receita"
-											: event.type === "TRANSFER"
-												? "Transferência"
-												: event.type === "INVESTMENT"
-													? "Invest."
-													: "Despesa"}
-									</Chip>
-								</div>
-								<span className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 truncate">
-									{event.description}
-									{event.type === "TRANSFER" &&
-										event.destinationAccountName &&
-										` para ${event.destinationAccountName}`}
-								</span>
-								{event.status === "PLANNED" && (
-									<Chip
-										size="sm"
-										variant="bordered"
-										className="h-5 text-[10px] sm:text-xs border-amber-300 text-amber-600 dark:text-amber-400"
-									>
-										Planejado
-									</Chip>
-								)}
-							</div>
-							<span
-								className={`text-xs sm:text-sm font-semibold flex-shrink-0 ${
-									event.amount > 0
-										? "text-emerald-600 dark:text-emerald-400"
-										: "text-red-600 dark:text-red-400"
-								}`}
-							>
-								{event.amount > 0 ? "+" : ""}
-								{formatCurrency(event.amount)}
-							</span>
-						</div>
 					))}
 				</div>
-			)}
+			</div>
 		</div>
 	)
 }

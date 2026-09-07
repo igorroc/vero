@@ -1,17 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Spinner, Button, Chip } from "@nextui-org/react"
+import { Spinner, Button } from "@nextui-org/react"
 import Link from "next/link"
-import {
-	TrendingUp,
-	Calendar,
-	AlertTriangle,
-	ChevronRight,
-	Target,
-} from "lucide-react"
+import { TrendingUp, AlertTriangle, ChevronRight, Target } from "lucide-react"
 import { getDashboardData, type DashboardData } from "@/features/dashboard"
 import { formatCurrency } from "@/types/finance"
+import { DashboardUpcomingEvents } from "./dashboard-upcoming-events"
 
 export function DashboardContent() {
 	const [data, setData] = useState<DashboardData | null>(null)
@@ -226,95 +221,7 @@ export function DashboardContent() {
 				</section>
 			)}
 
-			{/* Upcoming Events */}
-			<div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100 dark:border-slate-800">
-				<div className="flex justify-between items-center mb-4">
-					<div>
-						<h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">
-							Próximos Eventos
-						</h2>
-						<p className="text-xs sm:text-sm text-slate-500">Próximos 7 dias</p>
-					</div>
-					<Link
-						href="/events"
-						className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
-					>
-						Ver todos <ChevronRight className="w-4 h-4" />
-					</Link>
-				</div>
-
-				{data.upcomingEvents.length === 0 ? (
-					<div className="text-center py-6">
-						<div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3">
-							<Calendar className="w-6 h-6 text-slate-400" />
-						</div>
-						<p className="text-slate-500 text-sm">
-							Nenhum evento nos próximos 7 dias
-						</p>
-					</div>
-				) : (
-					<div className="space-y-2">
-						{data.upcomingEvents.slice(0, 4).map((event) => {
-							const eventDate = new Date(event.date)
-							const isToday =
-								eventDate.toDateString() === new Date().toDateString()
-
-							return (
-								<div
-									key={event.id}
-									className={`flex items-center justify-between p-3 rounded-xl ${
-										isToday
-											? "bg-blue-50 dark:bg-blue-900/20"
-											: "bg-slate-50 dark:bg-slate-800/50"
-									}`}
-								>
-									<div className="flex items-center gap-3 min-w-0">
-										<Chip
-											size="sm"
-											variant="flat"
-											color={
-												event.type === "INCOME"
-													? "success"
-													: event.type === "INVESTMENT"
-														? "secondary"
-														: "danger"
-											}
-											className="text-[10px]"
-										>
-											{event.type === "INCOME" ? "+" : "-"}
-										</Chip>
-										<div className="min-w-0">
-											<p className="font-medium text-sm text-slate-900 dark:text-white truncate">
-												{event.description}
-											</p>
-											<p
-												className={`text-xs ${isToday ? "text-blue-600 font-medium" : "text-slate-500"}`}
-											>
-												{isToday
-													? "Hoje"
-													: eventDate.toLocaleDateString("pt-BR", {
-															day: "numeric",
-															month: "short",
-														})}
-											</p>
-										</div>
-									</div>
-									<p
-										className={`font-bold text-sm flex-shrink-0 ${
-											event.amount > 0
-												? "text-emerald-600"
-												: "text-slate-900 dark:text-white"
-										}`}
-									>
-										{event.amount > 0 ? "+" : ""}
-										{formatCurrency(event.amount)}
-									</p>
-								</div>
-							)
-						})}
-					</div>
-				)}
-			</div>
+			<DashboardUpcomingEvents events={data.upcomingEvents} />
 		</div>
 	)
 }
