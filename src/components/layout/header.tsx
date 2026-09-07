@@ -15,10 +15,12 @@ import { logoutAction } from "@/features/auth"
 import Image from "next/image"
 import LogoImage from "@/app/icon.png"
 import { formatCurrency, type Cents } from "@/types/finance"
+import type { AccountType } from "@prisma/client"
 
 export interface HeaderAccountBalance {
 	id: string
 	name: string
+	type: AccountType
 	currentBalance: Cents
 }
 
@@ -30,6 +32,15 @@ interface HeaderProps {
 
 export function Header({ userName, userEmail, accounts }: HeaderProps) {
 	const router = useRouter()
+	const visibleAccounts = accounts
+		.filter((account) => account.currentBalance !== 0)
+		.sort((a, b) => b.currentBalance - a.currentBalance)
+	const liquidAccounts = visibleAccounts.filter(
+		(account) => account.type !== "INVESTMENT",
+	)
+	const investmentAccounts = visibleAccounts.filter(
+		(account) => account.type === "INVESTMENT",
+	)
 
 	const getGreeting = () => {
 		const hour = new Date().getHours()
@@ -77,31 +88,17 @@ export function Header({ userName, userEmail, accounts }: HeaderProps) {
 			</div>
 
 			<div className="hidden md:flex flex-1 min-w-0 justify-end px-6">
-				{accounts.length > 0 && (
+				{visibleAccounts.length > 0 && (
 					<div className="flex max-w-full items-center gap-2 overflow-x-auto py-1">
-						{accounts.map((account) => (
-							<Link
-								key={account.id}
-								href={`/accounts/${account.id}`}
-								className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
-							>
-								<p
-									className="max-w-28 truncate text-xs text-slate-500"
-									title={account.name}
-								>
-									{account.name}
-								</p>
-								<p
-									className={`text-sm font-semibold ${
-										account.currentBalance < 0
-											? "text-red-600 dark:text-red-400"
-											: "text-slate-900 dark:text-white"
-									}`}
-								>
-									{formatCurrency(account.currentBalance)}
-								</p>
-							</Link>
-						))}
+						{liquidAccounts.length > 0 && (
+							<HeaderAccountGroup tone="liquid" accounts={liquidAccounts} />
+						)}
+						{investmentAccounts.length > 0 && (
+							<HeaderAccountGroup
+								tone="investment"
+								accounts={investmentAccounts}
+							/>
+						)}
 					</div>
 				)}
 			</div>
@@ -170,5 +167,46 @@ export function Header({ userName, userEmail, accounts }: HeaderProps) {
 				</Dropdown>
 			</div>
 		</header>
+	)
+}
+
+function HeaderAccountGroup({
+	tone,
+	accounts,
+}: {
+	tone: "liquid" | "investment"
+	accounts: HeaderAccountBalance[]
+}) {
+	const cardColors =
+		tone === "liquid"
+			? "border-blue-100 border-l-blue-400 bg-blue-50/50 hover:bg-blue-50 dark:border-blue-900/60 dark:border-l-blue-400 dark:bg-blue-950/20 dark:hover:bg-blue-950/40"
+			: "border-violet-100 border-l-violet-400 bg-violet-50/50 hover:bg-violet-50 dark:border-violet-900/60 dark:border-l-violet-400 dark:bg-violet-950/20 dark:hover:bg-violet-950/40"
+
+	return (
+		<div className="flex items-center gap-2">
+			{accounts.map((account) => (
+				<Link
+					key={account.id}
+					href={`/accounts/${account.id}`}
+					className={`shrink-0 rounded-lg border border-l-2 px-2.5 py-1 transition-colors ${cardColors}`}
+				>
+					<p
+						className="max-w-28 truncate text-xs text-slate-500"
+						title={account.name}
+					>
+						{account.name}
+					</p>
+					<p
+						className={`text-sm font-semibold ${
+							account.currentBalance < 0
+								? "text-red-600 dark:text-red-400"
+								: "text-slate-900 dark:text-white"
+						}`}
+					>
+						{formatCurrency(account.currentBalance)}
+					</p>
+				</Link>
+			))}
+		</div>
 	)
 }

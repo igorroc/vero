@@ -275,12 +275,12 @@ export function AccountsList() {
 	const destinationAccounts = accounts.filter(
 		(account) => account.id !== withdrawalData?.fromAccountId,
 	)
-	const regularAccounts = accounts.filter(
-		(account) => account.type !== "INVESTMENT",
-	)
-	const investmentAccounts = accounts.filter(
-		(account) => account.type === "INVESTMENT",
-	)
+	const regularAccounts = accounts
+		.filter((account) => account.type !== "INVESTMENT")
+		.sort((a, b) => b.currentBalance - a.currentBalance)
+	const investmentAccounts = accounts
+		.filter((account) => account.type === "INVESTMENT")
+		.sort((a, b) => b.currentBalance - a.currentBalance)
 	const regularBalance = regularAccounts.reduce(
 		(total, account) => total + account.currentBalance,
 		0,
@@ -380,10 +380,19 @@ export function AccountsList() {
 					{displayedAccounts.map((account, index) => {
 						const AccountIcon = getAccountIcon(account.type)
 						const isInvestment = account.type === "INVESTMENT"
+						const isFirstRegular = !isInvestment && index === 0
 						const isFirstInvestment =
 							isInvestment && index === regularAccounts.length
 						return (
 							<div key={account.id} className="contents">
+								{isFirstRegular && (
+									<div className="col-span-full">
+										<p className="text-sm font-medium text-slate-500">
+											Contas disponíveis
+										</p>
+										<p className="text-xs text-slate-400">Banco e dinheiro</p>
+									</div>
+								)}
 								{isFirstInvestment && (
 									<div className="col-span-full mt-4 border-t border-slate-200 pt-5 dark:border-slate-800">
 										<p className="text-sm font-medium text-slate-500">
