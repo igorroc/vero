@@ -21,7 +21,7 @@ export function AppLayout({
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
 	return (
-		<div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+		<div className="min-h-screen bg-background text-foreground">
 			{/* Sidebar - only visible on desktop */}
 			<Sidebar
 				collapsed={sidebarCollapsed}
@@ -38,7 +38,7 @@ export function AppLayout({
 				<Header userName={userName} userEmail={userEmail} accounts={accounts} />
 
 				{/* Page content - extra bottom padding on mobile for bottom nav */}
-				<main className="p-4 sm:p-6 pb-24 md:pb-6">{children}</main>
+				<main className="p-4 pb-24 sm:p-6 md:pb-6">{children}</main>
 			</div>
 
 			{/* Bottom navigation - only visible on mobile */}

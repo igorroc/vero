@@ -34,7 +34,7 @@ export function SidebarNavigationGroups({
 					<SidebarNavigationItem
 						key={item.href}
 						item={item}
-						isActive={pathname === item.href}
+					isActive={pathname === item.href || pathname.startsWith(`${item.href}/`)}
 						collapsed={collapsed}
 					/>
 				))}
@@ -59,10 +59,11 @@ function SidebarNavigationItem({
 	return (
 		<Link
 			href={item.href}
-			className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+			aria-current={isActive ? "page" : undefined}
+			className={`flex items-center gap-3 px-4 py-3 rounded-control transition-colors duration-200 ${
 				isActive
-					? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/30"
-					: "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+					? "bg-primary text-primary-foreground shadow-surface"
+					: "text-text-secondary hover:bg-surface-muted hover:text-text-primary"
 			}`}
 			title={collapsed ? item.label : undefined}
 		>
@@ -82,29 +83,30 @@ export function BottomNavigationItems({
 	pathname,
 }: BottomNavigationItemsProps) {
 	return items.map((item) => {
-		const isActive = pathname === item.href
+		const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
 		const Icon = item.icon
 
 		return (
 			<Link
 				key={item.href}
 				href={item.href}
-				className={`flex flex-col items-center justify-center min-w-[64px] py-1.5 px-3 rounded-xl transition-all ${
+				aria-current={isActive ? "page" : undefined}
+				className={`flex flex-col items-center justify-center min-w-[64px] py-1.5 px-3 rounded-control transition-colors ${
 					isActive
-						? "text-blue-600 dark:text-blue-400"
-						: "text-slate-500 dark:text-slate-400"
+						? "text-primary"
+						: "text-text-muted"
 				}`}
 			>
 				<div
-					className={`p-1.5 rounded-xl transition-all ${
-						isActive ? "bg-blue-100 dark:bg-blue-900/40" : ""
+					className={`rounded-control p-1.5 transition-colors ${
+						isActive ? "bg-surface-brand" : ""
 					}`}
 				>
 					<Icon className={`w-5 h-5 ${isActive ? "stroke-[2.5px]" : ""}`} />
 				</div>
 				<span
-					className={`text-[10px] mt-0.5 font-medium ${
-						isActive ? "text-blue-600 dark:text-blue-400" : ""
+					className={`mt-0.5 text-[10px] font-medium ${
+						isActive ? "text-primary" : ""
 					}`}
 				>
 					{item.label}
@@ -129,7 +131,7 @@ export function MoreNavigationItems({ items, pathname }: MoreNavigationItemsProp
 				as={Link}
 				href={item.href}
 				startContent={<Icon className="w-4 h-4" />}
-				className={pathname === item.href ? "text-blue-600" : ""}
+			className={pathname === item.href || pathname.startsWith(`${item.href}/`) ? "text-primary" : ""}
 			>
 				{item.label}
 			</DropdownItem>

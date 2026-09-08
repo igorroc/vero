@@ -1,12 +1,22 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Instrument_Sans, Inter } from "next/font/google"
 import { ToastContainer } from "react-toastify"
 
 import "./globals.css"
 import "react-toastify/dist/ReactToastify.css"
 import { Providers } from "./providers"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({
+	subsets: ["latin"],
+	variable: "--font-interface",
+	display: "swap",
+})
+
+const instrumentSans = Instrument_Sans({
+	subsets: ["latin"],
+	variable: "--font-heading",
+	display: "swap",
+})
 
 export const metadata: Metadata = {
 	title: "Vero - Seu Copiloto Financeiro",
@@ -29,7 +39,7 @@ export default function RootLayout({
 			<head>
 				<meta name="apple-mobile-web-app-title" content="Vero" />
 			</head>
-			<body className={inter.className}>
+			<body className={`${inter.variable} ${instrumentSans.variable} font-sans`}>
 				<Providers>
 					<ToastContainer />
 					{children}

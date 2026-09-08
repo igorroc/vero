@@ -188,7 +188,7 @@ export function AccountsList() {
 					value={formatCurrency(regularBalance)}
 					subtitle={`${regularAccounts.length} conta(s) disponível(is)`}
 					icon={Wallet}
-					gradient={regularBalance >= 0 ? "blue" : "red"}
+					variant={regularBalance >= 0 ? "default" : "danger"}
 				/>
 				{investmentAccounts.length > 0 ? (
 					<div className="modern-card flex items-center justify-between p-5 text-slate-600 dark:text-slate-300">

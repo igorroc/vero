@@ -201,8 +201,8 @@ export function DebtsContent({ debtId }: { debtId?: string }) {
 							value={formatCurrency(totalOutstanding)}
 							subtitle={`${debts.filter((debt) => debt.status === "ACTIVE").length} dívida(s) ativa(s)`}
 							icon={CreditCard}
-							gradient="purple"
-						/>
+						variant="warning"
+					/>
 						<StatCard
 							title="Próxima parcela"
 							value={
@@ -218,8 +218,8 @@ export function DebtsContent({ debtId }: { debtId?: string }) {
 									: ""
 							}
 							icon={ReceiptText}
-							gradient="blue"
-						/>
+						variant="default"
+					/>
 					</div>
 					<div className="flex justify-end">
 						<Button

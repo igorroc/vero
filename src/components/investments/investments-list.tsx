@@ -190,14 +190,14 @@ export function InvestmentsList() {
 					value={plans.filter((p) => p.isActive).length.toString()}
 					subtitle={`${plans.length} plano(s) total`}
 					icon={TrendingUp}
-					gradient="purple"
+					variant="info"
 				/>
 				<StatCard
 					title="Investimento Mensal"
 					value={formatCurrency(totalMonthlyInvestment)}
 					subtitle="Total em planos ativos"
 					icon={PiggyBank}
-					gradient="blue"
+					variant="default"
 				/>
 			</div>
 

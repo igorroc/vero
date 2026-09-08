@@ -19,29 +19,28 @@ export function Sidebar({ collapsed, onCollapsedChange }: SidebarProps) {
 	return (
 		<aside
 			className={`
-                fixed left-0 top-0 h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800
-                transition-all duration-300 z-50
-                hidden md:block
-                ${collapsed ? "w-20" : "w-64"}
-            `}
+				fixed left-0 top-0 h-full bg-surface border-r border-border
+				transition-all duration-300 z-50
+				hidden md:block
+				${collapsed ? "w-20" : "w-64"}
+			`}
 		>
-			{/* Logo */}
-			<div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800">
+			<div className="h-16 flex items-center justify-between px-4 border-b border-border">
 				<Link href="/dashboard" className="flex items-center gap-3">
-					<div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0">
+					<div className="w-8 h-8 rounded-control flex items-center justify-center flex-shrink-0">
 						<Image src={LogoImage} alt="Vero Logo" />
 					</div>
 					{!collapsed && (
-						<span className="font-bold text-xl text-slate-900 dark:text-white">
+						<span className="font-bold text-xl font-heading text-text-primary">
 							Vero
 						</span>
 					)}
 				</Link>
 
-				{/* Collapse button */}
 				<button
 					onClick={() => onCollapsedChange(!collapsed)}
-					className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+					aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+					className="p-2 rounded-control hover:bg-surface-muted text-text-muted transition-colors"
 				>
 					{collapsed ? (
 						<ChevronRight className="w-5 h-5" />
@@ -51,8 +50,10 @@ export function Sidebar({ collapsed, onCollapsedChange }: SidebarProps) {
 				</button>
 			</div>
 
-			{/* Navigation */}
-			<nav className="h-[calc(100%-4rem)] space-y-5 overflow-y-auto p-4 pb-28">
+			<nav
+				aria-label="Navegação principal"
+				className="h-[calc(100%-4rem)] space-y-5 overflow-y-auto p-4 pb-28"
+			>
 				<SidebarNavigationGroups
 					groups={sidebarNavigationGroups}
 					pathname={pathname}

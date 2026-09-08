@@ -2,36 +2,36 @@
 
 import { LucideIcon } from "lucide-react"
 
-type GradientColor = "blue" | "green" | "red" | "orange" | "purple" | "pink"
+type StatCardVariant = "default" | "positive" | "warning" | "danger" | "info" | "accent"
 
 interface StatCardProps {
 	title: string
 	value: string
 	subtitle?: string
 	icon?: LucideIcon
-	gradient: GradientColor
+	variant?: StatCardVariant
 	trend?: {
 		value: number
 		label: string
 	}
 }
 
-const gradientClasses: Record<GradientColor, string> = {
-	blue: "bg-gradient-to-br from-blue-500 to-blue-700",
-	green: "bg-gradient-to-br from-emerald-500 to-emerald-700",
-	red: "bg-gradient-to-br from-red-500 to-red-700",
-	orange: "bg-gradient-to-br from-orange-500 to-orange-700",
-	purple: "bg-gradient-to-br from-purple-500 to-purple-700",
-	pink: "bg-gradient-to-br from-pink-500 to-pink-700",
+const variantClasses: Record<StatCardVariant, string> = {
+	default: "bg-surface border border-border shadow-surface",
+	positive: "bg-positive/10 border border-positive/20",
+	warning: "bg-warning/10 border border-warning/20",
+	danger: "bg-danger/10 border border-danger/20",
+	info: "bg-info/10 border border-info/20",
+	accent: "bg-accent-muted border border-accent/20",
 }
 
-const iconBgClasses: Record<GradientColor, string> = {
-	blue: "bg-blue-600/50",
-	green: "bg-emerald-600/50",
-	red: "bg-red-600/50",
-	orange: "bg-orange-600/50",
-	purple: "bg-purple-600/50",
-	pink: "bg-pink-600/50",
+const iconBgClasses: Record<StatCardVariant, string> = {
+	default: "bg-surface-muted text-text-secondary",
+	positive: "bg-positive/15 text-positive",
+	warning: "bg-warning/15 text-warning",
+	danger: "bg-danger/15 text-danger",
+	info: "bg-info/15 text-info",
+	accent: "bg-accent/20 text-primary",
 }
 
 export function StatCard({
@@ -39,36 +39,40 @@ export function StatCard({
 	value,
 	subtitle,
 	icon: Icon,
-	gradient,
+	variant = "default",
 	trend,
 }: StatCardProps) {
 	return (
 		<div
-			className={`${gradientClasses[gradient]} rounded-2xl p-5 text-white shadow-lg hover-lift cursor-default`}
+			className={`rounded-card p-5 cursor-default ${variantClasses[variant]}`}
 		>
 			<div className="flex justify-between items-start">
 				<div className="space-y-1">
-					<p className="text-white/80 text-sm font-medium">{title}</p>
-					<p className="text-3xl font-bold tracking-tight">{value}</p>
-					{subtitle && <p className="text-white/70 text-xs">{subtitle}</p>}
+					<p className="text-text-muted text-sm font-medium">{title}</p>
+					<p className="text-3xl font-bold tracking-tight financial-number text-text-primary">
+						{value}
+					</p>
+					{subtitle && (
+						<p className="text-text-muted text-xs">{subtitle}</p>
+					)}
 				</div>
 				{Icon && (
-					<div className={`${iconBgClasses[gradient]} p-3 rounded-xl`}>
+					<div className={`${iconBgClasses[variant]} p-3 rounded-control`}>
 						<Icon className="w-6 h-6" />
 					</div>
 				)}
 			</div>
 			{trend && (
-				<div className="mt-4 pt-3 border-t border-white/20">
+				<div className="mt-4 pt-3 border-t border-current/10">
 					<span
-						className={`text-sm font-medium ${
-							trend.value >= 0 ? "text-green-200" : "text-red-200"
+						className={`text-sm font-medium financial-number ${
+							trend.value >= 0 ? "text-positive" : "text-danger"
 						}`}
 					>
 						{trend.value >= 0 ? "+" : ""}
 						{trend.value}%
 					</span>
-					<span className="text-white/60 text-sm ml-2">{trend.label}</span>
+					<span className="text-text-muted text-sm ml-2">{trend.label}</span>
 				</div>
 			)}
 		</div>

@@ -13,34 +13,30 @@ export function BottomNav() {
 	const pathname = usePathname()
 
 	const isMoreActive = bottomMoreNavigationItems.some(
-		(item) => pathname === item.href,
+		(item) =>
+			pathname === item.href || pathname.startsWith(`${item.href}/`),
 	)
 
 	return (
-		<nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
-			{/* Blur background */}
-			<div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800" />
+		<nav aria-label="Navegação" className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
+			<div className="absolute inset-0 bg-surface/80 backdrop-blur-lg border-t border-border" />
 
-			{/* Safe area padding for iOS */}
 			<div className="relative flex items-center justify-around px-2 py-2 pb-safe">
 				<BottomNavigationItems
 					items={bottomMainNavigationItems}
 					pathname={pathname}
 				/>
 
-				{/* More menu */}
 				<Dropdown placement="top">
 					<DropdownTrigger>
 						<button
-							className={`flex flex-col items-center justify-center min-w-[64px] py-1.5 px-3 rounded-xl transition-all ${
-								isMoreActive
-									? "text-blue-600 dark:text-blue-400"
-									: "text-slate-500 dark:text-slate-400"
+							className={`flex flex-col items-center justify-center min-w-[64px] py-1.5 px-3 rounded-control transition-colors ${
+								isMoreActive ? "text-primary" : "text-text-muted"
 							}`}
 						>
 							<div
-								className={`p-1.5 rounded-xl transition-all ${
-									isMoreActive ? "bg-blue-100 dark:bg-blue-900/40" : ""
+								className={`rounded-control p-1.5 transition-colors ${
+									isMoreActive ? "bg-surface-brand" : ""
 								}`}
 							>
 								<MoreHorizontal
@@ -48,8 +44,8 @@ export function BottomNav() {
 								/>
 							</div>
 							<span
-								className={`text-[10px] mt-0.5 font-medium ${
-									isMoreActive ? "text-blue-600 dark:text-blue-400" : ""
+								className={`mt-0.5 text-[10px] font-medium ${
+									isMoreActive ? "text-primary" : ""
 								}`}
 							>
 								Mais
