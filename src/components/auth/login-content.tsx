@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { LoginForm } from "./login-form"
-import { Sparkles } from "lucide-react"
 import Image from "next/image"
 import LogoImage from "@/app/icon.png"
 
@@ -97,8 +96,8 @@ export function LoginContent() {
 					{/* Mobile Logo */}
 					<div className="lg:hidden flex justify-center mb-8">
 						<Link href="/" className="flex items-center gap-2">
-							<div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-								<Sparkles className="w-6 h-6 text-white" />
+							<div className="w-10 h-10 rounded-xl flex items-center justify-center">
+								<Image src={LogoImage} alt="Vero Logo" />
 							</div>
 							<span className="text-2xl font-bold text-slate-900 dark:text-white">
 								Vero
