@@ -25,7 +25,21 @@ export const metadata: Metadata = {
 	icons: {
 		icon: "/favicon.png",
 		shortcut: "/favicon.png",
-		apple: "/favicon.png",
+		apple: "/apple-icon.png",
+	},
+	openGraph: {
+		title: "Vero - Seu Copiloto Financeiro",
+		description:
+			"Planeje seu futuro financeiro com confiança. Acompanhe o fluxo de caixa, calcule limites diários de gastos e cresça seu patrimônio.",
+		siteName: "Vero",
+		locale: "pt_BR",
+		type: "website",
+	},
+	twitter: {
+		card: "summary_large_image",
+		title: "Vero - Seu Copiloto Financeiro",
+		description:
+			"Planeje seu futuro financeiro com confiança. Acompanhe o fluxo de caixa, calcule limites diários de gastos e cresça seu patrimônio.",
 	},
 }
 
