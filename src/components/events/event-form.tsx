@@ -11,7 +11,6 @@ import {
 	Input,
 	Select,
 	SelectItem,
-	SelectSection,
 	Switch,
 } from "@nextui-org/react"
 import {
@@ -23,6 +22,7 @@ import type { AccountWithBalance } from "@/features/accounts"
 import type { CategoryWithGroup } from "@/features/categories"
 import { toast } from "react-toastify"
 import { dateFromInput, formatCurrency, formatDateInput } from "@/types/finance"
+import { EventCategorySelect } from "./event-category-select"
 
 interface EventFormProps {
 	isOpen: boolean
@@ -329,55 +329,19 @@ export function EventForm({
 
 					{formData.type !== "TRANSFER" && (
 						<>
-							<Select
-								label="Categoria"
-								size="sm"
-								selectedKeys={formData.categoryId ? [formData.categoryId] : []}
-								onSelectionChange={(keys) =>
-									setFormData({
-										...formData,
-										categoryId: String(Array.from(keys)[0] ?? ""),
-									})
+							<EventCategorySelect
+								categories={categories}
+								type={formData.type}
+								categoryId={formData.categoryId}
+								onSelectionChange={(categoryId) =>
+									setFormData({ ...formData, categoryId })
 								}
-								isRequired
-								isDisabled={categories.length === 0}
 								description={
 									categories.length === 0
 										? "Cadastre uma categoria compatível antes de criar o evento."
 										: undefined
 								}
-							>
-								{Array.from(
-									new Map(
-										categories
-											.filter((category) =>
-												formData.type === "INCOME"
-													? category.categoryGroup.type === "INCOME"
-													: formData.type === "INVESTMENT"
-														? category.categoryGroup.type === "INVESTMENT"
-														: ["ESSENTIAL", "LIFESTYLE"].includes(
-																category.categoryGroup.type,
-															),
-											)
-											.map((category) => [
-												category.categoryGroup.id,
-												category.categoryGroup,
-											]),
-									).values(),
-								).map((group) => (
-									<SelectSection key={group.id} title={group.name}>
-										{categories
-											.filter(
-												(category) => category.categoryGroupId === group.id,
-											)
-											.map((category) => (
-												<SelectItem key={category.id}>
-													{category.name}
-												</SelectItem>
-											))}
-									</SelectSection>
-								))}
-							</Select>
+							/>
 							{formData.type === "EXPENSE" && (
 								<Select
 									label="Tipo de Custo"

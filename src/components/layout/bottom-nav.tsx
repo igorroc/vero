@@ -1,51 +1,20 @@
 "use client"
 
-import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { MoreHorizontal } from "lucide-react"
+import { Dropdown, DropdownTrigger, DropdownMenu } from "@nextui-org/react"
 import {
-	LayoutDashboard,
-	Wallet,
-	PiggyBank,
-	MoreHorizontal,
-	TrendingUp,
-	Settings,
-	Tags,
-	ReceiptText,
-	ChartNoAxesCombined,
-	HandCoins,
-} from "lucide-react"
-import {
-	Dropdown,
-	DropdownTrigger,
-	DropdownMenu,
-	DropdownItem,
-} from "@nextui-org/react"
-
-interface NavItem {
-	icon: React.ElementType
-	label: string
-	href: string
-}
-
-const mainNavItems: NavItem[] = [
-	{ icon: LayoutDashboard, label: "Home", href: "/dashboard" },
-	{ icon: Wallet, label: "Lançamentos", href: "/events" },
-	{ icon: ChartNoAxesCombined, label: "Relatórios", href: "/reports/budget" },
-]
-
-const moreNavItems: NavItem[] = [
-	{ icon: PiggyBank, label: "Contas", href: "/accounts" },
-	{ icon: Tags, label: "Categorias", href: "/categories" },
-	{ icon: ReceiptText, label: "Orçamentos", href: "/budgets" },
-	{ icon: TrendingUp, label: "Investimentos", href: "/investments" },
-	{ icon: HandCoins, label: "Dívidas", href: "/debts" },
-	{ icon: Settings, label: "Configurações", href: "/settings" },
-]
+	bottomMainNavigationItems,
+	bottomMoreNavigationItems,
+} from "./navigation-config"
+import { BottomNavigationItems, MoreNavigationItems } from "./navigation-items"
 
 export function BottomNav() {
 	const pathname = usePathname()
 
-	const isMoreActive = moreNavItems.some((item) => pathname === item.href)
+	const isMoreActive = bottomMoreNavigationItems.some(
+		(item) => pathname === item.href,
+	)
 
 	return (
 		<nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
@@ -54,39 +23,10 @@ export function BottomNav() {
 
 			{/* Safe area padding for iOS */}
 			<div className="relative flex items-center justify-around px-2 py-2 pb-safe">
-				{mainNavItems.map((item) => {
-					const isActive = pathname === item.href
-					const Icon = item.icon
-
-					return (
-						<Link
-							key={item.href}
-							href={item.href}
-							className={`flex flex-col items-center justify-center min-w-[64px] py-1.5 px-3 rounded-xl transition-all ${
-								isActive
-									? "text-blue-600 dark:text-blue-400"
-									: "text-slate-500 dark:text-slate-400"
-							}`}
-						>
-							<div
-								className={`p-1.5 rounded-xl transition-all ${
-									isActive ? "bg-blue-100 dark:bg-blue-900/40" : ""
-								}`}
-							>
-								<Icon
-									className={`w-5 h-5 ${isActive ? "stroke-[2.5px]" : ""}`}
-								/>
-							</div>
-							<span
-								className={`text-[10px] mt-0.5 font-medium ${
-									isActive ? "text-blue-600 dark:text-blue-400" : ""
-								}`}
-							>
-								{item.label}
-							</span>
-						</Link>
-					)
-				})}
+				<BottomNavigationItems
+					items={bottomMainNavigationItems}
+					pathname={pathname}
+				/>
 
 				{/* More menu */}
 				<Dropdown placement="top">
@@ -117,20 +57,10 @@ export function BottomNav() {
 						</button>
 					</DropdownTrigger>
 					<DropdownMenu aria-label="Mais opções">
-						{moreNavItems.map((item) => {
-							const Icon = item.icon
-							return (
-								<DropdownItem
-									key={item.href}
-									as={Link}
-									href={item.href}
-									startContent={<Icon className="w-4 h-4" />}
-									className={pathname === item.href ? "text-blue-600" : ""}
-								>
-									{item.label}
-								</DropdownItem>
-							)
-						})}
+						<MoreNavigationItems
+							items={bottomMoreNavigationItems}
+							pathname={pathname}
+						/>
 					</DropdownMenu>
 				</Dropdown>
 			</div>

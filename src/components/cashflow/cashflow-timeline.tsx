@@ -4,25 +4,19 @@ import { useEffect, useState } from "react"
 import {
 	Spinner,
 	Button,
-	Dropdown,
-	DropdownTrigger,
-	DropdownMenu,
-	DropdownItem,
 } from "@nextui-org/react"
 import { getCashflowProjection } from "@/features/cashflow"
 import { formatCurrency, type CashflowProjection } from "@/types/finance"
 import {
-	TrendingUp,
-	TrendingDown,
-	PiggyBank,
 	AlertTriangle,
-	ChevronDown,
 	Calendar,
 	ArrowUpRight,
 	ArrowDownRight,
-	Wallet,
 } from "lucide-react"
 import { CashflowDayRow } from "./cashflow-day-row"
+import { CashflowPeriodSelector } from "./cashflow-period-selector"
+import { CashflowProjectionAlerts } from "./cashflow-projection-alerts"
+import { CashflowProjectionSummary } from "./cashflow-projection-summary"
 
 export function CashflowTimeline() {
 	const [projection, setProjection] = useState<CashflowProjection | null>(null)
@@ -49,26 +43,11 @@ export function CashflowTimeline() {
 		setLoading(false)
 	}
 
-	const formatDate = (date: Date) => {
-		const d = new Date(date)
-		return d.toLocaleDateString("pt-BR", {
-			weekday: "short",
-			month: "short",
-			day: "numeric",
-		})
-	}
-
 	const isToday = (date: Date) => {
 		const today = new Date()
 		const d = new Date(date)
 		return d.toDateString() === today.toDateString()
 	}
-
-	const periodOptions = [
-		{ key: "30", label: "30 Dias" },
-		{ key: "60", label: "60 Dias" },
-		{ key: "90", label: "90 Dias" },
-	]
 
 	if (loading) {
 		return (
@@ -118,51 +97,7 @@ export function CashflowTimeline() {
 							</span>
 						</div>
 
-						{/* Period Selector - Dropdown on mobile, buttons on desktop */}
-						<div className="sm:hidden">
-							<Dropdown>
-								<DropdownTrigger>
-									<Button
-										variant="flat"
-										size="sm"
-										className="bg-white/20 text-white min-w-[100px] rounded-xl"
-										endContent={<ChevronDown className="w-4 h-4" />}
-									>
-										{days} Dias
-									</Button>
-								</DropdownTrigger>
-								<DropdownMenu
-									aria-label="Período"
-									selectedKeys={[days.toString()]}
-									onSelectionChange={(keys) => {
-										const selected = Array.from(keys)[0] as string
-										setDays(parseInt(selected))
-									}}
-									selectionMode="single"
-								>
-									{periodOptions.map((option) => (
-										<DropdownItem key={option.key}>{option.label}</DropdownItem>
-									))}
-								</DropdownMenu>
-							</Dropdown>
-						</div>
-
-						<div className="hidden sm:flex gap-2">
-							{periodOptions.map((option) => (
-								<Button
-									key={option.key}
-									size="sm"
-									className={`rounded-xl ${
-										days === parseInt(option.key)
-											? "bg-white text-indigo-900 font-medium"
-											: "bg-white/20 text-white hover:bg-white/30"
-									}`}
-									onPress={() => setDays(parseInt(option.key))}
-								>
-									{option.label}
-								</Button>
-							))}
-						</div>
+						<CashflowPeriodSelector days={days} onDaysChange={setDays} />
 					</div>
 
 					<p className="text-white/70 text-sm mb-1">
@@ -182,112 +117,9 @@ export function CashflowTimeline() {
 				</div>
 			</div>
 
-			{/* Summary Cards - Grid */}
-			<div className="grid grid-cols-2 gap-3 sm:gap-4">
-				{/* Income Card */}
-				<div className="bg-cyan-100 dark:bg-cyan-900/30 rounded-2xl p-4 sm:p-5">
-					<div className="flex items-center gap-2 mb-2">
-						<div className="w-8 h-8 bg-cyan-500/20 rounded-xl flex items-center justify-center">
-							<TrendingUp className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-						</div>
-						<span className="text-xs sm:text-sm text-cyan-700 dark:text-cyan-300">
-							Receitas
-						</span>
-					</div>
-					<p className="text-lg sm:text-xl font-bold text-cyan-900 dark:text-cyan-100">
-						{formatCurrency(projection.totalIncome)}
-					</p>
-				</div>
+			<CashflowProjectionSummary projection={projection} />
 
-				{/* Expense Card */}
-				<div className="bg-pink-100 dark:bg-pink-900/30 rounded-2xl p-4 sm:p-5">
-					<div className="flex items-center gap-2 mb-2">
-						<div className="w-8 h-8 bg-pink-500/20 rounded-xl flex items-center justify-center">
-							<TrendingDown className="w-4 h-4 text-pink-600 dark:text-pink-400" />
-						</div>
-						<span className="text-xs sm:text-sm text-pink-700 dark:text-pink-300">
-							Despesas
-						</span>
-					</div>
-					<p className="text-lg sm:text-xl font-bold text-pink-900 dark:text-pink-100">
-						{formatCurrency(projection.totalExpenses)}
-					</p>
-				</div>
-
-				{/* Investments Card */}
-				<div className="bg-purple-100 dark:bg-purple-900/30 rounded-2xl p-4 sm:p-5">
-					<div className="flex items-center gap-2 mb-2">
-						<div className="w-8 h-8 bg-purple-500/20 rounded-xl flex items-center justify-center">
-							<PiggyBank className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-						</div>
-						<span className="text-xs sm:text-sm text-purple-700 dark:text-purple-300">
-							Investimentos
-						</span>
-					</div>
-					<p className="text-lg sm:text-xl font-bold text-purple-900 dark:text-purple-100">
-						{formatCurrency(projection.totalInvestments)}
-					</p>
-				</div>
-
-				{/* Balance Projection Card */}
-				<div className="bg-amber-100 dark:bg-amber-900/30 rounded-2xl p-4 sm:p-5">
-					<div className="flex items-center gap-2 mb-2">
-						<div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center">
-							<Wallet className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-						</div>
-						<span className="text-xs sm:text-sm text-amber-700 dark:text-amber-300">
-							Saldo Final
-						</span>
-					</div>
-					<p className="text-lg sm:text-xl font-bold text-amber-900 dark:text-amber-100">
-						{projection.days.length > 0
-							? formatCurrency(
-									projection.days[projection.days.length - 1].endingBalance,
-								)
-							: formatCurrency(0)}
-					</p>
-				</div>
-			</div>
-
-			{/* Warnings */}
-			{projection.negativeDays > 0 && (
-				<div className="bg-red-50 dark:bg-red-900/20 rounded-2xl p-4 sm:p-5 border border-red-200 dark:border-red-800">
-					<div className="flex items-start gap-3">
-						<div className="w-10 h-10 bg-red-100 dark:bg-red-800/50 rounded-xl flex items-center justify-center flex-shrink-0">
-							<AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
-						</div>
-						<div>
-							<h3 className="font-semibold text-red-900 dark:text-red-100 text-sm sm:text-base">
-								{projection.negativeDays} dia
-								{projection.negativeDays > 1 ? "s" : ""} com saldo negativo
-							</h3>
-							{projection.lowestBalanceDate && (
-								<p className="text-xs sm:text-sm text-red-600 dark:text-red-400 mt-1">
-									Menor saldo: {formatCurrency(projection.lowestBalance)} em{" "}
-									{formatDate(projection.lowestBalanceDate)}
-								</p>
-							)}
-						</div>
-					</div>
-				</div>
-			)}
-
-			{projection.criticalDays > 0 && projection.negativeDays === 0 && (
-				<div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-4 sm:p-5 border border-amber-200 dark:border-amber-800">
-					<div className="flex items-start gap-3">
-						<div className="w-10 h-10 bg-amber-100 dark:bg-amber-800/50 rounded-xl flex items-center justify-center flex-shrink-0">
-							<AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-						</div>
-						<div>
-							<h3 className="font-semibold text-amber-900 dark:text-amber-100 text-sm sm:text-base">
-								{projection.criticalDays} dia
-								{projection.criticalDays > 1 ? "s" : ""} abaixo da reserva de
-								segurança
-							</h3>
-						</div>
-					</div>
-				</div>
-			)}
+			<CashflowProjectionAlerts projection={projection} />
 
 			{/* Timeline */}
 			<div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800">

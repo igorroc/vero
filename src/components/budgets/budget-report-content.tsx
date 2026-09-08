@@ -8,15 +8,9 @@ import type { BudgetGroupType, BudgetReport } from "@/lib/engines/budget-report"
 import { formatCurrency } from "@/types/finance"
 import { toast } from "react-toastify"
 import { BudgetPlanWarning } from "./budget-plan-warning"
+import { BudgetReportTypeCard } from "./budget-report-type-card"
 
 const reportTypes = ["INCOME", "ESSENTIAL", "LIFESTYLE", "INVESTMENT"] as const
-
-const typeLabels: Record<BudgetGroupType, string> = {
-	INCOME: "Entradas",
-	ESSENTIAL: "Essencial",
-	LIFESTYLE: "Estilo de vida",
-	INVESTMENT: "Investimentos",
-}
 
 export function BudgetReportContent() {
 	const now = new Date()
@@ -116,95 +110,42 @@ export function BudgetReportContent() {
 								(group) => group.type === type,
 							)
 							if (groups.length === 0) return null
-							const budgeted = groups.reduce(
-								(total, group) => total + group.budgeted,
-								0,
-							)
-							const actual = groups.reduce(
-								(total, group) => total + group.actual,
-								0,
-							)
-							const isExpanded = expandedTypes.has(type)
-							const allocation =
-								type === "INCOME" ? null : report.allocation[type]
-
 							return (
-								<section key={type} className="modern-card overflow-hidden">
-									<button
-										type="button"
-										className="grid w-full grid-cols-[1fr_auto] items-center gap-3 p-4 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
-										aria-expanded={isExpanded}
-										onClick={() =>
-											setExpandedTypes((current) => {
-												const next = new Set(current)
-												if (next.has(type)) next.delete(type)
-												else next.add(type)
-												return next
-											})
-										}
-									>
-										<div>
-											<p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-												Tipo de planejamento
-											</p>
-											<h2 className="font-semibold">{typeLabels[type]}</h2>
-											{allocation ? (
-												<AllocationSummary
-													target={allocation.target}
-													budgeted={allocation.budgeted}
-													actual={allocation.actual}
-												/>
-											) : (
-												<p className="text-xs text-slate-500">
-													{groups.length} grupo{groups.length !== 1 ? "s" : ""}
-												</p>
-											)}
-										</div>
-										<div className="flex items-center gap-4">
-											<div className="hidden text-right text-xs sm:block">
-												<p className="text-slate-500">Orçado</p>
-												<p className="font-medium">
-													{formatCurrency(budgeted)}
-												</p>
-											</div>
-											<div className="hidden text-right text-xs sm:block">
-												<p className="text-slate-500">Realizado</p>
-												<p className="font-medium">{formatCurrency(actual)}</p>
-											</div>
-											<DifferenceIndicator
-												type={type}
-												difference={budgeted - actual}
+								<BudgetReportTypeCard
+									key={type}
+									type={type}
+									groups={groups}
+									allocation={
+										type === "INCOME" ? null : report.allocation[type]
+									}
+									isExpanded={expandedTypes.has(type)}
+									onToggle={() =>
+										setExpandedTypes((current) => {
+											const next = new Set(current)
+											if (next.has(type)) next.delete(type)
+											else next.add(type)
+											return next
+										})
+									}
+									renderGroup={(group) => {
+										const groupKey = `${group.type}-${group.name}`
+										return (
+											<CategoryGroup
+												key={groupKey}
+												group={group}
+												isExpanded={expandedGroups.has(groupKey)}
+												onToggle={() =>
+													setExpandedGroups((current) => {
+														const next = new Set(current)
+														if (next.has(groupKey)) next.delete(groupKey)
+														else next.add(groupKey)
+														return next
+													})
+												}
 											/>
-											<ChevronDown
-												className={`h-4 w-4 text-slate-400 transition-transform ${
-													isExpanded ? "rotate-180" : ""
-												}`}
-											/>
-										</div>
-									</button>
-									{isExpanded && (
-										<div className="space-y-2 border-t bg-slate-50/70 p-2 dark:bg-slate-800/30 sm:p-3">
-											{groups.map((group) => (
-												<CategoryGroup
-													key={`${group.type}-${group.name}`}
-													group={group}
-													isExpanded={expandedGroups.has(
-														`${group.type}-${group.name}`,
-													)}
-													onToggle={() =>
-														setExpandedGroups((current) => {
-															const groupKey = `${group.type}-${group.name}`
-															const next = new Set(current)
-															if (next.has(groupKey)) next.delete(groupKey)
-															else next.add(groupKey)
-															return next
-														})
-													}
-												/>
-											))}
-										</div>
-									)}
-								</section>
+										)
+									}}
+								/>
 							)
 						})}
 					</section>
@@ -214,7 +155,7 @@ export function BudgetReportContent() {
 	)
 }
 
-function AllocationSummary({
+export function AllocationSummary({
 	target,
 	budgeted,
 	actual,
@@ -247,7 +188,7 @@ function AllocationSummary({
 	)
 }
 
-function CategoryGroup({
+export function CategoryGroup({
 	group,
 	isExpanded,
 	onToggle,
@@ -368,7 +309,7 @@ function Summary({
 	)
 }
 
-function DifferenceIndicator({
+export function DifferenceIndicator({
 	type,
 	difference,
 	showLabel = false,

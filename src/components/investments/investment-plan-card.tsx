@@ -1,3 +1,5 @@
+"use client"
+
 import {
 	Button,
 	Chip,
@@ -8,7 +10,7 @@ import {
 } from "@nextui-org/react"
 import { MoreVertical } from "lucide-react"
 import { formatCurrency } from "@/types/finance"
-import type { InvestmentPlanWithAccount } from "./investments-list"
+import type { InvestmentPlanWithAccount } from "./investment-plan-types"
 
 interface InvestmentPlanCardProps {
 	plan: InvestmentPlanWithAccount

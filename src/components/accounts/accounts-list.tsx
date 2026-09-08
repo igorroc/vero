@@ -1,54 +1,29 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
+import { Button, Spinner, useDisclosure } from "@nextui-org/react"
+import { PiggyBank, Plus, TrendingUp, Wallet } from "lucide-react"
+import { toast } from "react-toastify"
 import {
-	Button,
-	Chip,
-	Spinner,
-	Modal,
-	ModalContent,
-	ModalHeader,
-	ModalBody,
-	ModalFooter,
-	Input,
-	Select,
-	SelectItem,
-	useDisclosure,
-	Dropdown,
-	DropdownTrigger,
-	DropdownMenu,
-	DropdownItem,
-} from "@nextui-org/react"
-import {
-	getAccountBalances,
 	createAccount,
-	updateAccount,
 	deleteAccount,
+	getAccountBalances,
+	updateAccount,
 	type AccountWithBalance,
 	type CreateAccountInput,
 	type UpdateAccountInput,
 } from "@/features/accounts"
 import { createTransfer, type CreateTransferInput } from "@/features/events"
 import {
+	centsToDollars,
 	dateFromInput,
 	formatCurrency,
-	centsToDollars,
 	formatDateInput,
 } from "@/types/finance"
-import { toast } from "react-toastify"
-import {
-	Plus,
-	MoreVertical,
-	PiggyBank,
-	Wallet,
-	Landmark,
-	Banknote,
-	TrendingUp,
-	Pencil,
-	ArrowRightLeft,
-} from "lucide-react"
 import { StatCard } from "@/components/ui/stat-card"
+import { AccountCard } from "./account-card"
+import { AccountFormModal, type AccountFormData } from "./account-form-modal"
+import { TransferModal, type TransferFormData } from "./transfer-modal"
 
 export function AccountsList() {
 	const [accounts, setAccounts] = useState<AccountWithBalance[]>([])
@@ -60,122 +35,55 @@ export function AccountsList() {
 		onOpen: onEditOpen,
 		onClose: onEditClose,
 	} = useDisclosure()
+	const {
+		isOpen: isTransferOpen,
+		onOpen: onTransferOpen,
+		onClose: onTransferClose,
+	} = useDisclosure()
 	const [formLoading, setFormLoading] = useState(false)
-	const [formData, setFormData] = useState({
+	const [formData, setFormData] = useState<AccountFormData>({
 		name: "",
-		type: "BANK" as "BANK" | "CASH" | "INVESTMENT",
+		type: "BANK",
 		initialBalance: "",
 	})
-	const [editData, setEditData] = useState<{
-		id: string
-		name: string
-		type: "BANK" | "CASH" | "INVESTMENT"
-		initialBalance: string
-	} | null>(null)
-
-	// Withdrawal (Resgate) state
-	const {
-		isOpen: isWithdrawalOpen,
-		onOpen: onWithdrawalOpen,
-		onClose: onWithdrawalClose,
-	} = useDisclosure()
-	const [withdrawalData, setWithdrawalData] = useState<{
-		fromAccountId: string
-		fromAccountName: string
-		toAccountId: string
-		amount: string
-		description: string
-		date: string
-	} | null>(null)
-
-	// Get icon based on account type
-	const getAccountIcon = (type: string) => {
-		switch (type) {
-			case "BANK":
-				return Landmark
-			case "CASH":
-				return Banknote
-			case "INVESTMENT":
-				return TrendingUp
-			default:
-				return PiggyBank
-		}
-	}
-
-	// Get gradient based on account type
-	const getAccountGradient = (type: string) => {
-		switch (type) {
-			case "BANK":
-				return "from-blue-500 to-blue-600"
-			case "CASH":
-				return "from-green-500 to-emerald-600"
-			case "INVESTMENT":
-				return "from-purple-500 to-violet-600"
-			default:
-				return "from-slate-500 to-slate-600"
-		}
-	}
+	const [editData, setEditData] = useState<
+		(AccountFormData & { id: string }) | null
+	>(null)
+	const [transferData, setTransferData] = useState<TransferFormData | null>(
+		null,
+	)
 
 	useEffect(() => {
 		loadAccounts()
 	}, [])
 
-	const loadAccounts = async () => {
+	async function loadAccounts() {
 		setLoading(true)
 		setError(null)
-
 		const result = await getAccountBalances()
-
-		if (result.success) {
-			setAccounts(result.accounts)
-		} else {
-			setError(result.error)
-		}
-
+		if (result.success) setAccounts(result.accounts)
+		else setError(result.error)
 		setLoading(false)
 	}
 
-	const handleCreate = async () => {
-		if (!formData.name) {
-			toast.error("Nome da conta é obrigatório")
-			return
-		}
-
+	async function handleCreate() {
+		if (!formData.name) return toast.error("Nome da conta é obrigatório")
 		setFormLoading(true)
-
 		const input: CreateAccountInput = {
-			name: formData.name,
-			type: formData.type,
+			...formData,
 			initialBalance: parseFloat(formData.initialBalance) || 0,
 		}
-
 		const result = await createAccount(input)
-
 		if (result.success) {
 			toast.success("Conta criada com sucesso")
 			loadAccounts()
 			onClose()
 			setFormData({ name: "", type: "BANK", initialBalance: "" })
-		} else {
-			toast.error(result.error)
-		}
-
+		} else toast.error(result.error)
 		setFormLoading(false)
 	}
 
-	const handleDelete = async (accountId: string) => {
-		if (!confirm("Tem certeza que deseja excluir esta conta?")) return
-
-		const result = await deleteAccount(accountId)
-		if (result.success) {
-			toast.success("Conta excluída")
-			loadAccounts()
-		} else {
-			toast.error(result.error)
-		}
-	}
-
-	const handleEdit = (account: AccountWithBalance) => {
+	function handleEdit(account: AccountWithBalance) {
 		setEditData({
 			id: account.id,
 			name: account.name,
@@ -185,96 +93,71 @@ export function AccountsList() {
 		onEditOpen()
 	}
 
-	const handleUpdate = async () => {
+	async function handleUpdate() {
 		if (!editData) return
-
-		if (!editData.name) {
-			toast.error("Nome da conta é obrigatório")
-			return
-		}
-
+		if (!editData.name) return toast.error("Nome da conta é obrigatório")
 		setFormLoading(true)
-
 		const input: UpdateAccountInput = {
-			id: editData.id,
-			name: editData.name,
-			type: editData.type,
+			...editData,
 			initialBalance: parseFloat(editData.initialBalance) || 0,
 		}
-
 		const result = await updateAccount(input)
-
 		if (result.success) {
 			toast.success("Conta atualizada com sucesso")
 			loadAccounts()
 			onEditClose()
 			setEditData(null)
-		} else {
-			toast.error(result.error)
-		}
-
+		} else toast.error(result.error)
 		setFormLoading(false)
 	}
 
-	const handleWithdrawal = (account: AccountWithBalance) => {
-		const defaultDestination = accounts.find((a) => a.id !== account.id)
+	async function handleDelete(accountId: string) {
+		if (!confirm("Tem certeza que deseja excluir esta conta?")) return
+		const result = await deleteAccount(accountId)
+		if (result.success) {
+			toast.success("Conta excluída")
+			loadAccounts()
+		} else toast.error(result.error)
+	}
 
-		setWithdrawalData({
+	function handleTransfer(account: AccountWithBalance) {
+		const destination = accounts.find((item) => item.id !== account.id)
+		setTransferData({
 			fromAccountId: account.id,
 			fromAccountName: account.name,
-			toAccountId: defaultDestination?.id || "",
+			toAccountId: destination?.id || "",
 			amount: "",
 			description: "",
 			date: formatDateInput(new Date()),
 		})
-		onWithdrawalOpen()
+		onTransferOpen()
 	}
 
-	const handleWithdrawalSubmit = async () => {
-		if (!withdrawalData) return
-
-		if (!withdrawalData.toAccountId) {
-			toast.error("Selecione uma conta de destino")
-			return
-		}
-
-		if (!withdrawalData.amount || parseFloat(withdrawalData.amount) <= 0) {
-			toast.error("O valor deve ser maior que zero")
-			return
-		}
-		if (!withdrawalData.description.trim()) {
-			toast.error("A descrição é obrigatória")
-			return
-		}
-
+	async function handleTransferSubmit() {
+		if (!transferData) return
+		if (!transferData.toAccountId)
+			return toast.error("Selecione uma conta de destino")
+		if (!transferData.amount || parseFloat(transferData.amount) <= 0)
+			return toast.error("O valor deve ser maior que zero")
+		if (!transferData.description.trim())
+			return toast.error("A descrição é obrigatória")
 		setFormLoading(true)
-
 		const input: CreateTransferInput = {
-			fromAccountId: withdrawalData.fromAccountId,
-			toAccountId: withdrawalData.toAccountId,
-			amount: parseFloat(withdrawalData.amount),
-			description: withdrawalData.description,
-			date: dateFromInput(withdrawalData.date),
+			...transferData,
+			amount: parseFloat(transferData.amount),
+			date: dateFromInput(transferData.date),
 		}
-
 		const result = await createTransfer(input)
-
 		if (result.success) {
 			toast.success("Transferência realizada com sucesso")
 			if (result.warning) toast.warning(result.warning)
 			loadAccounts()
-			onWithdrawalClose()
-			setWithdrawalData(null)
-		} else {
-			toast.error(result.error)
-		}
-
+			onTransferClose()
+			setTransferData(null)
+		} else toast.error(result.error)
 		setFormLoading(false)
 	}
 
-	const destinationAccounts = accounts.filter(
-		(account) => account.id !== withdrawalData?.fromAccountId,
-	)
 	const regularAccounts = accounts
 		.filter((account) => account.type !== "INVESTMENT")
 		.sort((a, b) => b.currentBalance - a.currentBalance)
@@ -289,27 +172,13 @@ export function AccountsList() {
 		(total, account) => total + account.currentBalance,
 		0,
 	)
-	const displayedAccounts = [...regularAccounts, ...investmentAccounts]
 
-	const typeColors: Record<string, "primary" | "secondary" | "success"> = {
-		BANK: "primary",
-		CASH: "secondary",
-		INVESTMENT: "success",
-	}
-
-	const typeLabels: Record<string, string> = {
-		BANK: "Banco",
-		CASH: "Dinheiro",
-		INVESTMENT: "Investimento",
-	}
-
-	if (loading) {
+	if (loading)
 		return (
 			<div className="flex items-center justify-center min-h-[400px]">
 				<Spinner size="lg" label="Carregando contas..." />
 			</div>
 		)
-	}
 
 	return (
 		<div className="space-y-6">
@@ -321,7 +190,7 @@ export function AccountsList() {
 					icon={Wallet}
 					gradient={regularBalance >= 0 ? "blue" : "red"}
 				/>
-				{investmentAccounts.length > 0 && (
+				{investmentAccounts.length > 0 ? (
 					<div className="modern-card flex items-center justify-between p-5 text-slate-600 dark:text-slate-300">
 						<div>
 							<p className="text-sm font-medium">Investimentos</p>
@@ -334,10 +203,8 @@ export function AccountsList() {
 						</div>
 						<TrendingUp className="h-6 w-6 text-slate-400" />
 					</div>
-				)}
+				) : null}
 			</div>
-
-			{/* Header */}
 			<div className="flex justify-end">
 				<Button
 					color="primary"
@@ -347,9 +214,7 @@ export function AccountsList() {
 					Nova Conta
 				</Button>
 			</div>
-
-			{/* Error state */}
-			{error && (
+			{error ? (
 				<div className="modern-card p-5 border-l-4 border-l-red-500">
 					<p className="text-red-600">{error}</p>
 					<Button
@@ -361,10 +226,8 @@ export function AccountsList() {
 						Tentar Novamente
 					</Button>
 				</div>
-			)}
-
-			{/* Empty state */}
-			{!error && accounts.length === 0 && (
+			) : null}
+			{!error && accounts.length === 0 ? (
 				<div className="modern-card p-12 text-center">
 					<PiggyBank className="w-12 h-12 text-slate-300 mx-auto mb-3" />
 					<p className="text-slate-500">Nenhuma conta cadastrada.</p>
@@ -372,341 +235,106 @@ export function AccountsList() {
 						Criar sua primeira conta
 					</Button>
 				</div>
-			)}
-
-			{/* Accounts list */}
-			{!error && accounts.length > 0 && (
+			) : null}
+			{!error && accounts.length > 0 ? (
 				<div className="grid gap-4">
-					{displayedAccounts.map((account, index) => {
-						const AccountIcon = getAccountIcon(account.type)
-						const isInvestment = account.type === "INVESTMENT"
-						const isFirstRegular = !isInvestment && index === 0
-						const isFirstInvestment =
-							isInvestment && index === regularAccounts.length
-						return (
-							<div key={account.id} className="contents">
-								{isFirstRegular && (
-									<div className="col-span-full">
-										<p className="text-sm font-medium text-slate-500">
-											Contas disponíveis
-										</p>
-										<p className="text-xs text-slate-400">Banco e dinheiro</p>
-									</div>
-								)}
-								{isFirstInvestment && (
-									<div className="col-span-full mt-4 border-t border-slate-200 pt-5 dark:border-slate-800">
-										<p className="text-sm font-medium text-slate-500">
-											Contas de investimento
-										</p>
-									</div>
-								)}
-								<div
-									className={`modern-card p-4 ${
-										isInvestment
-											? "opacity-75 transition-opacity hover:opacity-100"
-											: ""
-									}`}
-								>
-									<div className="flex justify-between items-center">
-										<Link
-											href={`/accounts/${account.id}`}
-											className="flex min-w-0 items-center gap-4 rounded-lg transition-opacity hover:opacity-75"
-										>
-											<div
-												className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getAccountGradient(account.type)} flex items-center justify-center`}
-											>
-												<AccountIcon className="w-6 h-6 text-white" />
-											</div>
-											<div>
-												<div className="flex items-center gap-2 mb-1">
-													<Chip
-														color={typeColors[account.type]}
-														variant="flat"
-														size="sm"
-													>
-														{typeLabels[account.type]}
-													</Chip>
-												</div>
-												<p className="font-semibold text-lg text-slate-900 dark:text-white">
-													{account.name}
-												</p>
-												<p className="text-sm text-slate-500">
-													Saldo inicial:{" "}
-													{formatCurrency(account.initialBalance)}
-												</p>
-											</div>
-										</Link>
-										<div className="flex items-center gap-4">
-											<span
-												className={`text-2xl font-bold ${
-													account.currentBalance < 0
-														? "text-red-600"
-														: "text-slate-900 dark:text-white"
-												}`}
-											>
-												{formatCurrency(account.currentBalance)}
-											</span>
-											<Dropdown>
-												<DropdownTrigger>
-													<Button isIconOnly variant="light" size="sm">
-														<MoreVertical className="w-4 h-4" />
-													</Button>
-												</DropdownTrigger>
-												<DropdownMenu
-													aria-label="Ações da conta"
-													onAction={(key) => {
-														if (key === "edit") handleEdit(account)
-														if (key === "transfer") handleWithdrawal(account)
-														if (key === "delete") handleDelete(account.id)
-													}}
-												>
-													<DropdownItem
-														key="edit"
-														startContent={<Pencil className="w-4 h-4" />}
-													>
-														Editar
-													</DropdownItem>
-													{accounts.length > 1 ? (
-														<DropdownItem
-															key="transfer"
-															startContent={
-																<ArrowRightLeft className="w-4 h-4" />
-															}
-														>
-															Transferir
-														</DropdownItem>
-													) : null}
-													<DropdownItem
-														key="delete"
-														className="text-danger"
-														color="danger"
-													>
-														Excluir
-													</DropdownItem>
-												</DropdownMenu>
-											</Dropdown>
-										</div>
-									</div>
-								</div>
-							</div>
-						)
-					})}
+					<AccountGroup
+						title="Contas disponíveis"
+						subtitle="Banco e dinheiro"
+						accounts={regularAccounts}
+						canTransfer={accounts.length > 1}
+						onEdit={handleEdit}
+						onTransfer={handleTransfer}
+						onDelete={handleDelete}
+					/>
+					<AccountGroup
+						title="Contas de investimento"
+						accounts={investmentAccounts}
+						canTransfer={accounts.length > 1}
+						onEdit={handleEdit}
+						onTransfer={handleTransfer}
+						onDelete={handleDelete}
+						isSeparated
+					/>
 				</div>
-			)}
-
-			{/* Create account modal */}
-			<Modal isOpen={isOpen} onClose={onClose}>
-				<ModalContent>
-					<ModalHeader>Nova Conta</ModalHeader>
-					<ModalBody className="gap-4">
-						<Input
-							label="Nome da Conta"
-							placeholder="Ex: Conta Corrente Principal"
-							value={formData.name}
-							onValueChange={(value) =>
-								setFormData({ ...formData, name: value })
-							}
-							isRequired
-						/>
-
-						<Select
-							label="Tipo de Conta"
-							selectedKeys={[formData.type]}
-							onSelectionChange={(keys) => {
-								const value = Array.from(keys)[0] as
-									"BANK" | "CASH" | "INVESTMENT"
-								setFormData({ ...formData, type: value })
-							}}
-						>
-							<SelectItem key="BANK">Conta Bancária</SelectItem>
-							<SelectItem key="CASH">Dinheiro em Espécie</SelectItem>
-							<SelectItem key="INVESTMENT">Conta de Investimento</SelectItem>
-						</Select>
-
-						<Input
-							label="Saldo Inicial"
-							type="number"
-							placeholder="0,00"
-							startContent={<span className="text-gray-500">R$</span>}
-							value={formData.initialBalance}
-							onValueChange={(value) =>
-								setFormData({ ...formData, initialBalance: value })
-							}
-							description="Saldo atual nesta conta"
-						/>
-					</ModalBody>
-					<ModalFooter>
-						<Button variant="flat" onPress={onClose}>
-							Cancelar
-						</Button>
-						<Button
-							color="primary"
-							onPress={handleCreate}
-							isLoading={formLoading}
-						>
-							Criar Conta
-						</Button>
-					</ModalFooter>
-				</ModalContent>
-			</Modal>
-
-			{/* Edit account modal */}
-			<Modal isOpen={isEditOpen} onClose={onEditClose}>
-				<ModalContent>
-					<ModalHeader>Editar Conta</ModalHeader>
-					<ModalBody className="gap-4">
-						<Input
-							label="Nome da Conta"
-							placeholder="Ex: Conta Corrente Principal"
-							value={editData?.name || ""}
-							onValueChange={(value) =>
-								setEditData((prev) => (prev ? { ...prev, name: value } : null))
-							}
-							isRequired
-						/>
-
-						<Select
-							label="Tipo de Conta"
-							selectedKeys={editData?.type ? [editData.type] : []}
-							onSelectionChange={(keys) => {
-								const value = Array.from(keys)[0] as
-									"BANK" | "CASH" | "INVESTMENT"
-								setEditData((prev) => (prev ? { ...prev, type: value } : null))
-							}}
-						>
-							<SelectItem key="BANK">Conta Bancária</SelectItem>
-							<SelectItem key="CASH">Dinheiro em Espécie</SelectItem>
-							<SelectItem key="INVESTMENT">Conta de Investimento</SelectItem>
-						</Select>
-
-						<Input
-							label="Saldo Inicial"
-							type="number"
-							placeholder="0,00"
-							startContent={<span className="text-gray-500">R$</span>}
-							value={editData?.initialBalance || ""}
-							onValueChange={(value) =>
-								setEditData((prev) =>
-									prev ? { ...prev, initialBalance: value } : null,
-								)
-							}
-							description="Saldo inicial nesta conta (ajusta o saldo atual proporcionalmente)"
-						/>
-					</ModalBody>
-					<ModalFooter>
-						<Button variant="flat" onPress={onEditClose}>
-							Cancelar
-						</Button>
-						<Button
-							color="primary"
-							onPress={handleUpdate}
-							isLoading={formLoading}
-						>
-							Salvar Alterações
-						</Button>
-					</ModalFooter>
-				</ModalContent>
-			</Modal>
-
-			{/* Transfer modal */}
-			<Modal isOpen={isWithdrawalOpen} onClose={onWithdrawalClose}>
-				<ModalContent>
-					<ModalHeader>
-						<div className="flex items-center gap-2">
-							<ArrowRightLeft className="w-5 h-5 text-blue-600" />
-							<span>Transferir entre contas</span>
-						</div>
-					</ModalHeader>
-					<ModalBody className="gap-4">
-						<div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
-							<p className="text-sm text-purple-700 dark:text-purple-300">
-								Saindo de: <strong>{withdrawalData?.fromAccountName}</strong>
-							</p>
-						</div>
-
-						<Select
-							label="Conta de destino"
-							placeholder="Selecione a conta para receber o valor"
-							selectedKeys={
-								withdrawalData?.toAccountId ? [withdrawalData.toAccountId] : []
-							}
-							onSelectionChange={(keys) => {
-								const value = Array.from(keys)[0] as string
-								setWithdrawalData((prev) =>
-									prev ? { ...prev, toAccountId: value } : null,
-								)
-							}}
-							isRequired
-						>
-							{destinationAccounts.map((account) => (
-								<SelectItem key={account.id} textValue={account.name}>
-									<div className="flex justify-between items-center w-full">
-										<span>{account.name}</span>
-										<span className="text-xs text-slate-500">
-											{account.type === "BANK"
-												? "Banco"
-												: account.type === "CASH"
-													? "Dinheiro"
-													: "Investimento"}
-										</span>
-									</div>
-								</SelectItem>
-							))}
-						</Select>
-
-						<Input
-							label="Valor da transferência"
-							type="number"
-							placeholder="0,00"
-							startContent={<span className="text-gray-500">R$</span>}
-							value={withdrawalData?.amount || ""}
-							onValueChange={(value) =>
-								setWithdrawalData((prev) =>
-									prev ? { ...prev, amount: value } : null,
-								)
-							}
-							isRequired
-						/>
-
-						<Input
-							label="Descrição"
-							placeholder="Ex: Reserva para conta corrente"
-							value={withdrawalData?.description || ""}
-							onValueChange={(value) =>
-								setWithdrawalData((prev) =>
-									prev ? { ...prev, description: value } : null,
-								)
-							}
-							isRequired
-						/>
-
-						<Input
-							label="Data"
-							type="date"
-							value={withdrawalData?.date || ""}
-							onValueChange={(value) =>
-								setWithdrawalData((prev) =>
-									prev ? { ...prev, date: value } : null,
-								)
-							}
-							isRequired
-						/>
-					</ModalBody>
-					<ModalFooter>
-						<Button variant="flat" onPress={onWithdrawalClose}>
-							Cancelar
-						</Button>
-						<Button
-							color="secondary"
-							onPress={handleWithdrawalSubmit}
-							isLoading={formLoading}
-							startContent={<ArrowRightLeft className="w-4 h-4" />}
-						>
-							Transferir
-						</Button>
-					</ModalFooter>
-				</ModalContent>
-			</Modal>
+			) : null}
+			<AccountFormModal
+				isOpen={isOpen}
+				mode="create"
+				data={formData}
+				isLoading={formLoading}
+				onClose={onClose}
+				onChange={setFormData}
+				onSubmit={handleCreate}
+			/>
+			<AccountFormModal
+				isOpen={isEditOpen}
+				mode="edit"
+				data={editData}
+				isLoading={formLoading}
+				onClose={onEditClose}
+				onChange={(data) =>
+					setEditData((previous) =>
+						previous ? { ...previous, ...data } : null,
+					)
+				}
+				onSubmit={handleUpdate}
+			/>
+			<TransferModal
+				isOpen={isTransferOpen}
+				data={transferData}
+				destinationAccounts={accounts.filter(
+					(account) => account.id !== transferData?.fromAccountId,
+				)}
+				isLoading={formLoading}
+				onClose={onTransferClose}
+				onChange={setTransferData}
+				onSubmit={handleTransferSubmit}
+			/>
 		</div>
+	)
+}
+
+interface AccountGroupProps {
+	title: string
+	subtitle?: string
+	accounts: AccountWithBalance[]
+	canTransfer: boolean
+	isSeparated?: boolean
+	onEdit: (account: AccountWithBalance) => void
+	onTransfer: (account: AccountWithBalance) => void
+	onDelete: (accountId: string) => void
+}
+
+function AccountGroup({
+	title,
+	subtitle,
+	accounts,
+	canTransfer,
+	isSeparated,
+	onEdit,
+	onTransfer,
+	onDelete,
+}: AccountGroupProps) {
+	if (accounts.length === 0) return null
+	return (
+		<>
+			<div
+				className={`col-span-full ${isSeparated ? "mt-4 border-t border-slate-200 pt-5 dark:border-slate-800" : ""}`}
+			>
+				<p className="text-sm font-medium text-slate-500">{title}</p>
+				{subtitle ? <p className="text-xs text-slate-400">{subtitle}</p> : null}
+			</div>
+			{accounts.map((account) => (
+				<AccountCard
+					key={account.id}
+					account={account}
+					canTransfer={canTransfer}
+					onEdit={onEdit}
+					onTransfer={onTransfer}
+					onDelete={onDelete}
+				/>
+			))}
+		</>
 	)
 }

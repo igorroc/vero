@@ -1,23 +1,8 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import {
-	Button,
-	Input,
-	Modal,
-	ModalBody,
-	ModalContent,
-	ModalFooter,
-	ModalHeader,
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-	Select,
-	SelectItem,
-	Spinner,
-	useDisclosure,
-} from "@nextui-org/react"
-import { Plus, Tag, Trash2 } from "lucide-react"
+import { Button, Spinner, useDisclosure } from "@nextui-org/react"
+import { Plus } from "lucide-react"
 import { toast } from "react-toastify"
 import {
 	categoryGroupTypeLabels,
@@ -27,12 +12,8 @@ import {
 	updateCategory,
 	type CategoryGroupWithCategories,
 } from "@/features/categories"
-
-interface CategoryFormData {
-	id?: string
-	name: string
-	categoryGroupId: string
-}
+import { CategoryFormModal, type CategoryFormData } from "./category-form-modal"
+import { CategoryGroupCard } from "./category-group-card"
 
 export function CategoriesList() {
 	const [groups, setGroups] = useState<CategoryGroupWithCategories[]>([])
@@ -184,111 +165,25 @@ export function CategoriesList() {
 							</h2>
 							<div className="grid gap-4 lg:grid-cols-2">
 								{groupsByType.map((group) => (
-									<div key={group.id} className="modern-card p-4">
-										<div className="mb-3 flex items-center justify-between gap-3">
-											<div className="flex items-center gap-2">
-												<Tag className="h-4 w-4 text-blue-600" />
-												<h3 className="font-semibold text-slate-900 dark:text-white">
-													{group.name}
-												</h3>
-											</div>
-											<Popover
-												isOpen={quickGroupId === group.id}
-												onOpenChange={(isOpen) => {
-													setQuickGroupId(isOpen ? group.id : null)
-													if (isOpen) setQuickName("")
-												}}
-												placement="bottom-end"
-											>
-												<PopoverTrigger>
-													<Button
-														isIconOnly
-														size="sm"
-														variant="light"
-														aria-label={`Adicionar categoria em ${group.name}`}
-													>
-														<Plus className="h-4 w-4" />
-													</Button>
-												</PopoverTrigger>
-												<PopoverContent className="w-64 p-3">
-													<Input
-														ref={quickInputRef}
-														autoFocus
-														size="sm"
-														placeholder="Nome da categoria"
-														aria-label={`Nova categoria em ${group.name}`}
-														value={quickName}
-														isDisabled={saving}
-														onValueChange={setQuickName}
-														onKeyDown={(event) => {
-															if (event.key === "Enter") {
-																event.preventDefault()
-																handleQuickCreate()
-															}
-														}}
-													/>
-													<p className="mt-2 text-xs text-slate-500">
-														Pressione Enter para adicionar.
-													</p>
-												</PopoverContent>
-											</Popover>
-										</div>
-
-										{group.categories.length === 0 ? (
-											<p className="text-sm text-slate-500">
-												Nenhuma categoria cadastrada.
-											</p>
-										) : (
-											<div className="space-y-1">
-												{group.categories.map((category) => (
-													<div
-														key={category.id}
-														className="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800"
-													>
-														{editingCategoryId === category.id ? (
-															<Input
-																ref={editInputRef}
-																autoFocus
-																size="sm"
-																value={editingName}
-																isDisabled={saving}
-																onValueChange={setEditingName}
-																onBlur={() =>
-																	saveInlineEdit(category.id, group.id)
-																}
-																onKeyDown={(event) => {
-																	if (event.key === "Enter")
-																		event.currentTarget.blur()
-																	if (event.key === "Escape")
-																		setEditingCategoryId(null)
-																}}
-															/>
-														) : (
-															<button
-																type="button"
-																className="rounded px-1 text-left text-sm text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-slate-300 dark:hover:bg-slate-800"
-																onClick={() => beginInlineEdit(category)}
-															>
-																{category.name}
-															</button>
-														)}
-														<div className="flex items-center">
-															<Button
-																isIconOnly
-																size="sm"
-																variant="light"
-																color="danger"
-																onPress={() => handleDelete(category.id)}
-																aria-label={`Excluir ${category.name}`}
-															>
-																<Trash2 className="h-3.5 w-3.5" />
-															</Button>
-														</div>
-													</div>
-												))}
-											</div>
-										)}
-									</div>
+									<CategoryGroupCard
+										key={group.id}
+										group={group}
+										quickGroupId={quickGroupId}
+										quickName={quickName}
+										quickInputRef={quickInputRef}
+										editingCategoryId={editingCategoryId}
+										editingName={editingName}
+										editInputRef={editInputRef}
+										isSaving={saving}
+										onQuickGroupChange={setQuickGroupId}
+										onQuickNameChange={setQuickName}
+										onQuickCreate={handleQuickCreate}
+										onBeginEdit={beginInlineEdit}
+										onDelete={handleDelete}
+										onEditingNameChange={setEditingName}
+										onCancelEdit={() => setEditingCategoryId(null)}
+										onSaveEdit={saveInlineEdit}
+									/>
 								))}
 							</div>
 						</section>
@@ -296,48 +191,15 @@ export function CategoriesList() {
 				},
 			)}
 
-			<Modal isOpen={isOpen} onClose={onClose}>
-				<ModalContent>
-					<ModalHeader>
-						{formData.id ? "Editar categoria" : "Nova categoria"}
-					</ModalHeader>
-					<ModalBody>
-						<Input
-							label="Nome"
-							value={formData.name}
-							onValueChange={(name) => setFormData({ ...formData, name })}
-							isRequired
-						/>
-						<Select
-							label="Grupo"
-							selectedKeys={
-								formData.categoryGroupId ? [formData.categoryGroupId] : []
-							}
-							onSelectionChange={(keys) =>
-								setFormData({
-									...formData,
-									categoryGroupId: String(Array.from(keys)[0] ?? ""),
-								})
-							}
-							isRequired
-						>
-							{groups.map((group) => (
-								<SelectItem key={group.id} textValue={group.name}>
-									{categoryGroupTypeLabels[group.type]}: {group.name}
-								</SelectItem>
-							))}
-						</Select>
-					</ModalBody>
-					<ModalFooter>
-						<Button variant="flat" onPress={onClose}>
-							Cancelar
-						</Button>
-						<Button color="primary" onPress={handleSave} isLoading={saving}>
-							Salvar
-						</Button>
-					</ModalFooter>
-				</ModalContent>
-			</Modal>
+			<CategoryFormModal
+				formData={formData}
+				groups={groups}
+				isOpen={isOpen}
+				isSaving={saving}
+				onClose={onClose}
+				onSave={handleSave}
+				onFormDataChange={setFormData}
+			/>
 		</div>
 	)
 }

@@ -1,17 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import {
-	Button,
-	Input,
-	Modal,
-	ModalBody,
-	ModalContent,
-	ModalFooter,
-	ModalHeader,
-	Spinner,
-	useDisclosure,
-} from "@nextui-org/react"
+import { Button, Input, Spinner, useDisclosure } from "@nextui-org/react"
 import { Save } from "lucide-react"
 import { toast } from "react-toastify"
 import {
@@ -23,23 +13,10 @@ import {
 import { getCategories, type CategoryWithGroup } from "@/features/categories"
 
 import { calculateBudgetPlanAdjustment } from "@/lib/engines/budget-report"
-import { centsToDollars, formatCurrency } from "@/types/finance"
+import { centsToDollars } from "@/types/finance"
+import { BudgetCreateModal } from "./budget-create-modal"
 import { BudgetPlanWarning } from "./budget-plan-warning"
-
-const types = ["INCOME", "ESSENTIAL", "LIFESTYLE", "INVESTMENT"] as const
-
-const typeLabels = {
-	INCOME: "Receitas",
-	ESSENTIAL: "Essencial",
-	LIFESTYLE: "Estilo de vida",
-	INVESTMENT: "Investimentos",
-}
-
-const allocationTargets = {
-	ESSENTIAL: 50,
-	LIFESTYLE: 30,
-	INVESTMENT: 20,
-} as const
+import { budgetTypes, BudgetTypeSection } from "./budget-type-section"
 
 function amountInputToCents(value: string): number {
 	const normalized = value.trim().replace(",", ".")
@@ -133,7 +110,7 @@ export function BudgetsContent() {
 		month: "long",
 		year: "numeric",
 	})
-	const typeTotals = types.reduce(
+	const typeTotals = budgetTypes.reduce(
 		(totals, type) => {
 			totals[type] = categories
 				.filter((category) => category.categoryGroup.type === type)
@@ -144,7 +121,7 @@ export function BudgetsContent() {
 				)
 			return totals
 		},
-		{} as Record<(typeof types)[number], number>,
+		{} as Record<(typeof budgetTypes)[number], number>,
 	)
 	const planAdjustment = calculateBudgetPlanAdjustment(typeTotals.INCOME, {
 		ESSENTIAL: typeTotals.ESSENTIAL,
@@ -202,50 +179,23 @@ export function BudgetsContent() {
 						</p>
 					</div>
 
-					{types.map((type) => {
+					{budgetTypes.map((type) => {
 						const categoriesByType = categories.filter(
 							(category) => category.categoryGroup.type === type,
 						)
 						if (!categoriesByType.length) return null
 						return (
-							<section key={type} className="modern-card overflow-hidden">
-								<h2 className="border-b p-4 font-semibold">
-									{typeLabels[type]}
-								</h2>
-								{categoriesByType.map((category) => (
-									<div
-										key={category.id}
-										className="grid grid-cols-[1fr_140px] items-center gap-3 border-b p-4 last:border-0"
-									>
-										<div>
-											<p className="font-medium">{category.name}</p>
-											<p className="text-sm text-slate-500">
-												{category.categoryGroup.name}
-											</p>
-										</div>
-										<Input
-											aria-label={`Valor de ${category.name}`}
-											type="number"
-											min="0"
-											step="0.01"
-											placeholder="0,00"
-											startContent="R$"
-											value={values[category.id] ?? ""}
-											onValueChange={(value) =>
-												setValues((current) => ({
-													...current,
-													[category.id]: value,
-												}))
-											}
-										/>
-									</div>
-								))}
-								<TypeTotal
-									type={type}
-									total={typeTotals[type]}
-									incomeTotal={typeTotals.INCOME}
-								/>
-							</section>
+							<BudgetTypeSection
+								key={type}
+								type={type}
+								categories={categoriesByType}
+								values={values}
+								total={typeTotals[type]}
+								incomeTotal={typeTotals.INCOME}
+								onValueChange={(categoryId, value) =>
+									setValues((current) => ({ ...current, [categoryId]: value }))
+								}
+							/>
 						)
 					})}
 
@@ -264,79 +214,13 @@ export function BudgetsContent() {
 				</>
 			)}
 
-			<Modal isOpen={isOpen} onClose={onClose}>
-				<ModalContent>
-					<ModalHeader>Criar orçamento</ModalHeader>
-					<ModalBody>
-						<p>Escolha como iniciar o orçamento de {monthLabel}.</p>
-					</ModalBody>
-					<ModalFooter>
-						<Button
-							variant="flat"
-							onPress={() => create(false)}
-							isLoading={saving}
-						>
-							Em branco
-						</Button>
-						<Button
-							color="primary"
-							onPress={() => create(true)}
-							isLoading={saving}
-						>
-							Copiar mês anterior
-						</Button>
-					</ModalFooter>
-				</ModalContent>
-			</Modal>
-		</div>
-	)
-}
-
-function TypeTotal({
-	type,
-	total,
-	incomeTotal,
-}: {
-	type: (typeof types)[number]
-	total: number
-	incomeTotal: number
-}) {
-	if (type === "INCOME") {
-		return (
-			<div className="flex items-center justify-between bg-slate-50 p-4 dark:bg-slate-800/50">
-				<span className="text-sm font-medium">Total de receitas</span>
-				<span className="font-semibold">{formatCurrency(total)}</span>
-			</div>
-		)
-	}
-
-	const target = allocationTargets[type]
-	const percentage = incomeTotal > 0 ? (total / incomeTotal) * 100 : 0
-	const targetAmount = Math.round((incomeTotal * target) / 100)
-	const isAboveTarget = percentage > target
-
-	return (
-		<div className="flex flex-col gap-1 bg-slate-50 p-4 text-sm dark:bg-slate-800/50 sm:flex-row sm:items-center sm:justify-between">
-			<div>
-				<p className="font-medium">Total de {typeLabels[type].toLowerCase()}</p>
-				<p className="text-xs text-slate-500">
-					Meta ideal: até {target}% das receitas ({formatCurrency(targetAmount)})
-				</p>
-			</div>
-			<div className="text-right">
-				<p className="font-semibold">{formatCurrency(total)}</p>
-				<p
-					className={
-						isAboveTarget
-							? "text-xs font-medium text-red-600"
-							: "text-xs text-slate-500"
-					}
-				>
-					{incomeTotal > 0
-						? `${percentage.toFixed(1)}% das receitas`
-						: "Cadastre receitas para comparar"}
-				</p>
-			</div>
+			<BudgetCreateModal
+				isOpen={isOpen}
+				isSaving={saving}
+				monthLabel={monthLabel}
+				onClose={onClose}
+				onCreate={create}
+			/>
 		</div>
 	)
 }
