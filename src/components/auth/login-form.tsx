@@ -18,13 +18,13 @@ export function LoginForm() {
 				toast.error(res.error)
 				setIsLoading(false)
 			}
-		} catch (error) {
+		} catch {
 			// O redirect() lança uma exceção que é capturada pelo Next.js
 		}
 	}
 
 	return (
-		<form action={loginClient} className="flex flex-col gap-4">
+		<form action={loginClient} className="flex flex-col gap-4" aria-busy={isLoading}>
 			<Input
 				type="email"
 				label="Email"
@@ -59,10 +59,16 @@ export function LoginForm() {
 				size="lg"
 				className="mt-2 font-semibold bg-gradient-to-r from-blue-600 to-purple-600"
 				isLoading={isLoading}
+				isDisabled={isLoading}
 				startContent={!isLoading && <LogIn className="w-5 h-5" />}
 			>
-				{isLoading ? "Entrando..." : "Entrar"}
+				{isLoading ? "Validando credenciais..." : "Entrar"}
 			</Button>
+			{isLoading && (
+				<p className="text-center text-sm text-slate-500 dark:text-slate-400" role="status">
+					Aguarde enquanto verificamos seu acesso.
+				</p>
+			)}
 		</form>
 	)
 }

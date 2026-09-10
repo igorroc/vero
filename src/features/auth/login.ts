@@ -56,5 +56,5 @@ export async function loginAction(formData: FormData) {
 		}
 	}
 
-	redirect("/profile")
+	redirect("/dashboard")
 }
