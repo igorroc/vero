@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import {
 	Button,
 	Chip,
@@ -61,6 +62,7 @@ export function EventListItem({
 		(account) => account.id === event.destinationAccountId,
 	)
 	const isOverdue = isPast(event.date) && event.status === "PLANNED"
+	const isPlanned = event.status === "PLANNED"
 
 	return (
 		<div
@@ -88,11 +90,36 @@ export function EventListItem({
 							<p
 								className={`text-xs sm:text-sm mt-0.5 ${isOverdue ? "text-amber-600" : "text-slate-500"}`}
 							>
-								{event.type === "TRANSFER"
-									? `De ${sourceAccount?.name ?? "conta de origem"} para ${destinationAccount?.name ?? "conta de destino"}`
-									: event.type === "INCOME"
-										? `Entrou em: ${sourceAccount?.name ?? "conta não encontrada"}`
-										: `Saiu de: ${sourceAccount?.name ?? "conta não encontrada"}`}
+								{event.type === "TRANSFER" ? (
+									<>
+										De{" "}
+										<AccountLink
+											account={sourceAccount}
+											fallback="conta de origem"
+										/>
+										{" para "}
+										<AccountLink
+											account={destinationAccount}
+											fallback="conta de destino"
+										/>
+									</>
+								) : event.type === "INCOME" ? (
+									<>
+										{isPlanned ? "Entrará em: " : "Entrou em: "}
+										<AccountLink
+											account={sourceAccount}
+											fallback="conta não encontrada"
+										/>
+									</>
+								) : (
+									<>
+										{isPlanned ? "Sairá de: " : "Saiu de: "}
+										<AccountLink
+											account={sourceAccount}
+											fallback="conta não encontrada"
+										/>
+									</>
+								)}
 								{isOverdue && " • Atrasado"}
 							</p>
 						</div>
@@ -169,6 +196,25 @@ export function EventListItem({
 				</div>
 			</div>
 		</div>
+	)
+}
+
+function AccountLink({
+	account,
+	fallback,
+}: {
+	account: AccountWithBalance | undefined
+	fallback: string
+}) {
+	if (!account) return fallback
+
+	return (
+		<Link
+			href={`/accounts/${account.id}`}
+			className="font-semibold text-slate-700 transition-colors hover:text-primary hover:underline dark:text-slate-200"
+		>
+			{account.name}
+		</Link>
 	)
 }
 
