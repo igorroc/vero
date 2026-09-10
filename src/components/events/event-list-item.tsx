@@ -17,6 +17,7 @@ import {
 	ArrowLeftRight,
 	BadgePercent,
 	Banknote,
+	Building2,
 	Car,
 	CircleDollarSign,
 	CreditCard,
@@ -27,6 +28,7 @@ import {
 	Pencil,
 	Phone,
 	ReceiptText,
+	Scissors,
 	ShoppingCart,
 	TrendingUp,
 	Utensils,
@@ -257,6 +259,19 @@ function getEventIcon(description: string, type: string) {
 	if (type === "TRANSFER") return ArrowLeftRight
 	const desc = description.toLowerCase()
 	if (
+		desc.includes("ssn") ||
+		desc.includes("evolução de obra") ||
+		desc.includes("evolucao de obra")
+	)
+		return Building2
+	if (
+		desc.includes("unha") ||
+		desc.includes("depilação") ||
+		desc.includes("depilacao")
+	)
+		return Scissors
+	if (desc.includes("pagamento")) return ReceiptText
+	if (
 		desc.includes("salário") ||
 		desc.includes("salario") ||
 		desc.includes("renda")
@@ -302,7 +317,8 @@ function getEventIcon(description: string, type: string) {
 	if (
 		desc.includes("restaurante") ||
 		desc.includes("comida") ||
-		desc.includes("alimenta")
+		desc.includes("alimenta") ||
+		desc.includes("salgado")
 	)
 		return Utensils
 	if (
