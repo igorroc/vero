@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Input, Spinner } from "@nextui-org/react"
+import { cn, Input, Spinner } from "@nextui-org/react"
 import { ArrowDownRight, ArrowUpRight, ChevronDown, Minus } from "lucide-react"
 import { getBudgetReport } from "@/features/budgets"
 import type { BudgetGroupType, BudgetReport } from "@/lib/engines/budget-report"
@@ -241,14 +241,34 @@ export function CategoryGroup({
 						<span>Realizado</span>
 						<span>Diferença</span>
 					</div>
-					{group.items.map((item) => (
+					{group.items.map((item, index) => (
 						<div
 							key={item.categoryId}
-							className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-lg bg-white p-3 text-sm shadow-sm dark:bg-slate-900 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-center"
+							className={cn(
+								"grid grid-cols-2 gap-x-3 gap-y-2 rounded-lg p-3 text-sm shadow-sm sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-center",
+								index % 2 === 0
+									? "bg-white dark:bg-slate-900"
+									: "bg-indigo-50/10 dark:bg-indigo-950/10",
+							)}
 						>
-							<div className="col-span-2 min-w-0 border-l-2 border-slate-200 pl-3 dark:border-slate-700 sm:col-span-1">
+							<div
+								className={cn(
+									"col-span-2 min-w-0 border-l-2 pl-3 sm:col-span-1",
+									index % 2 === 0
+										? "border-slate-200 dark:border-slate-700"
+										: "border-indigo-300 dark:border-indigo-700",
+								)}
+							>
 								<p className="truncate font-medium">{item.categoryName}</p>
-								<p className="text-xs text-slate-500">
+								<p
+									className={cn(
+										"text-xs text-slate-500",
+										(group.type !== "INCOME" && item.executionPercent > 100) ||
+											(group.type === "INCOME" && item.executionPercent < 100)
+											? "text-red-600 dark:text-red-400"
+											: "text-emerald-600 dark:text-emerald-400",
+									)}
+								>
 									Execução: {item.executionPercent.toFixed(0)}%
 								</p>
 							</div>
