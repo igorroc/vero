@@ -202,6 +202,37 @@ function groupEventsByDate(
 	return map
 }
 
+/** Project account balances from a confirmed balance snapshot using planned events. */
+export function projectPlannedAccountBalances(
+	accounts: CashflowInput["accounts"],
+	events: CashflowInput["events"],
+): Map<string, Cents> {
+	const balances = new Map<string, Cents>(
+		accounts.map((account) => [account.id, account.initialBalance]),
+	)
+
+	for (const event of events) {
+		if (event.status !== "PLANNED") continue
+
+		const sourceBalance = balances.get(event.accountId)
+		if (sourceBalance !== undefined) {
+			balances.set(event.accountId, sourceBalance + event.amount)
+		}
+
+		if (event.type === "TRANSFER" && event.destinationAccountId) {
+			const destinationBalance = balances.get(event.destinationAccountId)
+			if (destinationBalance !== undefined) {
+				balances.set(
+					event.destinationAccountId,
+					destinationBalance - event.amount,
+				)
+			}
+		}
+	}
+
+	return balances
+}
+
 /**
  * Calculate total balance across all accounts
  */

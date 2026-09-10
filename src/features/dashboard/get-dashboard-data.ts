@@ -20,6 +20,7 @@ import {
 	buildCashflowProjection,
 	getProjectionSummary,
 	findCriticalEvents,
+	projectPlannedAccountBalances,
 	simulatePriorityScenarios,
 } from "@/lib/engines/cashflow"
 import type {
@@ -28,7 +29,7 @@ import type {
 	HorizonMode,
 	PrioritySimulationResult,
 } from "@/types/finance"
-import { addDays, startOfDay } from "@/types/finance"
+import { addDays, endOfMonth, startOfDay } from "@/types/finance"
 
 export interface DashboardData {
 	// Balance info
@@ -42,6 +43,10 @@ export interface DashboardData {
 
 	// Spending limit
 	spendingLimit: SpendingLimitResult
+	monthEndBalances: {
+		available: Cents
+		investments: Cents
+	}
 
 	// Upcoming events (next 7 days)
 	upcomingEvents: Array<{
@@ -100,6 +105,7 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 		}
 
 		const today = new Date()
+		const monthEnd = endOfMonth(today)
 		const [balancesResult, budgetResult] = await Promise.all([
 			getAccountBalances(),
 			getBudgetReport(today.getFullYear(), today.getMonth() + 1),
@@ -136,9 +142,18 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 			},
 			include: { debt: { select: { creditor: true } } },
 		})
+		const monthlyDebtInstallments = debtInstallments.filter(
+			(installment) =>
+				startOfDay(installment.dueDate).getTime() <= monthEnd.getTime(),
+		)
+		const monthlyEvents = eventsResult.events.filter(
+			(event) =>
+				startOfDay(event.date).getTime() >= startOfDay(today).getTime() &&
+				startOfDay(event.date).getTime() <= monthEnd.getTime(),
+		)
 
 		// Map events for spending limit calculation
-		const eventsForCalculation = eventsResult.events
+		const eventsForCalculation = monthlyEvents
 			.map((e) => ({
 				amount: e.amount,
 				type: e.type,
@@ -147,7 +162,7 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 				date: e.date,
 			}))
 			.concat(
-				debtInstallments.map((installment) => ({
+				monthlyDebtInstallments.map((installment) => ({
 					amount: -installment.plannedAmount,
 					type: "EXPENSE" as const,
 					status: "PLANNED" as const,
@@ -155,6 +170,46 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 					date: installment.dueDate,
 				})),
 			)
+		const projectedAccountBalances = projectPlannedAccountBalances(
+			accounts.map((account) => ({
+				id: account.id,
+				name: account.name,
+				initialBalance: account.currentBalance,
+			})),
+			monthlyEvents
+				.filter((event) => event.status === "PLANNED")
+				.map((event) => ({
+					id: event.id,
+					description: event.description,
+					amount: event.amount,
+					type: event.type,
+					costType: event.costType,
+					status: event.status,
+					priority: event.priority,
+					date: event.date,
+					accountId: event.accountId,
+					destinationAccountId: event.destinationAccountId,
+				})),
+		)
+		const monthEndBalances = accounts.reduce(
+			(totals, account) => {
+				const projectedBalance =
+					projectedAccountBalances.get(account.id) ?? account.currentBalance
+				if (account.type === "INVESTMENT") {
+					totals.investments += projectedBalance
+				} else {
+					totals.available += projectedBalance
+				}
+				return totals
+			},
+			{
+				available: -monthlyDebtInstallments.reduce(
+					(total, installment) => total + installment.plannedAmount,
+					0,
+				),
+				investments: 0,
+			},
+		)
 
 		// Calculate spending limit
 		const spendingLimit = calculateSpendingLimitAuto(
@@ -268,6 +323,7 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 				accounts,
 				monthlyBudget,
 				spendingLimit,
+				monthEndBalances,
 				upcomingEvents,
 				projectionSummary,
 				criticalEvents,

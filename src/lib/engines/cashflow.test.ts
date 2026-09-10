@@ -5,6 +5,7 @@ import {
 	getCurrentBalance,
 	findCriticalEvents,
 	getProjectionSummary,
+	projectPlannedAccountBalances,
 } from "./cashflow"
 import type { CashflowInput } from "@/types/finance"
 
@@ -64,6 +65,54 @@ describe("buildCashflowProjection", () => {
 		expect(result.days[0].startingBalance).toBe(100000)
 		expect(result.days[0].endingBalance).toBe(100000)
 		expect(result.days[4].endingBalance).toBe(100000)
+	})
+
+	it("should project planned account balances while preserving transfers", () => {
+		const balances = projectPlannedAccountBalances(
+			[
+				{ id: "cash", name: "Conta", initialBalance: 100000 },
+				{ id: "investment", name: "Investimento", initialBalance: 200000 },
+			],
+			[
+				{
+					id: "expense",
+					description: "Despesa planejada",
+					amount: -20000,
+					type: "EXPENSE",
+					costType: "RECURRENT",
+					status: "PLANNED",
+					priority: "IMPORTANT",
+					date: utcDate(2024, 1, 2),
+					accountId: "cash",
+				},
+				{
+					id: "transfer",
+					description: "Transferência planejada",
+					amount: -30000,
+					type: "TRANSFER",
+					costType: null,
+					status: "PLANNED",
+					priority: "IMPORTANT",
+					date: utcDate(2024, 1, 3),
+					accountId: "cash",
+					destinationAccountId: "investment",
+				},
+				{
+					id: "confirmed",
+					description: "Despesa confirmada",
+					amount: -10000,
+					type: "EXPENSE",
+					costType: "RECURRENT",
+					status: "CONFIRMED",
+					priority: "IMPORTANT",
+					date: utcDate(2024, 1, 4),
+					accountId: "cash",
+				},
+			],
+		)
+
+		expect(balances.get("cash")).toBe(50000)
+		expect(balances.get("investment")).toBe(230000)
 	})
 
 	it("should apply confirmed events to balance", () => {

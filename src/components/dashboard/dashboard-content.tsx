@@ -6,6 +6,8 @@ import { getDashboardData, type DashboardData } from "@/features/dashboard"
 import { DashboardAlerts } from "./dashboard-alerts"
 import { DashboardBalanceCard } from "./dashboard-balance-card"
 import { DashboardMonthlyBudget } from "./dashboard-monthly-budget"
+
+import { DashboardMonthEndBalance } from "./dashboard-month-end-balance"
 import { DashboardSpendingLimit } from "./dashboard-spending-limit"
 import { DashboardUpcomingEvents } from "./dashboard-upcoming-events"
 
@@ -56,6 +58,10 @@ export function DashboardContent() {
 		return null
 	}
 
+	const investmentBalance = data.accounts
+		.filter((account) => account.type === "INVESTMENT")
+		.reduce((total, account) => total + account.currentBalance, 0)
+
 	return (
 		<div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
 			<DashboardBalanceCard availableBalance={data.availableBalance} />
@@ -63,7 +69,14 @@ export function DashboardContent() {
 				criticalEvents={data.criticalEvents}
 				daysUntilNegative={data.projectionSummary.daysUntilNegative}
 			/>
-			<DashboardSpendingLimit breakdown={data.spendingLimit.breakdown} />
+			<DashboardSpendingLimit
+				breakdown={data.spendingLimit.breakdown}
+				investmentBalance={investmentBalance}
+			/>
+			<DashboardMonthEndBalance
+				availableBalance={data.monthEndBalances.available}
+				investmentBalance={data.monthEndBalances.investments}
+			/>
 			{data.monthlyBudget && (
 				<DashboardMonthlyBudget monthlyBudget={data.monthlyBudget} />
 			)}
