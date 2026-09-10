@@ -33,7 +33,31 @@ import {
 	TrendingUp,
 	Utensils,
 	Zap,
+	type LucideIcon,
 } from "lucide-react"
+
+const eventIconRules: Array<{ icon: LucideIcon; keywords: string[] }> = [
+	{ icon: Building2, keywords: ["ssn", "evolucao de obra", "financiamento"] },
+	{ icon: Scissors, keywords: ["unha", "depilacao"] },
+	{ icon: Banknote, keywords: ["salario", "renda"] },
+	{ icon: BadgePercent, keywords: ["correcao monetaria"] },
+	{ icon: ReceiptText, keywords: ["fatura", "pagamento", "divida", "imposto"] },
+	{ icon: Phone, keywords: ["telefone"] },
+	{ icon: Music, keywords: ["curso", "bateria"] },
+	{ icon: Heart, keywords: ["dizimo"] },
+	{ icon: Car, keywords: ["transporte", "uber", "99", "carro", "gasolina"] },
+	{ icon: Home, keywords: ["aluguel", "casa", "moradia"] },
+	{
+		icon: ShoppingCart,
+		keywords: ["mercado", "compra", "shopping", "acougue"],
+	},
+	{
+		icon: Utensils,
+		keywords: ["restaurante", "comida", "alimenta", "salgado"],
+	},
+	{ icon: Heart, keywords: ["saude", "medico", "farmacia"] },
+	{ icon: Zap, keywords: ["energia", "luz", "agua", "internet"] },
+]
 
 interface EventListItemProps {
 	event: Event
@@ -257,84 +281,17 @@ function getEventColors(type: string) {
 
 function getEventIcon(description: string, type: string) {
 	if (type === "TRANSFER") return ArrowLeftRight
-	const desc = description.toLowerCase()
-	if (
-		desc.includes("ssn") ||
-		desc.includes("evolução de obra") ||
-		desc.includes("evolucao de obra")
-	)
-		return Building2
-	if (
-		desc.includes("unha") ||
-		desc.includes("depilação") ||
-		desc.includes("depilacao")
-	)
-		return Scissors
-	if (desc.includes("pagamento")) return ReceiptText
-	if (
-		desc.includes("salário") ||
-		desc.includes("salario") ||
-		desc.includes("renda")
-	)
-		return Banknote
-	if (
-		desc.includes("correção monetária") ||
-		desc.includes("correcao monetaria")
-	)
-		return BadgePercent
-	if (
-		desc.includes("fatura") ||
-		desc.includes("financiamento") ||
-		desc.includes("dívida") ||
-		desc.includes("divida")
-	)
-		return ReceiptText
-	if (desc.includes("telefone")) return Phone
-	if (desc.includes("curso") || desc.includes("bateria")) return Music
-	if (desc.includes("dízimo") || desc.includes("dizimo")) return Heart
-	if (
-		desc.includes("transporte") ||
-		desc.includes("uber") ||
-		desc.includes("99") ||
-		desc.includes("carro") ||
-		desc.includes("gasolina")
-	)
-		return Car
-	if (
-		desc.includes("aluguel") ||
-		desc.includes("casa") ||
-		desc.includes("moradia")
-	)
-		return Home
-	if (
-		desc.includes("mercado") ||
-		desc.includes("compra") ||
-		desc.includes("shopping") ||
-		desc.includes("açougue") ||
-		desc.includes("acougue")
-	)
-		return ShoppingCart
-	if (
-		desc.includes("restaurante") ||
-		desc.includes("comida") ||
-		desc.includes("alimenta") ||
-		desc.includes("salgado")
-	)
-		return Utensils
-	if (
-		desc.includes("saúde") ||
-		desc.includes("médico") ||
-		desc.includes("farmácia")
-	)
-		return Heart
-	if (
-		desc.includes("energia") ||
-		desc.includes("luz") ||
-		desc.includes("água") ||
-		desc.includes("internet")
-	)
-		return Zap
 	if (type === "INVESTMENT") return TrendingUp
 	if (type === "INCOME") return CircleDollarSign
+
+	const normalizedDescription = description
+		.normalize("NFD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.toLowerCase()
+	const matchingRule = eventIconRules.find((rule) =>
+		rule.keywords.some((keyword) => normalizedDescription.includes(keyword)),
+	)
+
+	if (matchingRule) return matchingRule.icon
 	return CreditCard
 }
