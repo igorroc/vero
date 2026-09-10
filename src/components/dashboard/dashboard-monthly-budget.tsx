@@ -32,7 +32,7 @@ export function DashboardMonthlyBudget({
 					href="/reports/budget"
 					className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
 				>
-					Ver relatório <ChevronRight className="h-4 w-4" />
+					Ver orçamento mensal <ChevronRight className="h-4 w-4" />
 				</Link>
 			</div>
 			<div className="grid gap-3 sm:grid-cols-2">

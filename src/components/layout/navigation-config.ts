@@ -28,7 +28,7 @@ export const sidebarNavigationGroups: NavigationGroup[] = [
 		items: [{ icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" }],
 	},
 	{
-		label: "Configuração inicial",
+		label: "Gestão inicial",
 		items: [
 			{ icon: PiggyBank, label: "Contas", href: "/accounts" },
 			{ icon: Tags, label: "Categorias", href: "/categories" },
@@ -36,7 +36,7 @@ export const sidebarNavigationGroups: NavigationGroup[] = [
 		],
 	},
 	{
-		label: "Acompanhar",
+		label: "Acompanhamento",
 		items: [
 			{ icon: Wallet, label: "Lançamentos", href: "/events" },
 			{ icon: TrendingUp, label: "Investimentos", href: "/investments" },
@@ -48,7 +48,12 @@ export const sidebarNavigationGroups: NavigationGroup[] = [
 		items: [
 			{
 				icon: ChartNoAxesCombined,
-				label: "Relatórios",
+				label: "Gastos por categoria",
+				href: "/reports/spending",
+			},
+			{
+				icon: ReceiptText,
+				label: "Orçamento mensal",
 				href: "/reports/budget",
 			},
 		],
@@ -62,7 +67,11 @@ export const sidebarNavigationGroups: NavigationGroup[] = [
 export const bottomMainNavigationItems: NavigationItem[] = [
 	{ icon: LayoutDashboard, label: "Home", href: "/dashboard" },
 	{ icon: Wallet, label: "Lançamentos", href: "/events" },
-	{ icon: ChartNoAxesCombined, label: "Relatórios", href: "/reports/budget" },
+	{
+		icon: ChartNoAxesCombined,
+		label: "Gastos",
+		href: "/reports/spending",
+	},
 ]
 
 export const bottomMoreNavigationItems: NavigationItem[] = [

@@ -44,7 +44,7 @@ export function BudgetReportContent() {
 						Planejamento mensal
 					</p>
 					<h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-						Relatório de orçamento
+						Relatório de orçamento mensal
 					</h1>
 					<p className="text-sm text-slate-500">
 						Acompanhe o plano, o realizado e os limites por tipo de gasto.

@@ -12,6 +12,7 @@ import {
 import type { Event } from "@prisma/client"
 import type { AccountWithBalance } from "@/features/accounts"
 import type { CategoryWithGroup } from "@/features/categories"
+import { getEventIconKey, type EventIconKey } from "@/lib/event-icon-rules"
 import { formatCurrency } from "@/types/finance"
 import {
 	ArrowLeftRight,
@@ -33,31 +34,25 @@ import {
 	TrendingUp,
 	Utensils,
 	Zap,
-	type LucideIcon,
 } from "lucide-react"
 
-const eventIconRules: Array<{ icon: LucideIcon; keywords: string[] }> = [
-	{ icon: Building2, keywords: ["ssn", "evolucao de obra", "financiamento"] },
-	{ icon: Scissors, keywords: ["unha", "depilacao"] },
-	{ icon: Banknote, keywords: ["salario", "renda"] },
-	{ icon: BadgePercent, keywords: ["correcao monetaria"] },
-	{ icon: ReceiptText, keywords: ["fatura", "pagamento", "divida", "imposto"] },
-	{ icon: Phone, keywords: ["telefone"] },
-	{ icon: Music, keywords: ["curso", "bateria"] },
-	{ icon: Heart, keywords: ["dizimo"] },
-	{ icon: Car, keywords: ["transporte", "uber", "99", "carro", "gasolina"] },
-	{ icon: Home, keywords: ["aluguel", "casa", "moradia"] },
-	{
-		icon: ShoppingCart,
-		keywords: ["mercado", "compra", "shopping", "acougue"],
-	},
-	{
-		icon: Utensils,
-		keywords: ["restaurante", "comida", "alimenta", "salgado"],
-	},
-	{ icon: Heart, keywords: ["saude", "medico", "farmacia"] },
-	{ icon: Zap, keywords: ["energia", "luz", "agua", "internet"] },
-]
+const eventIcons: Record<EventIconKey, typeof CreditCard> = {
+	property: Building2,
+	beauty: Scissors,
+	income: Banknote,
+	adjustment: BadgePercent,
+	bill: ReceiptText,
+	phone: Phone,
+	education: Music,
+	donation: Heart,
+	transport: Car,
+	housing: Home,
+	shopping: ShoppingCart,
+	food: Utensils,
+	health: Heart,
+	utilities: Zap,
+	other: CreditCard,
+}
 
 interface EventListItemProps {
 	event: Event
@@ -284,14 +279,5 @@ function getEventIcon(description: string, type: string) {
 	if (type === "INVESTMENT") return TrendingUp
 	if (type === "INCOME") return CircleDollarSign
 
-	const normalizedDescription = description
-		.normalize("NFD")
-		.replace(/[\u0300-\u036f]/g, "")
-		.toLowerCase()
-	const matchingRule = eventIconRules.find((rule) =>
-		rule.keywords.some((keyword) => normalizedDescription.includes(keyword)),
-	)
-
-	if (matchingRule) return matchingRule.icon
-	return CreditCard
+	return eventIcons[getEventIconKey(description)]
 }
