@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, useEffect, useState } from "react"
+import { Fragment, useState } from "react"
 import {
 	Button,
 	Dropdown,
@@ -10,6 +10,7 @@ import {
 	Spinner,
 	useDisclosure,
 } from "@nextui-org/react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import {
 	confirmEvent,
 	deleteEvent,
@@ -19,11 +20,8 @@ import {
 	updateTransfer,
 	type UpdateEventInput,
 } from "@/features/events"
-import {
-	getAccountBalances,
-	type AccountWithBalance,
-} from "@/features/accounts"
-import { getCategories, type CategoryWithGroup } from "@/features/categories"
+import { getAccountBalances } from "@/features/accounts"
+import { getCategories } from "@/features/categories"
 import {
 	centsToDollars,
 	dateFromInput,
@@ -43,13 +41,56 @@ import { EventListItem } from "./event-list-item"
 import { NewEventLauncher } from "./new-event-launcher"
 
 export function EventsList() {
-	const [events, setEvents] = useState<Event[]>([])
-	const [accounts, setAccounts] = useState<AccountWithBalance[]>([])
-	const [categories, setCategories] = useState<CategoryWithGroup[]>([])
-	const [loading, setLoading] = useState(true)
-	const [error, setError] = useState<string | null>(null)
 	const statusFilter = useEventsFilterStore((state) => state.statusFilter)
 	const setStatusFilter = useEventsFilterStore((state) => state.setStatusFilter)
+	const queryClient = useQueryClient()
+	const eventQueryKey = ["events", statusFilter] as const
+	const eventsQuery = useQuery({
+		queryKey: eventQueryKey,
+		queryFn: async () => {
+			const result = await getEvents(
+				statusFilter === "pending"
+					? { status: "PLANNED" }
+					: statusFilter === "confirmed"
+						? { status: "CONFIRMED" }
+						: {},
+			)
+			if (!result.success) throw new Error(result.error)
+			return sortEvents(result.events)
+		},
+		staleTime: 5 * 60 * 1000,
+	})
+	const accountsQuery = useQuery({
+		queryKey: ["account-balances"],
+		queryFn: async () => {
+			const result = await getAccountBalances()
+			if (!result.success) throw new Error(result.error)
+			return result.accounts
+		},
+		staleTime: 5 * 60 * 1000,
+	})
+	const categoriesQuery = useQuery({
+		queryKey: ["categories"],
+		queryFn: async () => {
+			const result = await getCategories()
+			if (!result.success) throw new Error(result.error)
+			return result.categories
+		},
+		staleTime: 5 * 60 * 1000,
+	})
+	const events = eventsQuery.data ?? []
+	const accounts = accountsQuery.data ?? []
+	const categories = categoriesQuery.data ?? []
+	const loading =
+		eventsQuery.isLoading ||
+		accountsQuery.isLoading ||
+		categoriesQuery.isLoading
+	const error =
+		eventsQuery.error ?? accountsQuery.error ?? categoriesQuery.error ?? null
+	const errorMessage =
+		error instanceof Error
+			? error.message
+			: "Não foi possível carregar os dados"
 	const {
 		isOpen: isEditOpen,
 		onOpen: onEditOpen,
@@ -65,52 +106,23 @@ export function EventsList() {
 	const [transferEditData, setTransferEditData] =
 		useState<TransferEditData | null>(null)
 
-	useEffect(() => {
-		loadData()
-	}, [statusFilter])
-
-	const loadData = async () => {
-		setLoading(true)
-		setError(null)
-		const accountsResult = await getAccountBalances()
-		if (accountsResult.success) setAccounts(accountsResult.accounts)
-		const categoriesResult = await getCategories()
-		if (categoriesResult.success) setCategories(categoriesResult.categories)
-		const result = await getEvents(
-			statusFilter === "pending"
-				? { status: "PLANNED" }
-				: statusFilter === "confirmed"
-					? { status: "CONFIRMED" }
-					: {},
-		)
-		if (result.success) {
-			setEvents(
-				[...result.events].sort((a, b) => {
-					const aDay = new Date(a.date).setHours(0, 0, 0, 0)
-					const bDay = new Date(b.date).setHours(0, 0, 0, 0)
-					if (aDay !== bDay) return bDay - aDay
-					const aIsIncome = a.amount > 0
-					const bIsIncome = b.amount > 0
-					if (aIsIncome !== bIsIncome) return aIsIncome ? 1 : -1
-					return new Date(b.date).getTime() - new Date(a.date).getTime()
-				}),
-			)
-		} else setError(result.error)
-		setLoading(false)
+	const invalidateEventData = () => {
+		void queryClient.invalidateQueries({ queryKey: ["events"] })
+		void queryClient.invalidateQueries({ queryKey: ["account-balances"] })
 	}
 
 	const handleConfirm = async (eventId: string) => {
 		const result = await confirmEvent(eventId)
 		if (result.success) {
 			toast.success("Evento confirmado")
-			loadData()
+			invalidateEventData()
 		} else toast.error(result.error)
 	}
 	const handleSkip = async (eventId: string) => {
 		const result = await skipEvent(eventId)
 		if (result.success) {
 			toast.success("Evento ignorado")
-			loadData()
+			invalidateEventData()
 		} else toast.error(result.error)
 	}
 	const handleDelete = async (eventId: string) => {
@@ -118,8 +130,30 @@ export function EventsList() {
 		const result = await deleteEvent(eventId)
 		if (result.success) {
 			toast.success("Evento excluído")
-			loadData()
+			invalidateEventData()
 		} else toast.error(result.error)
+	}
+	const handleOptimisticCreate = (event: Event) => {
+		queryClient.setQueryData<Event[]>(eventQueryKey, (currentEvents = []) =>
+			sortEvents([...currentEvents, event]),
+		)
+	}
+	const handleEventCreated = (event: Event, optimisticEventId?: string) => {
+		queryClient.setQueryData<Event[]>(eventQueryKey, (currentEvents = []) =>
+			sortEvents([
+				...currentEvents.filter((item) => item.id !== optimisticEventId),
+				event,
+			]),
+		)
+		void queryClient.invalidateQueries({
+			queryKey: ["events"],
+			refetchType: "none",
+		})
+	}
+	const handleOptimisticError = (optimisticEventId: string) => {
+		queryClient.setQueryData<Event[]>(eventQueryKey, (currentEvents = []) =>
+			currentEvents.filter((event) => event.id !== optimisticEventId),
+		)
 	}
 	const handleEdit = (event: Event) => {
 		if (event.type === "TRANSFER") {
@@ -178,7 +212,7 @@ export function EventsList() {
 					? "Modelo recorrente atualizado"
 					: "Evento atualizado",
 			)
-			loadData()
+			invalidateEventData()
 			onEditClose()
 			setEditData(null)
 		} else toast.error(result.error)
@@ -195,7 +229,7 @@ export function EventsList() {
 		})
 		if (result.success) {
 			toast.success("Transferência atualizada")
-			await loadData()
+			invalidateEventData()
 			onTransferEditClose()
 			setTransferEditData(null)
 		} else toast.error(result.error)
@@ -304,7 +338,9 @@ export function EventsList() {
 						mode="button"
 						accounts={accounts}
 						categories={categories}
-						onSuccess={loadData}
+						onSuccess={handleEventCreated}
+						onOptimisticCreate={handleOptimisticCreate}
+						onOptimisticError={handleOptimisticError}
 					/>
 				</div>
 			</div>
@@ -318,8 +354,17 @@ export function EventsList() {
 			</div>
 			{error && (
 				<div className="modern-card p-4 sm:p-5 border-l-4 border-l-red-500">
-					<p className="text-red-600 text-sm sm:text-base">{error}</p>
-					<Button color="primary" size="sm" className="mt-2" onPress={loadData}>
+					<p className="text-red-600 text-sm sm:text-base">{errorMessage}</p>
+					<Button
+						color="primary"
+						size="sm"
+						className="mt-2"
+						onPress={() => {
+							void eventsQuery.refetch()
+							void accountsQuery.refetch()
+							void categoriesQuery.refetch()
+						}}
+					>
 						Tentar Novamente
 					</Button>
 				</div>
@@ -361,7 +406,9 @@ export function EventsList() {
 					mode="bubble"
 					accounts={accounts}
 					categories={categories}
-					onSuccess={loadData}
+					onSuccess={handleEventCreated}
+					onOptimisticCreate={handleOptimisticCreate}
+					onOptimisticError={handleOptimisticError}
 				/>
 			</div>
 			<EventEditModal
@@ -399,6 +446,18 @@ function calculateBudgetSummary(events: Event[]) {
 		confirmedExpenses,
 		progress: totalExpenses > 0 ? (confirmedExpenses / totalExpenses) * 100 : 0,
 	}
+}
+
+function sortEvents(events: Event[]) {
+	return [...events].sort((a, b) => {
+		const aDay = new Date(a.date).setHours(0, 0, 0, 0)
+		const bDay = new Date(b.date).setHours(0, 0, 0, 0)
+		if (aDay !== bDay) return bDay - aDay
+		const aIsIncome = a.amount > 0
+		const bIsIncome = b.amount > 0
+		if (aIsIncome !== bIsIncome) return aIsIncome ? 1 : -1
+		return new Date(b.date).getTime() - new Date(a.date).getTime()
+	})
 }
 
 function formatDate(date: Date) {

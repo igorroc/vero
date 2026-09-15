@@ -2,6 +2,7 @@
 
 import { Button, useDisclosure } from "@nextui-org/react"
 import { Plus } from "lucide-react"
+import type { Event } from "@prisma/client"
 import type { AccountWithBalance } from "@/features/accounts"
 import type { CategoryWithGroup } from "@/features/categories"
 import { EventForm } from "./event-form"
@@ -12,7 +13,9 @@ interface NewEventLauncherProps {
 	mode: NewEventViewMode
 	accounts: AccountWithBalance[]
 	categories: CategoryWithGroup[]
-	onSuccess: () => void
+	onSuccess: (event: Event, optimisticEventId?: string) => void
+	onOptimisticCreate?: (event: Event) => void
+	onOptimisticError?: (eventId: string) => void
 }
 
 export function NewEventLauncher({
@@ -20,6 +23,8 @@ export function NewEventLauncher({
 	accounts,
 	categories,
 	onSuccess,
+	onOptimisticCreate,
+	onOptimisticError,
 }: NewEventLauncherProps) {
 	const { isOpen, onOpen, onClose } = useDisclosure()
 
@@ -51,6 +56,8 @@ export function NewEventLauncher({
 				isOpen={isOpen}
 				onClose={onClose}
 				onSuccess={onSuccess}
+				onOptimisticCreate={onOptimisticCreate}
+				onOptimisticError={onOptimisticError}
 				accounts={accounts}
 				categories={categories}
 			/>

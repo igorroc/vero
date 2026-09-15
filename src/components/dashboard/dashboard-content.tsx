@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { Spinner, Button } from "@nextui-org/react"
-import { getDashboardData, type DashboardData } from "@/features/dashboard"
-import { getCategories, type CategoryWithGroup } from "@/features/categories"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { getDashboardData } from "@/features/dashboard"
+import { getCategories } from "@/features/categories"
 import { NewEventLauncher } from "@/components/events"
 import { DashboardAlerts } from "./dashboard-alerts"
 import { DashboardBalanceCard } from "./dashboard-balance-card"
@@ -14,35 +14,33 @@ import { DashboardSpendingLimit } from "./dashboard-spending-limit"
 import { DashboardUpcomingEvents } from "./dashboard-upcoming-events"
 
 export function DashboardContent() {
-	const [data, setData] = useState<DashboardData | null>(null)
-	const [categories, setCategories] = useState<CategoryWithGroup[]>([])
-	const [loading, setLoading] = useState(true)
-	const [error, setError] = useState<string | null>(null)
-
-	useEffect(() => {
-		loadDashboard()
-	}, [])
-
-	const loadDashboard = async () => {
-		setLoading(true)
-		setError(null)
-
-		const [result, categoriesResult] = await Promise.all([
-			getDashboardData(),
-			getCategories(),
-		])
-
-		if (result.success) {
-			setData(result.data)
-		} else {
-			setError(result.error)
-		}
-		if (categoriesResult.success) setCategories(categoriesResult.categories)
-
-		setLoading(false)
+	const queryClient = useQueryClient()
+	const dashboardQuery = useQuery({
+		queryKey: ["dashboard"],
+		queryFn: async () => {
+			const result = await getDashboardData()
+			if (!result.success) throw new Error(result.error)
+			return result.data
+		},
+		staleTime: 5 * 60 * 1000,
+	})
+	const categoriesQuery = useQuery({
+		queryKey: ["categories"],
+		queryFn: async () => {
+			const result = await getCategories()
+			if (!result.success) throw new Error(result.error)
+			return result.categories
+		},
+		staleTime: 5 * 60 * 1000,
+	})
+	const data = dashboardQuery.data ?? null
+	const categories = categoriesQuery.data ?? []
+	const error = dashboardQuery.error
+	const invalidateDashboard = () => {
+		void queryClient.invalidateQueries({ queryKey: ["dashboard"] })
 	}
 
-	if (loading) {
+	if (dashboardQuery.isLoading) {
 		return (
 			<div className="flex items-center justify-center min-h-[400px]">
 				<Spinner size="lg" label="Carregando dashboard..." />
@@ -53,8 +51,10 @@ export function DashboardContent() {
 	if (error) {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-				<p className="text-red-500">{error}</p>
-				<Button color="primary" onPress={loadDashboard}>
+				<p className="text-red-500">
+					{error instanceof Error ? error.message : "Não foi possível carregar a dashboard"}
+				</p>
+				<Button color="primary" onPress={() => void dashboardQuery.refetch()}>
 					Tentar Novamente
 				</Button>
 			</div>
@@ -93,7 +93,7 @@ export function DashboardContent() {
 					mode="bubble"
 					accounts={data.accounts}
 					categories={categories}
-					onSuccess={loadDashboard}
+					onSuccess={invalidateDashboard}
 				/>
 		</div>
 	)

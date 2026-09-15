@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
 	Modal,
 	ModalContent,
@@ -18,17 +18,25 @@ import {
 	createTransfer,
 	type CreateEventInput,
 } from "@/features/events"
+import type { Event } from "@prisma/client"
 import type { AccountWithBalance } from "@/features/accounts"
 import type { CategoryWithGroup } from "@/features/categories"
 import { toast } from "react-toastify"
-import { dateFromInput, formatCurrency } from "@/types/finance"
+import {
+	dateFromInput,
+	dollarsToCents,
+	formatCurrency,
+	startOfDay,
+} from "@/types/finance"
 import { useEventFormStore } from "@/stores/event-form-store"
 import { EventCategorySelect } from "./event-category-select"
 
 interface EventFormProps {
 	isOpen: boolean
 	onClose: () => void
-	onSuccess: () => void
+	onSuccess: (event: Event, optimisticEventId?: string) => void
+	onOptimisticCreate?: (event: Event) => void
+	onOptimisticError?: (eventId: string) => void
 	accounts: AccountWithBalance[]
 	categories: CategoryWithGroup[]
 }
@@ -37,6 +45,8 @@ export function EventForm({
 	isOpen,
 	onClose,
 	onSuccess,
+	onOptimisticCreate,
+	onOptimisticError,
 	accounts,
 	categories,
 }: EventFormProps) {
@@ -44,6 +54,7 @@ export function EventForm({
 	const [createAnother, setCreateAnother] = useState(false)
 	const formData = useEventFormStore((state) => state.formData)
 	const setFormData = useEventFormStore((state) => state.setFormData)
+	const wasOpen = useRef(isOpen)
 	const eventCategories = categories.filter(
 		(category) => category.categoryGroupId !== "debts",
 	)
@@ -53,9 +64,10 @@ export function EventForm({
 		}
 	}, [accounts, formData, setFormData])
 	useEffect(() => {
-		if (!isOpen && (formData.description || formData.amount)) {
+		if (wasOpen.current && !isOpen && (formData.description || formData.amount)) {
 			setFormData({ ...formData, description: "", amount: "" })
 		}
+		wasOpen.current = isOpen
 	}, [formData, isOpen, setFormData])
 	const selectedAccount = accounts.find(
 		(account) => account.id === formData.accountId,
@@ -75,6 +87,12 @@ export function EventForm({
 		amountCents > 0 &&
 		selectedAccount !== undefined &&
 		selectedAccount.currentBalance - amountCents < 0
+	const notifyOptimisticCreate = (event: Event) => {
+		onOptimisticCreate?.(event)
+		return event.id
+	}
+	const notifyOptimisticError = (eventId: string) =>
+		onOptimisticError?.(eventId)
 
 	const handleSubmit = async () => {
 		if (
@@ -91,23 +109,38 @@ export function EventForm({
 		setLoading(true)
 
 		if (formData.type === "TRANSFER") {
+			const date = dateFromInput(formData.date)
+			const optimisticEventId = notifyOptimisticCreate(
+				buildOptimisticEvent({
+					accountId: formData.accountId,
+					destinationAccountId: formData.destinationAccountId,
+					description: formData.description,
+					amount: -dollarsToCents(Math.abs(parseFloat(formData.amount))),
+					type: "TRANSFER",
+					status: "CONFIRMED",
+					date,
+				}),
+			)
 			const result = await createTransfer({
 				fromAccountId: formData.accountId,
 				toAccountId: formData.destinationAccountId,
 				description: formData.description,
 				amount: parseFloat(formData.amount),
-				date: dateFromInput(formData.date),
+				date,
 			})
 			if (result.success) {
 				toast.success("Transferência criada com sucesso")
 				if (result.warning) toast.warning(result.warning)
-				onSuccess()
+				onSuccess(result.event, optimisticEventId)
 				setFormData({ ...formData, description: "", amount: "" })
 				if (!createAnother) {
 					setCreateAnother(false)
 					onClose()
 				}
-			} else toast.error(result.error)
+			} else {
+				notifyOptimisticError(optimisticEventId)
+				toast.error(result.error)
+			}
 			setLoading(false)
 			return
 		}
@@ -121,18 +154,36 @@ export function EventForm({
 			priority: formData.priority,
 			date: dateFromInput(formData.date),
 		}
+		const optimisticEventId = notifyOptimisticCreate(
+			buildOptimisticEvent({
+				accountId: input.accountId,
+				categoryId: input.categoryId,
+				description: input.description,
+				amount:
+					input.type === "INCOME"
+						? dollarsToCents(Math.abs(input.amount))
+						: -dollarsToCents(Math.abs(input.amount)),
+				type: input.type,
+				status:
+					startOfDay(input.date).getTime() <= startOfDay(new Date()).getTime()
+						? "CONFIRMED"
+						: "PLANNED",
+				date: input.date,
+			}),
+		)
 
 		const result = await createEvent(input)
 
 		if (result.success) {
 			toast.success("Evento criado com sucesso")
-			onSuccess()
+			onSuccess(result.event, optimisticEventId)
 			setFormData({ ...formData, description: "", amount: "" })
 			if (!createAnother) {
 				setCreateAnother(false)
 				onClose()
 			}
 		} else {
+			notifyOptimisticError(optimisticEventId)
 			toast.error(result.error)
 		}
 
@@ -350,4 +401,50 @@ export function EventForm({
 			</ModalContent>
 		</Modal>
 	)
+}
+
+function buildOptimisticEvent({
+	accountId,
+	destinationAccountId = null,
+	categoryId = null,
+	description,
+	amount,
+	type,
+	status,
+	date,
+}: OptimisticEventInput): Event {
+	const now = new Date()
+	return {
+		id: `optimistic-${now.getTime()}`,
+		userId: "",
+		accountId,
+		destinationAccountId,
+		categoryId,
+		description,
+		amount,
+		type,
+		costType: type === "EXPENSE" ? "RECURRENT" : null,
+		status,
+		priority: "IMPORTANT",
+		date,
+		isRecurrenceTemplate: false,
+		recurrenceFrequency: null,
+		recurrenceEndDate: null,
+		recurrenceId: null,
+		createdAt: now,
+		updatedAt: now,
+	}
+}
+
+type OptimisticEventInput = Pick<
+	Event,
+	| "accountId"
+	| "description"
+	| "amount"
+	| "type"
+	| "status"
+	| "date"
+> & {
+	destinationAccountId?: string | null
+	categoryId?: string | null
 }
