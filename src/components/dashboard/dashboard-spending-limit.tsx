@@ -1,96 +1,49 @@
 import { AlertTriangle, Target } from "lucide-react"
 import type { DashboardData } from "@/features/dashboard"
-import { formatCurrency, type Cents } from "@/types/finance"
+import { formatCurrency } from "@/types/finance"
 
 interface DashboardSpendingLimitProps {
 	breakdown: DashboardData["spendingLimit"]["breakdown"]
-	investmentBalance: Cents
 }
 
 export function DashboardSpendingLimit({
 	breakdown,
-	investmentBalance,
 }: DashboardSpendingLimitProps) {
-	const paymentShortfall = Math.max(
-		0,
-		breakdown.requiredExpenses +
-			breakdown.plannedInvestments -
-			breakdown.cashNow,
-	)
-	const suggestedWithdrawal = Math.min(investmentBalance, paymentShortfall)
-	const remainingShortfall = paymentShortfall - suggestedWithdrawal
-	const isSafetyBufferShortfall = paymentShortfall === 0
-
 	return breakdown.isNegative ? (
-		<div
-			className={
-				isSafetyBufferShortfall
-					? "bg-amber-50 dark:bg-amber-900/20 rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-amber-200 dark:border-amber-800"
-					: "bg-red-50 dark:bg-red-900/20 rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-red-200 dark:border-red-800"
-			}
-		>
+		<div className="rounded-2xl border border-danger/30 bg-danger/10 p-4 sm:rounded-3xl sm:p-5">
 			<div className="flex items-center justify-between">
 				<div className="flex-1 min-w-0">
-					<p
-						className={`font-semibold text-base ${
-							isSafetyBufferShortfall
-								? "text-amber-800 dark:text-amber-200"
-								: "text-red-800 dark:text-red-200"
-						}`}
-					>
-						{isSafetyBufferShortfall
-							? "Reserva de segurança comprometida"
-							: "Saldo insuficiente"}
+					<p className="text-base font-semibold text-danger">
+						Sem margem para gastar
 					</p>
-					{isSafetyBufferShortfall ? (
-						<p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
-							O saldo em conta cobre os lançamentos planejados, mas ficará
-							abaixo da sua reserva de segurança nos próximos{" "}
-							{breakdown.daysUntilHorizon} dias.
-						</p>
-					) : (
-						<>
-							<p className="text-sm text-red-600 dark:text-red-400 mt-1">
-								Faltam {formatCurrency(paymentShortfall)} no saldo disponível em
-								conta para cobrir os lançamentos planejados nos próximos{" "}
-								{breakdown.daysUntilHorizon} dias.
-							</p>
-							{investmentBalance > 0 && (
-								<p className="text-sm text-red-600 dark:text-red-400 mt-1">
-									Você tem {formatCurrency(investmentBalance)} em contas de
-									investimento. Considere resgatar{" "}
-									{formatCurrency(suggestedWithdrawal)} para cobrir a diferença.
-									{remainingShortfall > 0 &&
-										` Ainda faltarão ${formatCurrency(remainingShortfall)}.`}
-								</p>
-							)}
-						</>
-					)}
+					<p className="mt-1 text-sm text-text-secondary">
+						Os lançamentos e a reserva comprometem{" "}
+						{formatCurrency(Math.abs(breakdown.availableForSpending))} até o
+						horizonte.
+					</p>
 				</div>
-				<div
-					className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center flex-shrink-0 ml-4 ${
-						isSafetyBufferShortfall
-							? "bg-gradient-to-br from-amber-400 to-amber-600"
-							: "bg-gradient-to-br from-red-400 to-red-600"
-					}`}
-				>
+				<div className="ml-4 flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-danger sm:h-14 sm:w-14">
 					<AlertTriangle className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
 				</div>
 			</div>
 		</div>
 	) : (
-		<div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-100 dark:border-slate-800">
+		<div className="relative overflow-hidden rounded-2xl bg-primary p-5 text-primary-foreground shadow-surface sm:rounded-3xl sm:p-6">
+			<div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-accent/30" />
 			<div className="flex items-center justify-between">
 				<div className="flex-1 min-w-0">
-					<p className="font-semibold text-slate-900 dark:text-white text-base">
-						Limite diário seguro
+					<p className="text-sm font-medium text-primary-foreground/75">
+						Você pode gastar nesta semana
 					</p>
-					<p className="text-sm text-slate-500 mt-1">
-						Você pode gastar {formatCurrency(breakdown.dailyLimit)} por dia nos
-						próximos {breakdown.daysUntilHorizon} dias
+					<p className="financial-number mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
+						{formatCurrency(breakdown.weeklyLimit)}
+					</p>
+					<p className="mt-2 text-sm text-primary-foreground/75">
+						Sem comprometer lançamentos e reserva nos próximos{" "}
+						{breakdown.daysUntilHorizon} dias.
 					</p>
 				</div>
-				<div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0 ml-4">
+				<div className="ml-4 flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15 sm:h-14 sm:w-14">
 					<Target className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
 				</div>
 			</div>

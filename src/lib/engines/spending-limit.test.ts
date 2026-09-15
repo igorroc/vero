@@ -32,7 +32,19 @@ describe("calculateDailySpendingLimit", () => {
 		expect(result.breakdown.availableForSpending).toBe(90000)
 		expect(result.breakdown.daysUntilHorizon).toBe(30)
 		expect(result.breakdown.dailyLimit).toBe(3000)
+		expect(result.breakdown.weeklyLimit).toBe(21000)
 		expect(result.breakdown.isNegative).toBe(false)
+	})
+
+	it("should cap the weekly limit to the remaining horizon", () => {
+		const result = calculateDailySpendingLimit({
+			...baseInput,
+			today: utcDate(2024, 1, 29),
+		})
+
+		// Only two days remain before the horizon, so no more than that share is available.
+		expect(result.breakdown.daysUntilHorizon).toBe(2)
+		expect(result.breakdown.weeklyLimit).toBe(90000)
 	})
 
 	it("should subtract required expenses from available cash", () => {

@@ -18,11 +18,11 @@ export function DashboardMonthlyBudget({
 				: "bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200"
 
 	return (
-		<section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+		<section className="modern-card p-4 sm:p-5">
 			<div className="mb-4 flex items-center justify-between">
 				<div>
 					<h2 className="text-base font-semibold text-slate-900 dark:text-white sm:text-lg">
-						Como vai o mês
+						Orçamento por categoria
 					</h2>
 					<p className="text-xs text-slate-500 sm:text-sm">
 						Orçamento versus realizado
@@ -59,6 +59,57 @@ export function DashboardMonthlyBudget({
 					</p>
 				</div>
 			</div>
+			{monthlyBudget.categories.length > 0 && (
+				<div className="mt-4 space-y-3">
+					{monthlyBudget.categories.map((category) => {
+						const progress = Math.min(
+							100,
+							Math.max(0, category.executionPercent),
+						)
+						const isOverBudget = category.remaining < 0
+						return (
+							<div key={category.name}>
+								<div className="flex items-baseline justify-between gap-3 text-sm">
+									<p className="font-medium text-text-primary">
+										{category.name}
+									</p>
+									<p
+										className={
+											isOverBudget
+												? "financial-number text-danger"
+												: "financial-number text-text-secondary"
+										}
+									>
+										{formatCurrency(category.actual)} de{" "}
+										{formatCurrency(category.budgeted)}
+									</p>
+								</div>
+								<div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-muted">
+									<div
+										className={
+											isOverBudget
+												? "h-full rounded-full bg-danger"
+												: "h-full rounded-full bg-primary"
+										}
+										style={{ width: `${progress}%` }}
+									/>
+								</div>
+								<p
+									className={
+										isOverBudget
+											? "mt-1 text-xs text-danger"
+											: "mt-1 text-xs text-text-muted"
+									}
+								>
+									{isOverBudget
+										? `${formatCurrency(Math.abs(category.remaining))} acima do orçamento`
+										: `${formatCurrency(category.remaining)} restantes`}
+								</p>
+							</div>
+						)
+					})}
+				</div>
+			)}
 			<div className={`mt-3 flex gap-3 rounded-xl p-3 ${insightColors}`}>
 				<TrendingUp className="h-5 w-5 shrink-0" />
 				<p className="text-sm">{monthlyBudget.insight.message}</p>

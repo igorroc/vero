@@ -1,4 +1,6 @@
 import { AlertTriangle } from "lucide-react"
+import Link from "next/link"
+import { formatCurrency } from "@/types/finance"
 import type { DashboardData } from "@/features/dashboard"
 
 interface DashboardAlertsProps {
@@ -24,11 +26,19 @@ export function DashboardAlerts({
 						</div>
 						<div className="min-w-0">
 							<p className="font-semibold text-red-800 dark:text-red-200 text-sm">
-								{criticalEvents.length} evento(s) crítico(s)
+								{criticalEvents.length} evento(s) pode(m) deixar seu saldo
+								negativo
 							</p>
-							<p className="text-xs text-red-600 dark:text-red-300 truncate">
-								{criticalEvents[0]?.description}
+							<p className="text-xs text-red-600 dark:text-red-300">
+								{criticalEvents[0]?.description}:{" "}
+								{formatCurrency(Math.abs(criticalEvents[0]?.amount ?? 0))}
 							</p>
+							<Link
+								href="/cashflow"
+								className="mt-2 inline-flex text-xs font-semibold text-red-700 underline"
+							>
+								Ver fluxo e eventos
+							</Link>
 						</div>
 					</div>
 				</div>
@@ -44,6 +54,12 @@ export function DashboardAlerts({
 							<p className="font-semibold text-amber-800 dark:text-amber-200 text-sm">
 								Saldo negativo em {daysUntilNegative} dias
 							</p>
+							<Link
+								href="/cashflow"
+								className="mt-2 inline-flex text-xs font-semibold text-amber-700 underline"
+							>
+								Ver projeção
+							</Link>
 						</div>
 					</div>
 				</div>

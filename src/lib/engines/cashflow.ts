@@ -6,6 +6,7 @@ import type {
 	CashflowInput,
 	PrioritySimulationResult,
 	EventPriority,
+	BalanceSeriesPoint,
 } from "@/types/finance"
 import {
 	startOfDay,
@@ -185,6 +186,64 @@ export function buildCashflowProjection(
 }
 
 /**
+ * Builds a monthly chart series. Confirmed events form the real history and
+ * planned events only extend the dotted projection after today.
+ */
+export function buildBalanceSeries(
+	input: CashflowInput,
+	today: Date = new Date(),
+): BalanceSeriesPoint[] {
+	const rangeStart = startOfDay(input.startDate)
+	const rangeEnd = startOfDay(input.endDate)
+	const todayStart = startOfDay(today)
+	let realBalance = input.accounts.reduce(
+		(total, account) => total + account.initialBalance,
+		0,
+	)
+	let projectedBalance = realBalance
+
+	for (const event of input.events) {
+		if (
+			event.status === "CONFIRMED" &&
+			startOfDay(event.date).getTime() < rangeStart.getTime() &&
+			event.type !== "TRANSFER"
+		) {
+			realBalance += event.amount
+			projectedBalance += event.amount
+		}
+	}
+
+	const eventsByDate = groupEventsByDate(
+		input.events.filter((event) => event.status !== "SKIPPED"),
+	)
+	const points: BalanceSeriesPoint[] = []
+	const numberOfDays = daysBetween(rangeStart, rangeEnd)
+
+	for (let index = 0; index < numberOfDays; index++) {
+		const date = addDays(rangeStart, index)
+		const isFuture = date.getTime() > todayStart.getTime()
+		for (const event of eventsByDate.get(formatDateISO(date)) ?? []) {
+			if (event.type === "TRANSFER") continue
+			if (event.status === "CONFIRMED") {
+				realBalance += event.amount
+				projectedBalance += event.amount
+			} else if (event.status === "PLANNED" && isFuture) {
+				projectedBalance += event.amount
+			}
+		}
+
+		points.push({
+			dateKey: formatDateISO(date),
+			realBalance: date.getTime() <= todayStart.getTime() ? realBalance : null,
+			projectedBalance:
+				date.getTime() >= todayStart.getTime() ? projectedBalance : null,
+		})
+	}
+
+	return points
+}
+
+/**
  * Group events by their date (YYYY-MM-DD key)
  */
 function groupEventsByDate(
@@ -231,6 +290,14 @@ export function projectPlannedAccountBalances(
 	}
 
 	return balances
+}
+
+/** Consolidates projected cash and investments after a hypothetical full redemption. */
+export function calculateRedeemedBalance(
+	availableBalance: Cents,
+	investmentBalance: Cents,
+): Cents {
+	return availableBalance + investmentBalance
 }
 
 /**

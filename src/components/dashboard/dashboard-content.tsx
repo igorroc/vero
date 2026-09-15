@@ -8,7 +8,8 @@ import { NewEventLauncher } from "@/components/events"
 import { DashboardAlerts } from "./dashboard-alerts"
 import { DashboardBalanceCard } from "./dashboard-balance-card"
 import { DashboardMonthlyBudget } from "./dashboard-monthly-budget"
-
+import { DashboardBalanceChart } from "./dashboard-balance-chart"
+import { DashboardMonthlyComparison } from "./dashboard-monthly-comparison"
 import { DashboardMonthEndBalance } from "./dashboard-month-end-balance"
 import { DashboardSpendingLimit } from "./dashboard-spending-limit"
 import { DashboardUpcomingEvents } from "./dashboard-upcoming-events"
@@ -52,7 +53,9 @@ export function DashboardContent() {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
 				<p className="text-red-500">
-					{error instanceof Error ? error.message : "Não foi possível carregar a dashboard"}
+					{error instanceof Error
+						? error.message
+						: "Não foi possível carregar a dashboard"}
 				</p>
 				<Button color="primary" onPress={() => void dashboardQuery.refetch()}>
 					Tentar Novamente
@@ -65,36 +68,37 @@ export function DashboardContent() {
 		return null
 	}
 
-	const investmentBalance = data.accounts
-		.filter((account) => account.type === "INVESTMENT")
-		.reduce((total, account) => total + account.currentBalance, 0)
-
 	return (
 		<div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+			<DashboardSpendingLimit breakdown={data.spendingLimit.breakdown} />
 			<DashboardBalanceCard availableBalance={data.availableBalance} />
 			<DashboardAlerts
 				criticalEvents={data.criticalEvents}
 				daysUntilNegative={data.projectionSummary.daysUntilNegative}
 			/>
-			<DashboardSpendingLimit
-				breakdown={data.spendingLimit.breakdown}
-				investmentBalance={investmentBalance}
+			<DashboardBalanceChart
+				series={data.monthlyBalanceSeries}
+				safetyBuffer={data.safetyBuffer}
 			/>
 			<DashboardMonthEndBalance
 				availableBalance={data.monthEndBalances.available}
 				investmentBalance={data.monthEndBalances.investments}
+				afterRedeemingInvestments={
+					data.monthEndBalances.afterRedeemingInvestments
+				}
 			/>
 			{data.monthlyBudget && (
 				<DashboardMonthlyBudget monthlyBudget={data.monthlyBudget} />
 			)}
+			<DashboardMonthlyComparison comparison={data.monthlyComparison} />
 
 			<DashboardUpcomingEvents events={data.upcomingEvents} />
-				<NewEventLauncher
-					mode="bubble"
-					accounts={data.accounts}
-					categories={categories}
-					onSuccess={invalidateDashboard}
-				/>
+			<NewEventLauncher
+				mode="bubble"
+				accounts={data.accounts}
+				categories={categories}
+				onSuccess={invalidateDashboard}
+			/>
 		</div>
 	)
 }

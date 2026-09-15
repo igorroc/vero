@@ -1,22 +1,24 @@
-import { Landmark, PiggyBank } from "lucide-react"
+import { Landmark, PiggyBank, WalletCards } from "lucide-react"
 import { formatCurrency, type Cents } from "@/types/finance"
 
 interface DashboardMonthEndBalanceProps {
 	availableBalance: Cents
 	investmentBalance: Cents
+	afterRedeemingInvestments: Cents
 }
 
 export function DashboardMonthEndBalance({
 	availableBalance,
 	investmentBalance,
+	afterRedeemingInvestments,
 }: DashboardMonthEndBalanceProps) {
 	return (
 		<div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-100 dark:border-slate-800">
 			<p className="font-semibold text-slate-900 dark:text-white text-base">
 				Saldo projetado no fim do mês
 			</p>
-			<p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-				Considera apenas os lançamentos planejados deste mês.
+			<p className="text-sm text-text-secondary mt-1">
+				Considera todos os lançamentos planejados e parcelas deste mês.
 			</p>
 			<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
 				<div className="rounded-xl bg-slate-50 dark:bg-slate-800/70 p-3">
@@ -48,6 +50,31 @@ export function DashboardMonthEndBalance({
 					>
 						{formatCurrency(investmentBalance)}
 					</p>
+				</div>
+			</div>
+			<div
+				className={`mt-3 rounded-xl border p-3 ${afterRedeemingInvestments < 0 ? "border-danger/30 bg-danger/10" : "border-primary/20 bg-surface-brand"}`}
+			>
+				<div className="flex items-start gap-2">
+					<WalletCards
+						className={`mt-0.5 h-4 w-4 shrink-0 ${afterRedeemingInvestments < 0 ? "text-danger" : "text-primary"}`}
+					/>
+					<div>
+						<p className="text-sm font-medium text-text-primary">
+							Se resgatar todos os investimentos
+						</p>
+						{afterRedeemingInvestments < 0 ? (
+							<p className="mt-1 text-sm text-danger">
+								Saldo insuficiente. Faltariam{" "}
+								{formatCurrency(Math.abs(afterRedeemingInvestments))} no fim do
+								mês.
+							</p>
+						) : (
+							<p className="financial-number mt-1 text-lg font-semibold text-primary">
+								Restariam {formatCurrency(afterRedeemingInvestments)} em conta.
+							</p>
+						)}
+					</div>
 				</div>
 			</div>
 		</div>

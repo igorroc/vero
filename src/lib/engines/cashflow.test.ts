@@ -6,6 +6,8 @@ import {
 	findCriticalEvents,
 	getProjectionSummary,
 	projectPlannedAccountBalances,
+	buildBalanceSeries,
+	calculateRedeemedBalance,
 } from "./cashflow"
 import type { CashflowInput } from "@/types/finance"
 
@@ -428,6 +430,120 @@ describe("buildCashflowProjection", () => {
 		// Total starting balance: $1000 + $5000 = $6000
 		expect(result.days[0].startingBalance).toBe(600000)
 		expect(result.days[2].endingBalance).toBe(580000)
+	})
+})
+
+describe("buildBalanceSeries", () => {
+	it("should keep planned events out of real history and include them in future projection", () => {
+		const series = buildBalanceSeries(
+			{
+				accounts: [{ id: "cash", name: "Conta", initialBalance: 100000 }],
+				events: [
+					{
+						id: "confirmed",
+						description: "Conta paga",
+						amount: -10000,
+						type: "EXPENSE",
+						costType: "RECURRENT",
+						status: "CONFIRMED",
+						priority: "IMPORTANT",
+						date: utcDate(2024, 1, 2),
+						accountId: "cash",
+					},
+					{
+						id: "planned",
+						description: "Aluguel",
+						amount: -30000,
+						type: "EXPENSE",
+						costType: "RECURRENT",
+						status: "PLANNED",
+						priority: "IMPORTANT",
+						date: utcDate(2024, 1, 4),
+						accountId: "cash",
+					},
+					{
+						id: "skipped",
+						description: "Ignorado",
+						amount: -50000,
+						type: "EXPENSE",
+						costType: "EXCEPTIONAL",
+						status: "SKIPPED",
+						priority: "IMPORTANT",
+						date: utcDate(2024, 1, 5),
+						accountId: "cash",
+					},
+				],
+				startDate: utcDate(2024, 1, 1),
+				endDate: utcDate(2024, 1, 5),
+			},
+			utcDate(2024, 1, 3),
+		)
+
+		expect(series[1]).toMatchObject({
+			realBalance: 90000,
+			projectedBalance: null,
+		})
+		expect(series[2]).toMatchObject({
+			realBalance: 90000,
+			projectedBalance: 90000,
+		})
+		expect(series[3]).toMatchObject({
+			realBalance: null,
+			projectedBalance: 60000,
+		})
+		expect(series[4]).toMatchObject({
+			realBalance: null,
+			projectedBalance: 60000,
+		})
+	})
+
+	it("should include confirmed events before the month and ignore transfers", () => {
+		const series = buildBalanceSeries(
+			{
+				accounts: [{ id: "cash", name: "Conta", initialBalance: 100000 }],
+				events: [
+					{
+						id: "past",
+						description: "Despesa anterior",
+						amount: -20000,
+						type: "EXPENSE",
+						costType: "RECURRENT",
+						status: "CONFIRMED",
+						priority: "IMPORTANT",
+						date: utcDate(2023, 12, 30),
+						accountId: "cash",
+					},
+					{
+						id: "transfer",
+						description: "Transferência",
+						amount: -10000,
+						type: "TRANSFER",
+						costType: null,
+						status: "PLANNED",
+						priority: "IMPORTANT",
+						date: utcDate(2024, 1, 2),
+						accountId: "cash",
+						destinationAccountId: "investment",
+					},
+				],
+				startDate: utcDate(2024, 1, 1),
+				endDate: utcDate(2024, 1, 2),
+			},
+			utcDate(2024, 1, 1),
+		)
+
+		expect(series[0].realBalance).toBe(80000)
+		expect(series[1].projectedBalance).toBe(80000)
+	})
+})
+
+describe("calculateRedeemedBalance", () => {
+	it("should combine projected cash and investments after a full redemption", () => {
+		expect(calculateRedeemedBalance(-160867, 424388)).toBe(263521)
+	})
+
+	it("should preserve a shortfall when investments cannot cover it", () => {
+		expect(calculateRedeemedBalance(-200000, 50000)).toBe(-150000)
 	})
 })
 

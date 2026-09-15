@@ -90,8 +90,11 @@ export function calculateDailySpendingLimit(
 	const availableForSpending =
 		effectiveCash - requiredExpenses - plannedInvestments - safetyBuffer
 
-	// Calculate daily limit
+	// Keep the daily value for existing consumers and derive a capped seven-day amount.
 	const dailyLimit = Math.floor(availableForSpending / daysUntilHorizon)
+	const weeklyLimit = Math.floor(
+		(availableForSpending * Math.min(7, daysUntilHorizon)) / daysUntilHorizon,
+	)
 
 	// Determine if negative and why
 	const isNegative = availableForSpending < 0
@@ -134,6 +137,7 @@ export function calculateDailySpendingLimit(
 		availableForSpending,
 		daysUntilHorizon,
 		dailyLimit,
+		weeklyLimit,
 		horizonDate,
 		horizonMode,
 		isNegative,

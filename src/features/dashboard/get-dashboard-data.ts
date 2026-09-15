@@ -22,8 +22,11 @@ import {
 	findCriticalEvents,
 	projectPlannedAccountBalances,
 	simulatePriorityScenarios,
+	buildBalanceSeries,
+	calculateRedeemedBalance,
 } from "@/lib/engines/cashflow"
 import type {
+	BalanceSeriesPoint,
 	Cents,
 	CashflowEvent,
 	HorizonMode,
@@ -39,14 +42,27 @@ export interface DashboardData {
 		income: { budgeted: Cents; actual: Cents }
 		outgoing: { budgeted: Cents; actual: Cents }
 		insight: BudgetInsight
+		categories: Array<{
+			name: string
+			budgeted: Cents
+			actual: Cents
+			remaining: Cents
+			executionPercent: number
+		}>
 	} | null
+	monthlyComparison: {
+		income: { current: Cents; previous: Cents }
+		outgoing: { current: Cents; previous: Cents }
+	}
 
 	// Spending limit
 	spendingLimit: SpendingLimitResult
 	monthEndBalances: {
 		available: Cents
 		investments: Cents
+		afterRedeemingInvestments: Cents
 	}
+	monthlyBalanceSeries: BalanceSeriesPoint[]
 
 	// Upcoming events (next 7 days)
 	upcomingEvents: Array<{
@@ -105,10 +121,50 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 		}
 
 		const today = new Date()
+		const monthStart = new Date(
+			Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1),
+		)
 		const monthEnd = endOfMonth(today)
-		const [balancesResult, budgetResult] = await Promise.all([
+		const previousMonthStart = new Date(
+			Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 1, 1),
+		)
+		const [
+			balancesResult,
+			budgetResult,
+			priorConfirmedEvents,
+			comparisonEvents,
+		] = await Promise.all([
 			getAccountBalances(),
 			getBudgetReport(today.getFullYear(), today.getMonth() + 1),
+			prisma.event.findMany({
+				where: {
+					userId: user.id,
+					isRecurrenceTemplate: false,
+					status: "CONFIRMED",
+					date: { lt: monthStart },
+				},
+				select: {
+					id: true,
+					description: true,
+					amount: true,
+					type: true,
+					costType: true,
+					status: true,
+					priority: true,
+					date: true,
+					accountId: true,
+					destinationAccountId: true,
+				},
+			}),
+			prisma.event.findMany({
+				where: {
+					userId: user.id,
+					isRecurrenceTemplate: false,
+					status: "CONFIRMED",
+					date: { gte: previousMonthStart, lte: monthEnd },
+				},
+				select: { amount: true, type: true, date: true },
+			}),
 		])
 		if (!balancesResult.success) {
 			return { success: false, error: balancesResult.error }
@@ -124,13 +180,28 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 						income: budgetResult.report.income,
 						outgoing: budgetResult.report.outgoing,
 						insight: buildBudgetInsight(budgetResult.report),
+						categories: budgetResult.report.groups
+							.filter((group) => group.type !== "INCOME")
+							.flatMap((group) => group.items)
+							.sort((a, b) => b.actual - a.actual || b.budgeted - a.budgeted)
+							.slice(0, 4)
+							.map((item) => ({
+								name: item.categoryName,
+								budgeted: item.budgeted,
+								actual: item.actual,
+								remaining: item.difference,
+								executionPercent: item.executionPercent,
+							})),
 					}
 				: null
 
 		// Get events for projection (next 90 days)
 		const projectionEnd = addDays(today, 90)
 
-		const eventsResult = await getEventsWithProjection(today, projectionEnd)
+		const eventsResult = await getEventsWithProjection(
+			monthStart,
+			projectionEnd,
+		)
 		if (!eventsResult.success) {
 			return { success: false, error: eventsResult.error }
 		}
@@ -148,12 +219,16 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 		)
 		const monthlyEvents = eventsResult.events.filter(
 			(event) =>
-				startOfDay(event.date).getTime() >= startOfDay(today).getTime() &&
+				startOfDay(event.date).getTime() >= monthStart.getTime() &&
 				startOfDay(event.date).getTime() <= monthEnd.getTime(),
+		)
+		const remainingMonthlyEvents = monthlyEvents.filter(
+			(event) =>
+				startOfDay(event.date).getTime() >= startOfDay(today).getTime(),
 		)
 
 		// Map events for spending limit calculation
-		const eventsForCalculation = monthlyEvents
+		const eventsForCalculation = remainingMonthlyEvents
 			.map((e) => ({
 				amount: e.amount,
 				type: e.type,
@@ -176,7 +251,7 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 				name: account.name,
 				initialBalance: account.currentBalance,
 			})),
-			monthlyEvents
+			remainingMonthlyEvents
 				.filter((event) => event.status === "PLANNED")
 				.map((event) => ({
 					id: event.id,
@@ -191,7 +266,7 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 					destinationAccountId: event.destinationAccountId,
 				})),
 		)
-		const monthEndBalances = accounts.reduce(
+		const monthEndBalanceTotals = accounts.reduce(
 			(totals, account) => {
 				const projectedBalance =
 					projectedAccountBalances.get(account.id) ?? account.currentBalance
@@ -210,6 +285,13 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 				investments: 0,
 			},
 		)
+		const monthEndBalances = {
+			...monthEndBalanceTotals,
+			afterRedeemingInvestments: calculateRedeemedBalance(
+				monthEndBalanceTotals.available,
+				monthEndBalanceTotals.investments,
+			),
+		}
 
 		// Calculate spending limit
 		const spendingLimit = calculateSpendingLimitAuto(
@@ -258,6 +340,67 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 			)
 			.sort((a, b) => a.date.getTime() - b.date.getTime())
 
+		const comparison = comparisonEvents.reduce(
+			(result, event) => {
+				if (event.type === "TRANSFER") return result
+				const isCurrentMonth = event.date.getTime() >= monthStart.getTime()
+				if (event.type === "INCOME" && event.amount > 0) {
+					result.income[isCurrentMonth ? "current" : "previous"] += event.amount
+				} else if (event.amount < 0) {
+					result.outgoing[isCurrentMonth ? "current" : "previous"] += Math.abs(
+						event.amount,
+					)
+				}
+				return result
+			},
+			{
+				income: { current: 0, previous: 0 },
+				outgoing: { current: 0, previous: 0 },
+			},
+		)
+
+		const debtEvents = debtInstallments.map((installment) => ({
+			id: `debt-${installment.id}`,
+			description: `Parcela de dívida - ${installment.debt.creditor}`,
+			amount: -installment.plannedAmount,
+			type: "EXPENSE" as const,
+			costType: "RECURRENT" as const,
+			status: "PLANNED" as const,
+			priority: "REQUIRED" as const,
+			date: installment.dueDate,
+			accountId: "debt-projection",
+			destinationAccountId: null,
+		}))
+
+		const monthlyBalanceSeries = buildBalanceSeries(
+			{
+				accounts: accounts.map((account) => ({
+					id: account.id,
+					name: account.name,
+					initialBalance: account.initialBalance,
+				})),
+				events: priorConfirmedEvents
+					.concat(monthlyEvents)
+					.map((event) => ({
+						id: event.id,
+						description: event.description,
+						amount: event.amount,
+						type: event.type,
+						costType: event.costType,
+						status: event.status,
+						priority: event.priority,
+						date: event.date,
+						accountId: event.accountId,
+						destinationAccountId: event.destinationAccountId,
+					}))
+					.concat(debtEvents),
+				startDate: monthStart,
+				endDate: monthEnd,
+				safetyBuffer: settings.safetyBuffer,
+			},
+			today,
+		)
+
 		// Build cashflow projection input
 		const cashflowInput = {
 			accounts: [
@@ -274,6 +417,10 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 			],
 			events: eventsResult.events
 				.filter((e) => e.status !== "SKIPPED")
+				.filter(
+					(event) =>
+						startOfDay(event.date).getTime() >= startOfDay(today).getTime(),
+				)
 				.map((e) => ({
 					id: e.id,
 					description: e.description,
@@ -286,20 +433,7 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 					accountId: e.accountId,
 					destinationAccountId: e.destinationAccountId,
 				}))
-				.concat(
-					debtInstallments.map((installment) => ({
-						id: `debt-${installment.id}`,
-						description: `Parcela de dívida - ${installment.debt.creditor}`,
-						amount: -installment.plannedAmount,
-						type: "EXPENSE" as const,
-						costType: "RECURRENT" as const,
-						status: "PLANNED" as const,
-						priority: "REQUIRED" as const,
-						date: installment.dueDate,
-						accountId: "debt-projection",
-						destinationAccountId: null,
-					})),
-				),
+				.concat(debtEvents),
 			startDate: today,
 			endDate: addDays(today, 30),
 			safetyBuffer: settings.safetyBuffer,
@@ -322,8 +456,10 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 				availableBalance,
 				accounts,
 				monthlyBudget,
+				monthlyComparison: comparison,
 				spendingLimit,
 				monthEndBalances,
+				monthlyBalanceSeries,
 				upcomingEvents,
 				projectionSummary,
 				criticalEvents,

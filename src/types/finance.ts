@@ -206,6 +206,13 @@ export interface CashflowProjection {
 	criticalDays: number
 }
 
+/** A chart point that distinguishes confirmed history from future planning. */
+export interface BalanceSeriesPoint {
+	dateKey: string
+	realBalance: Cents | null
+	projectedBalance: Cents | null
+}
+
 /**
  * Result of priority-based cashflow simulation
  * Shows what happens if OPTIONAL events are postponed
@@ -248,6 +255,7 @@ export interface SpendingLimitBreakdown {
 	availableForSpending: Cents
 	daysUntilHorizon: number
 	dailyLimit: Cents
+	weeklyLimit: Cents
 	horizonDate: Date
 	horizonMode: HorizonMode
 	isNegative: boolean
