@@ -59,7 +59,10 @@ export async function createEvent(
 		const category = input.categoryId
 			? await prisma.category.findFirst({
 					where: { id: input.categoryId, userId: user.id },
-					select: { id: true, categoryGroup: { select: { type: true } } },
+					select: {
+						id: true,
+						categoryGroup: { select: { id: true, type: true } },
+					},
 				})
 			: null
 
@@ -72,6 +75,12 @@ export async function createEvent(
 					["ESSENTIAL", "LIFESTYLE"].includes(category.categoryGroup.type)))
 		if (!isCompatibleCategory) {
 			return { success: false, error: "Categoria inválida" }
+		}
+		if (category.categoryGroup.id === "debts") {
+			return {
+				success: false,
+				error: "Pagamentos de dívida devem ser registrados no painel de Dívidas",
+			}
 		}
 
 		// Validate input

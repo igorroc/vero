@@ -48,11 +48,8 @@ export function EventForm({
 		description: string
 		amount: string
 		type: "INCOME" | "EXPENSE" | "INVESTMENT" | "TRANSFER"
-		costType: "RECURRENT" | "EXCEPTIONAL"
 		priority: "REQUIRED" | "IMPORTANT" | "OPTIONAL"
 		date: string
-		isRecurring: boolean
-		recurrenceFrequency: string
 	}>({
 		accountId: accounts[0]?.id || "",
 		destinationAccountId: "",
@@ -60,12 +57,12 @@ export function EventForm({
 		description: "",
 		amount: "",
 		type: "EXPENSE",
-		costType: "RECURRENT",
 		priority: "IMPORTANT",
 		date: formatDateInput(new Date()),
-		isRecurring: false,
-		recurrenceFrequency: "MONTHLY",
 	})
+	const eventCategories = categories.filter(
+		(category) => category.categoryGroupId !== "debts",
+	)
 	const selectedAccount = accounts.find(
 		(account) => account.id === formData.accountId,
 	)
@@ -120,11 +117,8 @@ export function EventForm({
 					description: "",
 					amount: "",
 					type: createAnother ? formData.type : "EXPENSE",
-					costType: "RECURRENT",
 					priority: "IMPORTANT",
 					date: createAnother ? formData.date : formatDateInput(new Date()),
-					isRecurring: false,
-					recurrenceFrequency: "MONTHLY",
 				})
 				if (!createAnother) {
 					setCreateAnother(false)
@@ -141,13 +135,8 @@ export function EventForm({
 			description: formData.description,
 			amount: parseFloat(formData.amount),
 			type: formData.type,
-			costType: formData.type === "EXPENSE" ? formData.costType : undefined,
 			priority: formData.priority,
 			date: dateFromInput(formData.date),
-			isRecurring: formData.isRecurring,
-			recurrenceFrequency: formData.isRecurring
-				? (formData.recurrenceFrequency as CreateEventInput["recurrenceFrequency"])
-				: undefined,
 		}
 
 		const result = await createEvent(input)
@@ -165,11 +154,8 @@ export function EventForm({
 				description: "",
 				amount: "",
 				type: createAnother ? formData.type : "EXPENSE",
-				costType: "RECURRENT",
 				priority: "IMPORTANT",
 				date: createAnother ? formData.date : formatDateInput(new Date()),
-				isRecurring: false,
-				recurrenceFrequency: "MONTHLY",
 			})
 			if (!createAnother) {
 				setCreateAnother(false)
@@ -330,39 +316,18 @@ export function EventForm({
 					{formData.type !== "TRANSFER" && (
 						<>
 							<EventCategorySelect
-								categories={categories}
+								categories={eventCategories}
 								type={formData.type}
 								categoryId={formData.categoryId}
 								onSelectionChange={(categoryId) =>
 									setFormData({ ...formData, categoryId })
 								}
 								description={
-									categories.length === 0
+									eventCategories.length === 0
 										? "Cadastre uma categoria compatível antes de criar o evento."
 										: undefined
 								}
 							/>
-							{formData.type === "EXPENSE" && (
-								<Select
-									label="Tipo de Custo"
-									size="sm"
-									selectedKeys={[formData.costType]}
-									onSelectionChange={(keys) => {
-										const value = Array.from(keys)[0] as
-											"RECURRENT" | "EXCEPTIONAL"
-										setFormData({ ...formData, costType: value })
-									}}
-									description="Custos recorrentes são para planejamento de longo prazo."
-									classNames={{ label: "text-sm", description: "text-xs" }}
-								>
-									<SelectItem key="RECURRENT" textValue="Recorrente">
-										Recorrente (aluguel, contas)
-									</SelectItem>
-									<SelectItem key="EXCEPTIONAL" textValue="Excepcional">
-										Excepcional (viagens, emergências)
-									</SelectItem>
-								</Select>
-							)}
 						</>
 					)}
 
@@ -377,47 +342,6 @@ export function EventForm({
 							label: "text-sm",
 						}}
 					/>
-
-					{formData.type !== "TRANSFER" && (
-						<div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 sm:p-4">
-							<div>
-								<p className="font-medium text-sm sm:text-base text-slate-900 dark:text-white">
-									Evento Recorrente
-								</p>
-								<p className="text-xs sm:text-sm text-slate-500">
-									Repete em uma agenda
-								</p>
-							</div>
-							<Switch
-								size="sm"
-								isSelected={formData.isRecurring}
-								onValueChange={(value) =>
-									setFormData({ ...formData, isRecurring: value })
-								}
-							/>
-						</div>
-					)}
-
-					{formData.type !== "TRANSFER" && formData.isRecurring && (
-						<Select
-							label="Frequência"
-							size="sm"
-							selectedKeys={[formData.recurrenceFrequency]}
-							onSelectionChange={(keys) => {
-								const value = Array.from(keys)[0] as string
-								setFormData({ ...formData, recurrenceFrequency: value })
-							}}
-							classNames={{
-								label: "text-sm",
-							}}
-						>
-							<SelectItem key="DAILY">Diário</SelectItem>
-							<SelectItem key="WEEKLY">Semanal</SelectItem>
-							<SelectItem key="BIWEEKLY">Quinzenal</SelectItem>
-							<SelectItem key="MONTHLY">Mensal</SelectItem>
-							<SelectItem key="YEARLY">Anual</SelectItem>
-						</Select>
-					)}
 
 					<div className="flex items-center justify-between rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">
 						<div>
