@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
 	Modal,
 	ModalContent,
@@ -21,7 +21,8 @@ import {
 import type { AccountWithBalance } from "@/features/accounts"
 import type { CategoryWithGroup } from "@/features/categories"
 import { toast } from "react-toastify"
-import { dateFromInput, formatCurrency, formatDateInput } from "@/types/finance"
+import { dateFromInput, formatCurrency } from "@/types/finance"
+import { useEventFormStore } from "@/stores/event-form-store"
 import { EventCategorySelect } from "./event-category-select"
 
 interface EventFormProps {
@@ -41,28 +42,21 @@ export function EventForm({
 }: EventFormProps) {
 	const [loading, setLoading] = useState(false)
 	const [createAnother, setCreateAnother] = useState(false)
-	const [formData, setFormData] = useState<{
-		accountId: string
-		destinationAccountId: string
-		categoryId: string
-		description: string
-		amount: string
-		type: "INCOME" | "EXPENSE" | "INVESTMENT" | "TRANSFER"
-		priority: "REQUIRED" | "IMPORTANT" | "OPTIONAL"
-		date: string
-	}>({
-		accountId: accounts[0]?.id || "",
-		destinationAccountId: "",
-		categoryId: "",
-		description: "",
-		amount: "",
-		type: "EXPENSE",
-		priority: "IMPORTANT",
-		date: formatDateInput(new Date()),
-	})
+	const formData = useEventFormStore((state) => state.formData)
+	const setFormData = useEventFormStore((state) => state.setFormData)
 	const eventCategories = categories.filter(
 		(category) => category.categoryGroupId !== "debts",
 	)
+	useEffect(() => {
+		if (!formData.accountId && accounts[0]) {
+			setFormData({ ...formData, accountId: accounts[0].id })
+		}
+	}, [accounts, formData, setFormData])
+	useEffect(() => {
+		if (!isOpen && (formData.description || formData.amount)) {
+			setFormData({ ...formData, description: "", amount: "" })
+		}
+	}, [formData, isOpen, setFormData])
 	const selectedAccount = accounts.find(
 		(account) => account.id === formData.accountId,
 	)
@@ -108,18 +102,7 @@ export function EventForm({
 				toast.success("Transferência criada com sucesso")
 				if (result.warning) toast.warning(result.warning)
 				onSuccess()
-				setFormData({
-					accountId: createAnother ? formData.accountId : accounts[0]?.id || "",
-					destinationAccountId: createAnother
-						? formData.destinationAccountId
-						: "",
-					categoryId: createAnother ? formData.categoryId : "",
-					description: "",
-					amount: "",
-					type: createAnother ? formData.type : "EXPENSE",
-					priority: "IMPORTANT",
-					date: createAnother ? formData.date : formatDateInput(new Date()),
-				})
+				setFormData({ ...formData, description: "", amount: "" })
 				if (!createAnother) {
 					setCreateAnother(false)
 					onClose()
@@ -144,19 +127,7 @@ export function EventForm({
 		if (result.success) {
 			toast.success("Evento criado com sucesso")
 			onSuccess()
-			// Reset form
-			setFormData({
-				accountId: createAnother ? formData.accountId : accounts[0]?.id || "",
-				destinationAccountId: createAnother
-					? formData.destinationAccountId
-					: "",
-				categoryId: createAnother ? formData.categoryId : "",
-				description: "",
-				amount: "",
-				type: createAnother ? formData.type : "EXPENSE",
-				priority: "IMPORTANT",
-				date: createAnother ? formData.date : formatDateInput(new Date()),
-			})
+			setFormData({ ...formData, description: "", amount: "" })
 			if (!createAnother) {
 				setCreateAnother(false)
 				onClose()
