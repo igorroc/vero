@@ -32,15 +32,15 @@ import {
 } from "@/types/finance"
 import type { Event } from "@prisma/client"
 import { toast } from "react-toastify"
-import { Calendar, ChevronDown, Plus } from "lucide-react"
+import { Calendar, ChevronDown } from "lucide-react"
 import { useEventsFilterStore } from "@/stores/events-filter-store"
 import {
 	EventEditModal,
 	type EditEventData,
 	type TransferEditData,
 } from "./event-edit-modal"
-import { EventForm } from "./event-form"
 import { EventListItem } from "./event-list-item"
+import { NewEventLauncher } from "./new-event-launcher"
 
 export function EventsList() {
 	const [events, setEvents] = useState<Event[]>([])
@@ -50,7 +50,6 @@ export function EventsList() {
 	const [error, setError] = useState<string | null>(null)
 	const statusFilter = useEventsFilterStore((state) => state.statusFilter)
 	const setStatusFilter = useEventsFilterStore((state) => state.setStatusFilter)
-	const { isOpen, onOpen, onClose } = useDisclosure()
 	const {
 		isOpen: isEditOpen,
 		onOpen: onEditOpen,
@@ -300,15 +299,14 @@ export function EventsList() {
 						</Button>
 					))}
 				</div>
-				<Button
-					color="primary"
-					onPress={onOpen}
-					radius="full"
-					className="w-full sm:w-auto"
-					startContent={<Plus className="w-4 h-4" />}
-				>
-					Novo Lançamento
-				</Button>
+				<div className="hidden sm:block">
+					<NewEventLauncher
+						mode="button"
+						accounts={accounts}
+						categories={categories}
+						onSuccess={loadData}
+					/>
+				</div>
 			</div>
 			<div className="flex items-center justify-between">
 				<h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">
@@ -332,9 +330,6 @@ export function EventsList() {
 						<Calendar className="w-8 h-8 sm:w-10 sm:h-10 text-slate-400" />
 					</div>
 					<p className="text-slate-500 mb-4">Nenhum lançamento encontrado.</p>
-					<Button color="primary" radius="full" onPress={onOpen}>
-						Criar seu primeiro evento
-					</Button>
 				</div>
 			)}
 			{!error && events.length > 0 && (
@@ -361,13 +356,14 @@ export function EventsList() {
 					))}
 				</div>
 			)}
-			<EventForm
-				isOpen={isOpen}
-				onClose={onClose}
-				onSuccess={loadData}
-				accounts={accounts}
-				categories={categories}
-			/>
+			<div className="sm:hidden">
+				<NewEventLauncher
+					mode="bubble"
+					accounts={accounts}
+					categories={categories}
+					onSuccess={loadData}
+				/>
+			</div>
 			<EventEditModal
 				isOpen={isEditOpen}
 				onClose={onEditClose}
