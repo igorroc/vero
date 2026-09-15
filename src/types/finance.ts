@@ -139,6 +139,12 @@ export function dateFromInput(value: string): Date {
 	return new Date(year, month - 1, day)
 }
 
+/** Creates a Date at UTC midnight from an HTML date input value. */
+export function dateFromInputUTC(value: string): Date {
+	const [year, month, day] = value.split("-").map(Number)
+	return new Date(Date.UTC(year, month - 1, day))
+}
+
 /** Format a local Date for an HTML date input. */
 export function formatDateInput(date: Date): string {
 	return [
