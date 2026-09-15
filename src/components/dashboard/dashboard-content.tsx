@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react"
 import { Spinner, Button } from "@nextui-org/react"
 import { getDashboardData, type DashboardData } from "@/features/dashboard"
+import { getCategories, type CategoryWithGroup } from "@/features/categories"
+import { NewEventLauncher } from "@/components/events"
 import { DashboardAlerts } from "./dashboard-alerts"
 import { DashboardBalanceCard } from "./dashboard-balance-card"
 import { DashboardMonthlyBudget } from "./dashboard-monthly-budget"
@@ -13,6 +15,7 @@ import { DashboardUpcomingEvents } from "./dashboard-upcoming-events"
 
 export function DashboardContent() {
 	const [data, setData] = useState<DashboardData | null>(null)
+	const [categories, setCategories] = useState<CategoryWithGroup[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
@@ -24,13 +27,17 @@ export function DashboardContent() {
 		setLoading(true)
 		setError(null)
 
-		const result = await getDashboardData()
+		const [result, categoriesResult] = await Promise.all([
+			getDashboardData(),
+			getCategories(),
+		])
 
 		if (result.success) {
 			setData(result.data)
 		} else {
 			setError(result.error)
 		}
+		if (categoriesResult.success) setCategories(categoriesResult.categories)
 
 		setLoading(false)
 	}
@@ -82,6 +89,12 @@ export function DashboardContent() {
 			)}
 
 			<DashboardUpcomingEvents events={data.upcomingEvents} />
+				<NewEventLauncher
+					mode="bubble"
+					accounts={data.accounts}
+					categories={categories}
+					onSuccess={loadDashboard}
+				/>
 		</div>
 	)
 }
