@@ -23,7 +23,9 @@ import {
 	CircleDollarSign,
 	CreditCard,
 	Heart,
+	HandCoins,
 	Home,
+	Landmark,
 	MoreVertical,
 	Music,
 	Pencil,
@@ -41,7 +43,9 @@ const eventIcons: Record<EventIconKey, typeof CreditCard> = {
 	beauty: Scissors,
 	income: Banknote,
 	adjustment: BadgePercent,
-	bill: ReceiptText,
+	card: ReceiptText,
+	debt: HandCoins,
+	tax: Landmark,
 	phone: Phone,
 	education: Music,
 	donation: Heart,
@@ -73,9 +77,13 @@ export function EventListItem({
 	onSkip,
 	onDelete,
 }: EventListItemProps) {
-	const EventIcon = getEventIcon(event.description, event.type)
-	const colors = getEventColors(event.type)
 	const category = categories.find((item) => item.id === event.categoryId)
+	const EventIcon = getEventIcon(
+		event.description,
+		event.type,
+		category?.categoryGroupId,
+	)
+	const colors = getEventColors(event.type)
 	const sourceAccount = accounts.find(
 		(account) => account.id === event.accountId,
 	)
@@ -274,10 +282,14 @@ function getEventColors(type: string) {
 	}
 }
 
-function getEventIcon(description: string, type: string) {
+function getEventIcon(
+	description: string,
+	type: string,
+	categoryGroupId?: string,
+) {
 	if (type === "TRANSFER") return ArrowLeftRight
 	if (type === "INVESTMENT") return TrendingUp
 	if (type === "INCOME") return CircleDollarSign
 
-	return eventIcons[getEventIconKey(description)]
+	return eventIcons[getEventIconKey(description, categoryGroupId)]
 }

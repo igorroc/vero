@@ -5,6 +5,7 @@ export interface SpendingByCategoryInput {
 	description: string
 	amount: Cents
 	categoryName: string | null
+	categoryGroupId?: string | null
 }
 
 export interface SpendingCategoryItem {
@@ -29,7 +30,7 @@ export function buildSpendingByCategoryReport(
 	for (const event of events) {
 		if (event.amount >= 0) continue
 
-		const iconKey = getEventIconKey(event.description)
+		const iconKey = getEventIconKey(event.description, event.categoryGroupId)
 		const group = groups.get(iconKey) ?? {
 			total: 0,
 			categories: new Map<string, Cents>(),

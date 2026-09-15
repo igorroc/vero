@@ -30,7 +30,7 @@ export async function getCurrentSpendingByCategory(): Promise<GetCurrentSpending
 			select: {
 				description: true,
 				amount: true,
-				category: { select: { name: true } },
+				category: { select: { name: true, categoryGroupId: true } },
 			},
 		})
 
@@ -41,6 +41,7 @@ export async function getCurrentSpendingByCategory(): Promise<GetCurrentSpending
 					description: event.description,
 					amount: event.amount,
 					categoryName: event.category?.name ?? null,
+					categoryGroupId: event.category?.categoryGroupId ?? null,
 				})),
 			),
 		}

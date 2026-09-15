@@ -3,7 +3,9 @@ export const eventIconKeys = [
 	"beauty",
 	"income",
 	"adjustment",
-	"bill",
+	"card",
+	"debt",
+	"tax",
 	"phone",
 	"education",
 	"donation",
@@ -31,7 +33,9 @@ export const eventIconDefinitions: Record<
 	beauty: { label: "Beleza", color: "#ec4899" },
 	income: { label: "Receitas", color: "#10b981" },
 	adjustment: { label: "Ajustes", color: "#14b8a6" },
-	bill: { label: "Faturas", color: "#f97316" },
+	card: { label: "Cartões e faturas", color: "#f97316" },
+	debt: { label: "Dívidas", color: "#8b5cf6" },
+	tax: { label: "Impostos", color: "#eab308" },
 	phone: { label: "Telefone", color: "#0ea5e9" },
 	education: { label: "Educação", color: "#8b5cf6" },
 	donation: { label: "Doações", color: "#f43f5e" },
@@ -50,9 +54,11 @@ const eventIconRules: EventIconRule[] = [
 		keywords: ["ssn", "evolucao de obra", "financiamento"],
 	},
 	{ iconKey: "beauty", keywords: ["unha", "depilacao"] },
+	{ iconKey: "tax", keywords: ["imposto", "tributo", "iptu", "ipva", "irpf"] },
 	{ iconKey: "income", keywords: ["salario", "renda"] },
 	{ iconKey: "adjustment", keywords: ["correcao monetaria"] },
-	{ iconKey: "bill", keywords: ["fatura", "pagamento", "divida", "imposto"] },
+	{ iconKey: "debt", keywords: ["divida"] },
+	{ iconKey: "card", keywords: ["fatura", "cartao"] },
 	{ iconKey: "phone", keywords: ["telefone"] },
 	{ iconKey: "education", keywords: ["curso", "bateria"] },
 	{ iconKey: "donation", keywords: ["dizimo"] },
@@ -73,7 +79,12 @@ const eventIconRules: EventIconRule[] = [
 	{ iconKey: "utilities", keywords: ["energia", "luz", "agua", "internet"] },
 ]
 
-export function getEventIconKey(description: string): EventIconKey {
+export function getEventIconKey(
+	description: string,
+	categoryGroupId?: string | null,
+): EventIconKey {
+	if (categoryGroupId === "debts") return "debt"
+
 	const normalizedDescription = description
 		.normalize("NFD")
 		.replace(/[\u0300-\u036f]/g, "")
