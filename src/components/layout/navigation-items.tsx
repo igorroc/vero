@@ -1,6 +1,5 @@
 "use client"
 
-import { DropdownItem } from "@nextui-org/react"
 import Link from "next/link"
 import type { NavigationGroup, NavigationItem } from "./navigation-config"
 
@@ -34,7 +33,9 @@ export function SidebarNavigationGroups({
 					<SidebarNavigationItem
 						key={item.href}
 						item={item}
-					isActive={pathname === item.href || pathname.startsWith(`${item.href}/`)}
+						isActive={
+							pathname === item.href || pathname.startsWith(`${item.href}/`)
+						}
 						collapsed={collapsed}
 					/>
 				))}
@@ -83,7 +84,8 @@ export function BottomNavigationItems({
 	pathname,
 }: BottomNavigationItemsProps) {
 	return items.map((item) => {
-		const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+		const isActive =
+			pathname === item.href || pathname.startsWith(`${item.href}/`)
 		const Icon = item.icon
 
 		return (
@@ -92,9 +94,7 @@ export function BottomNavigationItems({
 				href={item.href}
 				aria-current={isActive ? "page" : undefined}
 				className={`flex flex-col items-center justify-center min-w-[64px] py-1.5 px-3 rounded-control transition-colors ${
-					isActive
-						? "text-primary"
-						: "text-text-muted"
+					isActive ? "text-primary" : "text-text-muted"
 				}`}
 			>
 				<div
@@ -112,29 +112,6 @@ export function BottomNavigationItems({
 					{item.label}
 				</span>
 			</Link>
-		)
-	})
-}
-
-interface MoreNavigationItemsProps {
-	items: NavigationItem[]
-	pathname: string
-}
-
-export function MoreNavigationItems({ items, pathname }: MoreNavigationItemsProps) {
-	return items.map((item) => {
-		const Icon = item.icon
-
-		return (
-			<DropdownItem
-				key={item.href}
-				as={Link}
-				href={item.href}
-				startContent={<Icon className="w-4 h-4" />}
-			className={pathname === item.href || pathname.startsWith(`${item.href}/`) ? "text-primary" : ""}
-			>
-				{item.label}
-			</DropdownItem>
 		)
 	})
 }

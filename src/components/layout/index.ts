@@ -11,6 +11,5 @@ export {
 } from "./navigation-config"
 export {
 	BottomNavigationItems,
-	MoreNavigationItems,
 	SidebarNavigationGroups,
 } from "./navigation-items"

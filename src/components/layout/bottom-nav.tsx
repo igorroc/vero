@@ -2,23 +2,31 @@
 
 import { usePathname } from "next/navigation"
 import { MoreHorizontal } from "lucide-react"
-import { Dropdown, DropdownTrigger, DropdownMenu } from "@nextui-org/react"
+import {
+	Dropdown,
+	DropdownItem,
+	DropdownMenu,
+	DropdownTrigger,
+} from "@nextui-org/react"
+import Link from "next/link"
 import {
 	bottomMainNavigationItems,
 	bottomMoreNavigationItems,
 } from "./navigation-config"
-import { BottomNavigationItems, MoreNavigationItems } from "./navigation-items"
+import { BottomNavigationItems } from "./navigation-items"
 
 export function BottomNav() {
 	const pathname = usePathname()
 
 	const isMoreActive = bottomMoreNavigationItems.some(
-		(item) =>
-			pathname === item.href || pathname.startsWith(`${item.href}/`),
+		(item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
 	)
 
 	return (
-		<nav aria-label="Navegação" className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
+		<nav
+			aria-label="Navegação"
+			className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
+		>
 			<div className="absolute inset-0 bg-surface/80 backdrop-blur-lg border-t border-border" />
 
 			<div className="relative flex items-center justify-around px-2 py-2 pb-safe">
@@ -53,10 +61,26 @@ export function BottomNav() {
 						</button>
 					</DropdownTrigger>
 					<DropdownMenu aria-label="Mais opções">
-						<MoreNavigationItems
-							items={bottomMoreNavigationItems}
-							pathname={pathname}
-						/>
+						{bottomMoreNavigationItems.map((item) => {
+							const Icon = item.icon
+
+							return (
+								<DropdownItem
+									key={item.href}
+									as={Link}
+									href={item.href}
+									startContent={<Icon className="w-4 h-4" />}
+									className={
+										pathname === item.href ||
+										pathname.startsWith(`${item.href}/`)
+											? "text-primary"
+											: ""
+									}
+								>
+									{item.label}
+								</DropdownItem>
+							)
+						})}
 					</DropdownMenu>
 				</Dropdown>
 			</div>
