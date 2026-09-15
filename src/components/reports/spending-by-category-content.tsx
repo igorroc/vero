@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { Button, Spinner } from "@nextui-org/react"
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts"
 import {
 	BadgePercent,
 	Banknote,
@@ -47,6 +48,12 @@ const eventIcons: Record<EventIconKey, LucideIcon> = {
 	other: CreditCard,
 }
 
+interface SpendingChartSlice {
+	name: string
+	value: number
+	color: string
+}
+
 export function SpendingByCategoryContent() {
 	const [groups, setGroups] = useState<SpendingIconGroup[]>([])
 	const [loading, setLoading] = useState(true)
@@ -73,14 +80,11 @@ export function SpendingByCategoryContent() {
 		month: "long",
 		year: "numeric",
 	}).format(new Date())
-	let progress = 0
-	const gradient = groups
-		.map((group) => {
-			const start = progress
-			progress += (group.total / total) * 100
-			return `${eventIconDefinitions[group.iconKey].color} ${start}% ${progress}%`
-		})
-		.join(", ")
+	const chartData: SpendingChartSlice[] = groups.map((group) => ({
+		name: eventIconDefinitions[group.iconKey].label,
+		value: group.total,
+		color: eventIconDefinitions[group.iconKey].color,
+	}))
 
 	return (
 		<div className="space-y-6">
@@ -117,11 +121,51 @@ export function SpendingByCategoryContent() {
 					>
 						<div className="flex flex-col items-center gap-6 md:flex-row md:gap-10">
 							<div
+								className="relative h-56 w-full max-w-[18rem] shrink-0"
 								role="img"
 								aria-label="Distribuição dos gastos confirmados por tipo"
-								className="h-52 w-52 shrink-0 rounded-full shadow-inner"
-								style={{ background: `conic-gradient(${gradient})` }}
-							/>
+							>
+								<ResponsiveContainer
+									width="100%"
+									height="100%"
+									className="relative z-10"
+								>
+									<PieChart>
+										<Pie
+											data={chartData}
+											dataKey="value"
+											nameKey="name"
+											innerRadius="0%"
+											outerRadius="88%"
+											paddingAngle={0}
+											stroke="none"
+										>
+											{chartData.map((slice) => (
+												<Cell key={slice.name} fill={slice.color} />
+											))}
+										</Pie>
+										<Tooltip
+											content={({ active, payload }) => {
+												if (!active || !payload?.length) return null
+												const slice = payload[0]?.payload as
+													SpendingChartSlice | undefined
+												if (!slice) return null
+												return (
+													<div className="rounded-xl border border-border bg-surface px-3 py-2 text-sm shadow-surface">
+														<p className="font-medium text-text-primary">
+															{slice.name}
+														</p>
+														<p className="financial-number text-text-secondary">
+															{formatCurrency(slice.value)} (
+															{((slice.value / total) * 100).toFixed(1)}%)
+														</p>
+													</div>
+												)
+											}}
+										/>
+									</PieChart>
+								</ResponsiveContainer>
+							</div>
 							<div className="w-full">
 								<p className="text-sm text-slate-500">Total gasto no mês</p>
 								<h2

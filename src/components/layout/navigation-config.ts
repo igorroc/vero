@@ -48,7 +48,7 @@ export const sidebarNavigationGroups: NavigationGroup[] = [
 		items: [
 			{
 				icon: ChartNoAxesCombined,
-				label: "Gastos por categoria",
+				label: "Por categoria",
 				href: "/reports/spending",
 			},
 			{
