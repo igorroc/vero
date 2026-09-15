@@ -9,10 +9,10 @@ import { HomeHowItWorks } from "./home-how-it-works"
 import { HomeNavigation } from "./home-navigation"
 import { HomeProblems } from "./home-problems"
 
-export function HomeContent() {
+export function HomeContent({ userName }: { userName?: string }) {
 	return (
 		<div className="min-h-screen bg-white dark:bg-slate-950">
-			<HomeNavigation />
+			<HomeNavigation userName={userName} />
 			<HomeHero />
 			<HomeProblems />
 			<HomeFeatures />
