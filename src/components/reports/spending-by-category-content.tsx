@@ -3,7 +3,14 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { Button, Spinner } from "@nextui-org/react"
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts"
+import {
+	Pie,
+	PieChart,
+	ResponsiveContainer,
+	Sector,
+	Tooltip,
+	type PieSectorShapeProps,
+} from "recharts"
 import {
 	BadgePercent,
 	Banknote,
@@ -52,6 +59,13 @@ interface SpendingChartSlice {
 	name: string
 	value: number
 	color: string
+}
+
+function SpendingPieSlice(props: PieSectorShapeProps) {
+	const slice = props as PieSectorShapeProps & { color?: unknown }
+	const fill = typeof slice.color === "string" ? slice.color : props.fill
+
+	return <Sector {...props} fill={fill} />
 }
 
 export function SpendingByCategoryContent() {
@@ -139,11 +153,8 @@ export function SpendingByCategoryContent() {
 											outerRadius="88%"
 											paddingAngle={0}
 											stroke="none"
-										>
-											{chartData.map((slice) => (
-												<Cell key={slice.name} fill={slice.color} />
-											))}
-										</Pie>
+											shape={SpendingPieSlice}
+										/>
 										<Tooltip
 											content={({ active, payload }) => {
 												if (!active || !payload?.length) return null
