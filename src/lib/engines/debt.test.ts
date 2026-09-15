@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { buildDebtInstallmentPlan, distributeRemainingDebt } from "./debt"
+import {
+	buildDebtInstallmentPlan,
+	canRegisterDebtPayment,
+	distributeRemainingDebt,
+} from "./debt"
 
 describe("debt engine", () => {
 	it("divides installments in cents and adjusts the final installment", () => {
@@ -21,5 +25,10 @@ describe("debt engine", () => {
 			{ id: "a", plannedAmount: 450 },
 			{ id: "b", plannedAmount: 451 },
 		])
+	})
+
+	it("allows only one payment per installment", () => {
+		expect(canRegisterDebtPayment(0)).toBe(true)
+		expect(canRegisterDebtPayment(1)).toBe(false)
 	})
 })

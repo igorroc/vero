@@ -32,7 +32,9 @@ export function DebtInstallmentRow({
 					</p>
 				))}
 			</div>
-			{debt.status === "ACTIVE" && debt.outstandingAmount > 0 && (
+			{debt.status === "ACTIVE" &&
+				debt.outstandingAmount > 0 &&
+				installment.payments.length === 0 && (
 				<Button
 					size="sm"
 					color="primary"

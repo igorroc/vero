@@ -43,6 +43,10 @@ export function distributeRemainingDebt(
 	}))
 }
 
+export function canRegisterDebtPayment(paymentCount: number): boolean {
+	return paymentCount === 0
+}
+
 function addMonthsKeepingDay(date: Date, months: number): Date {
 	const result = new Date(
 		Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1),

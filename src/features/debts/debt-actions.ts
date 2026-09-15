@@ -6,6 +6,7 @@ import { getUserBySession } from "@/lib/auth"
 import { dateFromInputUTC, dollarsToCents, startOfDay } from "@/types/finance"
 import {
 	buildDebtInstallmentPlan,
+	canRegisterDebtPayment,
 	distributeRemainingDebt,
 } from "@/lib/engines/debt"
 
@@ -254,6 +255,7 @@ export async function registerDebtPayment(input: RegisterDebtPaymentInput) {
 				debt: { userId: user.id, status: "ACTIVE" },
 			},
 			include: {
+				payments: true,
 				debt: {
 					include: {
 						installments: {
@@ -266,6 +268,11 @@ export async function registerDebtPayment(input: RegisterDebtPaymentInput) {
 		})
 		if (!installment)
 			return { success: false, error: "Parcela não encontrada" } as const
+		if (!canRegisterDebtPayment(installment.payments.length))
+			return {
+				success: false,
+				error: "Esta parcela já possui um pagamento registrado",
+			} as const
 		const account = await prisma.account.findFirst({
 			where: { id: input.accountId, userId: user.id },
 			select: { id: true },
