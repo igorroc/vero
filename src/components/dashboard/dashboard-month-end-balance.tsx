@@ -12,6 +12,9 @@ export function DashboardMonthEndBalance({
 	investmentBalance,
 	afterRedeemingInvestments,
 }: DashboardMonthEndBalanceProps) {
+	const requiredWithdrawal = Math.max(0, -availableBalance)
+	const remainingInvestments = investmentBalance - requiredWithdrawal
+
 	return (
 		<div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-100 dark:border-slate-800">
 			<p className="font-semibold text-slate-900 dark:text-white text-base">
@@ -61,7 +64,7 @@ export function DashboardMonthEndBalance({
 					/>
 					<div>
 						<p className="text-sm font-medium text-text-primary">
-							Se resgatar todos os investimentos
+							Para cobrir os lançamentos do mês
 						</p>
 						{afterRedeemingInvestments < 0 ? (
 							<p className="mt-1 text-sm text-danger">
@@ -69,9 +72,21 @@ export function DashboardMonthEndBalance({
 								{formatCurrency(Math.abs(afterRedeemingInvestments))} no fim do
 								mês.
 							</p>
+						) : requiredWithdrawal > 0 ? (
+							<p className="mt-1 text-sm text-text-secondary">
+								Resgate {formatCurrency(requiredWithdrawal)}. Restarão{" "}
+								<span className="financial-number font-semibold text-primary">
+									{formatCurrency(remainingInvestments)} em investimentos
+								</span>
+								.
+							</p>
 						) : (
-							<p className="financial-number mt-1 text-lg font-semibold text-primary">
-								Restariam {formatCurrency(afterRedeemingInvestments)} em conta.
+							<p className="mt-1 text-sm text-text-secondary">
+								Você não precisa resgatar. Permanecerão{" "}
+								<span className="financial-number font-semibold text-primary">
+									{formatCurrency(investmentBalance)} em investimentos
+								</span>
+								.
 							</p>
 						)}
 					</div>
