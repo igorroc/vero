@@ -12,13 +12,17 @@ import Link from "next/link"
 import {
 	bottomMainNavigationItems,
 	bottomMoreNavigationItems,
+	superAdminBottomNavigationItem,
 } from "./navigation-config"
 import { BottomNavigationItems } from "./navigation-items"
 
-export function BottomNav() {
+export function BottomNav({ isSuperAdmin }: { isSuperAdmin: boolean }) {
 	const pathname = usePathname()
+	const moreNavigationItems = isSuperAdmin
+		? [...bottomMoreNavigationItems, superAdminBottomNavigationItem]
+		: bottomMoreNavigationItems
 
-	const isMoreActive = bottomMoreNavigationItems.some(
+	const isMoreActive = moreNavigationItems.some(
 		(item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
 	)
 
@@ -61,7 +65,7 @@ export function BottomNav() {
 						</button>
 					</DropdownTrigger>
 					<DropdownMenu aria-label="Mais opções">
-						{bottomMoreNavigationItems.map((item) => {
+						{moreNavigationItems.map((item) => {
 							const Icon = item.icon
 
 							return (

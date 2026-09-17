@@ -10,6 +10,7 @@ interface AppLayoutProps {
 	userName?: string
 	userEmail?: string
 	accounts: HeaderAccountBalance[]
+	isSuperAdmin: boolean
 }
 
 export function AppLayout({
@@ -17,6 +18,7 @@ export function AppLayout({
 	userName,
 	userEmail,
 	accounts,
+	isSuperAdmin,
 }: AppLayoutProps) {
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
@@ -26,6 +28,7 @@ export function AppLayout({
 			<Sidebar
 				collapsed={sidebarCollapsed}
 				onCollapsedChange={setSidebarCollapsed}
+				isSuperAdmin={isSuperAdmin}
 			/>
 
 			{/* Main content area */}
@@ -42,7 +45,7 @@ export function AppLayout({
 			</div>
 
 			{/* Bottom navigation - only visible on mobile */}
-			<BottomNav />
+			<BottomNav isSuperAdmin={isSuperAdmin} />
 		</div>
 	)
 }

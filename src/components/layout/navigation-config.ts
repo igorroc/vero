@@ -8,6 +8,7 @@ import {
 	Tags,
 	TrendingUp,
 	Wallet,
+	UsersRound,
 } from "lucide-react"
 import type { ElementType } from "react"
 
@@ -64,6 +65,11 @@ export const sidebarNavigationGroups: NavigationGroup[] = [
 	},
 ]
 
+export const superAdminNavigationGroup: NavigationGroup = {
+	label: "Operação interna",
+	items: [{ icon: UsersRound, label: "Super Admin", href: "/admin" }],
+}
+
 export const bottomMainNavigationItems: NavigationItem[] = [
 	{ icon: LayoutDashboard, label: "Home", href: "/dashboard" },
 	{ icon: Wallet, label: "Lançamentos", href: "/events" },
@@ -82,3 +88,9 @@ export const bottomMoreNavigationItems: NavigationItem[] = [
 	{ icon: HandCoins, label: "Dívidas", href: "/debts" },
 	{ icon: Settings, label: "Configurações", href: "/settings" },
 ]
+
+export const superAdminBottomNavigationItem: NavigationItem = {
+	icon: UsersRound,
+	label: "Super Admin",
+	href: "/admin",
+}
