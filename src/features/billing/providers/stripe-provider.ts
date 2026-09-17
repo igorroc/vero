@@ -1,4 +1,5 @@
 import { getStripe } from "@/lib/stripe"
+import { env } from "@/lib/env"
 
 import type {
 	PaymentProvider,
@@ -9,7 +10,7 @@ import type {
 async function createCheckout(
 	input: PaymentProviderCheckoutInput,
 ): Promise<PaymentProviderCheckoutResult> {
-	const priceId = process.env.STRIPE_PLUS_PRICE_ID
+	const priceId = env.STRIPE_PLUS_PRICE_ID
 	if (!priceId) throw new Error("STRIPE_PLUS_PRICE_ID is not configured")
 
 	const stripe = getStripe()

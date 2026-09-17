@@ -1,3 +1,5 @@
+import { env } from "@/lib/env"
+
 export function getApplicationUrl(origin: string | null): string {
-	return process.env.NEXT_PUBLIC_APP_URL ?? origin ?? "http://localhost:3000"
+	return env.NEXT_PUBLIC_APP_URL ?? origin ?? "http://localhost:3000"
 }

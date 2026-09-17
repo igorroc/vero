@@ -1,13 +1,17 @@
 import type Stripe from "stripe"
 import { Prisma } from "@prisma/client"
 
+import { env } from "@/lib/env"
+
 import {
 	processPaymentWebhookEvent,
 	synchronizeProviderSubscription,
 	type ProviderSubscription,
 } from "./subscriptions"
 
-function getSubscriptionStatus(subscription: Stripe.Subscription): ProviderSubscription["status"] {
+function getSubscriptionStatus(
+	subscription: Stripe.Subscription,
+): ProviderSubscription["status"] {
 	if (subscription.status === "canceled") return "CANCELED"
 	if (subscription.status === "unpaid") return "UNPAID"
 	if (subscription.status === "past_due") return "PAST_DUE"
@@ -17,13 +21,17 @@ function getSubscriptionStatus(subscription: Stripe.Subscription): ProviderSubsc
 
 function getPeriodEnd(subscription: Stripe.Subscription): Date {
 	const periodEnd = subscription.items.data[0]?.current_period_end
-	if (!periodEnd) throw new Error(`Stripe subscription ${subscription.id} has no period end`)
+	if (!periodEnd)
+		throw new Error(`Stripe subscription ${subscription.id} has no period end`)
 	return new Date(periodEnd * 1000)
 }
 
 function getPeriodStart(subscription: Stripe.Subscription): Date {
 	const periodStart = subscription.items.data[0]?.current_period_start
-	if (!periodStart) throw new Error(`Stripe subscription ${subscription.id} has no period start`)
+	if (!periodStart)
+		throw new Error(
+			`Stripe subscription ${subscription.id} has no period start`,
+		)
 	return new Date(periodStart * 1000)
 }
 
@@ -37,8 +45,9 @@ export async function synchronizeStripeSubscription(
 	stripeSubscription: Stripe.Subscription,
 ): Promise<void> {
 	const providerPriceId = stripeSubscription.items.data[0]?.price.id
-	const configuredPriceId = process.env.STRIPE_PLUS_PRICE_ID
-	if (!configuredPriceId) throw new Error("STRIPE_PLUS_PRICE_ID is not configured")
+	const configuredPriceId = env.STRIPE_PLUS_PRICE_ID
+	if (!configuredPriceId)
+		throw new Error("STRIPE_PLUS_PRICE_ID is not configured")
 	if (providerPriceId !== configuredPriceId) return
 
 	await synchronizeProviderSubscription("stripe", {
@@ -57,7 +66,9 @@ export async function synchronizeStripeSubscription(
 	})
 }
 
-export async function processStripeWebhookEvent(event: Stripe.Event): Promise<void> {
+export async function processStripeWebhookEvent(
+	event: Stripe.Event,
+): Promise<void> {
 	await processPaymentWebhookEvent({
 		provider: "stripe",
 		providerEventId: event.id,
@@ -69,7 +80,9 @@ export async function processStripeWebhookEvent(event: Stripe.Event): Promise<vo
 				event.type === "customer.subscription.updated" ||
 				event.type === "customer.subscription.deleted"
 			) {
-				await synchronizeStripeSubscription(event.data.object as Stripe.Subscription)
+				await synchronizeStripeSubscription(
+					event.data.object as Stripe.Subscription,
+				)
 			}
 		},
 	})

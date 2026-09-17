@@ -4,7 +4,9 @@ import { User } from "@prisma/client"
 import { cookies } from "next/headers"
 import { JWTPayload, SignJWT, jwtVerify } from "jose"
 
-const secretKey = process.env.AUTHENTICATION_SECRET_KEY
+import { env } from "./env"
+
+const secretKey = env.AUTHENTICATION_SECRET_KEY
 const key = new TextEncoder().encode(secretKey)
 
 export async function encrypt(payload: any) {
