@@ -19,7 +19,11 @@ export async function synchronizeProviderSubscription(
 	provider: string,
 	providerSubscription: ProviderSubscription,
 ): Promise<void> {
-	const { userId: _providerUserId, ...subscriptionData } = providerSubscription
+	const {
+		userId: _providerUserId,
+		currentPeriodStart,
+		...subscriptionData
+	} = providerSubscription
 
 	await prisma.$transaction(async (tx) => {
 		const existing = await tx.subscription.findUnique({
@@ -69,7 +73,7 @@ export async function synchronizeProviderSubscription(
 				plan: providerSubscription.plan,
 				source: "INDIVIDUAL_SUBSCRIPTION",
 				status: accessRemainsActive ? "ACTIVE" : "EXPIRED",
-				startsAt: providerSubscription.currentPeriodStart,
+				startsAt: currentPeriodStart,
 				endsAt: accessRemainsActive ? entitlementEndsAt : new Date(),
 				subscriptionId: subscription.id,
 			},
