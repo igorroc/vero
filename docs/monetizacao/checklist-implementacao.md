@@ -15,6 +15,7 @@ Este checklist acompanha a entrega de planos, assinaturas, acessos e administrac
 - [x] Criar o contrato de adaptador de provedor e o registro central de provedores.
 - [x] Implementar Stripe como primeiro adaptador, com Checkout hospedado, cartao e Customer Portal.
 - [x] Criar webhook Stripe assinado em `/api/stripe/webhook`.
+- [x] Adicionar adaptador Polar, checkout, portal e webhook assinado em `/api/polar/webhook`.
 - [x] Adicionar acoes de contratar e gerenciar assinatura no perfil.
 - [x] Cobrir a resolucao de acesso com testes unitarios.
 - [x] Criar e aplicar a migration do schema de cobranca.

@@ -10,7 +10,7 @@ Vero uses Next.js App Router with domain-oriented Server Actions. Financial calc
 src/
   app/                 Routes, layouts, and thin server pages
     (app)/             Authenticated product routes
-    api/               Route handlers, including Stripe webhook
+    api/               Route handlers, including payment-provider webhooks
     auth/              Authentication routes
   components/          Reusable interface components
   features/            Server Actions and domain orchestration
