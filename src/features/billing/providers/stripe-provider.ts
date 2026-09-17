@@ -1,4 +1,5 @@
 import { getStripe } from "@/lib/stripe"
+import { BillingProvider } from "@/lib/billing-provider"
 
 import type {
 	PaymentProvider,
@@ -46,7 +47,7 @@ async function createCustomerPortal(input: {
 }
 
 export const stripePaymentProvider: PaymentProvider = {
-	id: "stripe",
+	id: BillingProvider.STRIPE,
 	createCheckout,
 	createCustomerPortal,
 }

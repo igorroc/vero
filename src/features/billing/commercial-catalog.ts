@@ -1,9 +1,10 @@
 import prisma from "@/lib/db"
+import type { BillingProvider } from "@/lib/billing-provider"
 
 import type { AccessPlan } from "./access"
 
 export async function getActiveCommercialOffer(
-	provider: string,
+	provider: BillingProvider,
 	plan: Exclude<AccessPlan, "FREE">,
 ) {
 	return prisma.commercialOffer.findFirst({
@@ -18,7 +19,7 @@ export async function getActiveCommercialOffer(
 }
 
 export async function getCommercialOfferByProviderPrice(
-	provider: string,
+	provider: BillingProvider,
 	providerPriceId: string,
 ) {
 	return prisma.commercialOffer.findUnique({

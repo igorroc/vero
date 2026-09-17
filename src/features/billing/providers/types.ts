@@ -1,4 +1,5 @@
 import type { AccessPlan } from "../access"
+import type { BillingProvider } from "@/lib/billing-provider"
 
 export type PaymentProviderCheckoutInput = {
 	user: { id: string; name: string; email: string }
@@ -15,7 +16,7 @@ export type PaymentProviderCheckoutResult = {
 }
 
 export type PaymentProvider = {
-	id: string
+	id: BillingProvider
 	createCheckout(input: PaymentProviderCheckoutInput): Promise<PaymentProviderCheckoutResult>
 	createCustomerPortal(input: { providerCustomerId: string; returnUrl: string }): Promise<string>
 }

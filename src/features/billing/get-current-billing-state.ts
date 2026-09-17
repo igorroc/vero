@@ -2,6 +2,7 @@
 
 import { getUserBySession } from "@/lib/auth"
 import prisma from "@/lib/db"
+import { BillingProvider } from "@/lib/billing-provider"
 
 import { resolveAccessPlan } from "./access"
 import { getActiveCommercialOffer } from "./commercial-catalog"
@@ -25,7 +26,7 @@ export async function getCurrentBillingState(): Promise<CurrentBillingState | nu
 			where: { userId: user.id, status: "ACTIVE" },
 			select: { id: true, plan: true, source: true, startsAt: true, endsAt: true },
 		}),
-		getActiveCommercialOffer("stripe", "PLUS"),
+		getActiveCommercialOffer(BillingProvider.STRIPE, "PLUS"),
 	])
 
 	if (!storedUser) return null

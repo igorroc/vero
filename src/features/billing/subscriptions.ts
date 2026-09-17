@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client"
 
 import prisma from "@/lib/db"
+import type { BillingProvider } from "@/lib/billing-provider"
 
 export type ProviderSubscription = {
 	providerCustomerId: string
@@ -16,7 +17,7 @@ export type ProviderSubscription = {
 }
 
 export async function synchronizeProviderSubscription(
-	provider: string,
+	provider: BillingProvider,
 	providerSubscription: ProviderSubscription,
 ): Promise<void> {
 	const {
@@ -86,7 +87,7 @@ export async function synchronizeProviderSubscription(
 }
 
 export async function processPaymentWebhookEvent(input: {
-	provider: string
+	provider: BillingProvider
 	providerEventId: string
 	type: string
 	payload: Prisma.InputJsonValue

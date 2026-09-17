@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 import prisma from "@/lib/db"
+import { BillingProvider } from "@/lib/billing-provider"
 
 import { requireSuperAdmin } from "./require-super-admin"
 
@@ -19,7 +20,7 @@ export async function getCommercialOffers() {
 	await requireSuperAdmin()
 
 	return prisma.commercialOffer.findMany({
-		where: { plan: "PLUS", provider: "stripe" },
+		where: { plan: "PLUS", provider: BillingProvider.STRIPE },
 		include: { createdByUser: { select: { name: true, email: true } } },
 		orderBy: { effectiveAt: "desc" },
 	})
@@ -42,7 +43,11 @@ export async function createCommercialOffer(input: {
 		await prisma.$transaction(async (tx) => {
 			if (effectiveAt.getTime() <= Date.now()) {
 				await tx.commercialOffer.updateMany({
-					where: { plan: "PLUS", provider: "stripe", isActive: true },
+					where: {
+						plan: "PLUS",
+						provider: BillingProvider.STRIPE,
+						isActive: true,
+					},
 					data: { isActive: false, deactivatedAt: new Date() },
 				})
 			}
@@ -52,7 +57,7 @@ export async function createCommercialOffer(input: {
 					plan: "PLUS",
 					amountCents: parsed.data.amountCents,
 					currency: parsed.data.currency.toUpperCase(),
-					provider: "stripe",
+					provider: BillingProvider.STRIPE,
 					providerProductId: parsed.data.providerProductId,
 					providerPriceId: parsed.data.providerPriceId,
 					effectiveAt,

@@ -1,6 +1,8 @@
 import type Stripe from "stripe"
 import { Prisma } from "@prisma/client"
 
+import { BillingProvider } from "@/lib/billing-provider"
+
 import {
 	processPaymentWebhookEvent,
 	synchronizeProviderSubscription,
@@ -45,10 +47,13 @@ export async function synchronizeStripeSubscription(
 ): Promise<void> {
 	const providerPriceId = stripeSubscription.items.data[0]?.price.id
 	if (!providerPriceId) return
-	const offer = await getCommercialOfferByProviderPrice("stripe", providerPriceId)
+	const offer = await getCommercialOfferByProviderPrice(
+		BillingProvider.STRIPE,
+		providerPriceId,
+	)
 	if (!offer || offer.plan !== "PLUS") return
 
-	await synchronizeProviderSubscription("stripe", {
+	await synchronizeProviderSubscription(BillingProvider.STRIPE, {
 		providerCustomerId: getCustomerId(stripeSubscription),
 		providerSubscriptionId: stripeSubscription.id,
 		providerPriceId,
@@ -68,7 +73,7 @@ export async function processStripeWebhookEvent(
 	event: Stripe.Event,
 ): Promise<void> {
 	await processPaymentWebhookEvent({
-		provider: "stripe",
+		provider: BillingProvider.STRIPE,
 		providerEventId: event.id,
 		type: event.type,
 		payload: event as unknown as Prisma.InputJsonValue,
