@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/db"
 import { getUserBySession } from "@/lib/auth"
+import { canUse } from "@/features/billing"
 import {
 	buildSpendingByCategoryReport,
 	type SpendingIconGroup,
@@ -15,6 +16,12 @@ export async function getCurrentSpendingByCategory(): Promise<GetCurrentSpending
 	try {
 		const user = await getUserBySession()
 		if (!user) return { success: false, error: "Não autenticado" }
+		if (!(await canUse(user.id, "reports.detailed"))) {
+			return {
+				success: false,
+				error: "O plano atual não permite visualizar este relatório.",
+			}
+		}
 
 		const now = new Date()
 		const startDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1))

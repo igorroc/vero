@@ -4,12 +4,15 @@ import { useState } from "react"
 import { Sidebar } from "./sidebar"
 import { Header, type HeaderAccountBalance } from "./header"
 import { BottomNav } from "./bottom-nav"
+import { SessionView } from "@/lib/session-view-types"
 
 interface AppLayoutProps {
 	children: React.ReactNode
 	userName?: string
 	userEmail?: string
 	accounts: HeaderAccountBalance[]
+	isSuperAdmin: boolean
+	sessionView: SessionView
 }
 
 export function AppLayout({
@@ -17,6 +20,8 @@ export function AppLayout({
 	userName,
 	userEmail,
 	accounts,
+	isSuperAdmin,
+	sessionView,
 }: AppLayoutProps) {
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
@@ -26,6 +31,7 @@ export function AppLayout({
 			<Sidebar
 				collapsed={sidebarCollapsed}
 				onCollapsedChange={setSidebarCollapsed}
+				isAdminView={sessionView === SessionView.ADMIN}
 			/>
 
 			{/* Main content area */}
@@ -35,14 +41,20 @@ export function AppLayout({
 				}`}
 			>
 				{/* Header */}
-				<Header userName={userName} userEmail={userEmail} accounts={accounts} />
+				<Header
+					userName={userName}
+					userEmail={userEmail}
+					accounts={accounts}
+					isSuperAdmin={isSuperAdmin}
+					sessionView={sessionView}
+				/>
 
 				{/* Page content - extra bottom padding on mobile for bottom nav */}
 				<main className="p-4 pb-24 sm:p-6 md:pb-6">{children}</main>
 			</div>
 
 			{/* Bottom navigation - only visible on mobile */}
-			<BottomNav />
+			<BottomNav isAdminView={sessionView === SessionView.ADMIN} />
 		</div>
 	)
 }

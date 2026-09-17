@@ -4,6 +4,7 @@ import prisma from "@/lib/db"
 import { getUserBySession } from "@/lib/auth"
 import type { InvestmentPlan, InvestmentFrequency } from "@prisma/client"
 import { dollarsToCents } from "@/types/finance"
+import { canUse } from "@/features/billing"
 
 // ============================================
 // GET
@@ -18,7 +19,6 @@ export async function getInvestmentPlans(): Promise<GetInvestmentPlansResult> {
 		if (!user) {
 			return { success: false, error: "Not authenticated" }
 		}
-
 		const plans = await prisma.investmentPlan.findMany({
 			where: {
 				userId: user.id,
@@ -62,6 +62,12 @@ export async function createInvestmentPlan(
 		const user = await getUserBySession()
 		if (!user) {
 			return { success: false, error: "Not authenticated" }
+		}
+		if (!(await canUse(user.id, "investment-plans.manage"))) {
+			return {
+				success: false,
+				error: "O plano atual não permite gerir planos de investimento.",
+			}
 		}
 
 		// Verify account ownership
@@ -130,6 +136,12 @@ export async function updateInvestmentPlan(
 		const user = await getUserBySession()
 		if (!user) {
 			return { success: false, error: "Not authenticated" }
+		}
+		if (!(await canUse(user.id, "investment-plans.manage"))) {
+			return {
+				success: false,
+				error: "O plano atual não permite gerir planos de investimento.",
+			}
 		}
 
 		// Verify ownership

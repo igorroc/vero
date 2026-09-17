@@ -2,7 +2,7 @@
 
 ## Status
 
-Esta e uma especificacao de produto para orientar a implementacao futura de monetizacao, assinaturas e acessos compartilhados. Nenhuma das regras deste documento deve ser considerada implementada ate que exista suporte correspondente na aplicacao e no banco de dados.
+Esta e uma especificacao de produto para monetizacao, assinaturas e acessos compartilhados. A base de assinatura individual Plus, catalogo comercial, Stripe e papel de Super Admin ja existe; o checklist indica as regras e dominios ainda pendentes. Nenhuma regra deve ser considerada concluida sem suporte correspondente na aplicacao, no banco e na operacao de producao.
 
 ## Objetivo
 
@@ -24,6 +24,19 @@ O produto deve permanecer acessivel para pessoas fisicas e permitir que profissi
 - Todos os valores comerciais sao mensais e expressos em reais. A implementacao deve armazenar valores monetarios em centavos.
 
 ## Catalogo Inicial
+
+### Configuracao Comercial
+
+Os precos, identificadores de produto e identificadores de preco de cada provedor de pagamento devem ser configurados no painel de Super Admin. A aplicacao deve consultar a configuracao comercial ativa no banco ao iniciar uma contratacao; nenhum preco comercial ou identificador de preco de provedor deve depender de variavel de ambiente ou de redeploy.
+
+Para cada plano comercial e provedor habilitado, o Super Admin deve poder configurar, com historico:
+
+- Plano comercial e valor mensal em centavos.
+- Moeda e situacao de venda (ativo ou inativo).
+- Provedor de pagamento e identificadores externos de produto e preco.
+- Data de inicio da vigencia da configuracao.
+
+Uma alteracao de preco deve valer apenas para novas contratacoes, salvo uma acao administrativa explicita para migrar assinaturas existentes. Assinaturas ja contratadas devem manter o preco e o identificador externo originalmente vinculados ate que sejam alteradas de forma controlada.
 
 ### Vero Gratuito
 
@@ -214,9 +227,9 @@ Quando a parceria for validada, a vaga patrocinada pode:
 
 ### Cortesia administrativa
 
-A equipe do Vero pode liberar Vero Plus para usuarios selecionados, como amigos, testers, parceiros e usuarios estrategicos.
+O Super Admin pode liberar Vero Plus para usuarios selecionados, como amigos, testers, parceiros e usuarios estrategicos. Esse acesso e uma concessao gratuita e nao cria uma assinatura, cliente ou cobranca em qualquer provedor de pagamento.
 
-O painel administrativo deve permitir:
+O painel de Super Admin deve permitir:
 
 - Selecionar o usuario beneficiado.
 - Definir o plano concedido.
@@ -257,15 +270,26 @@ Uma revogacao administrativa imediata deve ser reservada a necessidade operacion
 
 ## Gestao Operacional
 
-O painel administrativo de monetizacao deve permitir consultar e alterar, com historico:
+### Super Admin
+
+O Super Admin e um papel interno, separado de usuarios comuns e profissionais. Ele deve ser atribuido e revogado somente por outro Super Admin, com historico do responsavel e da data da alteracao. Nenhuma pessoa deve se tornar Super Admin por dados enviados pelo cliente.
+
+O painel de Super Admin deve exigir autenticacao e autorizacao no servidor para todas as leituras e mutacoes. Acoes administrativas sensiveis devem registrar responsavel, data, motivo e os valores anteriores e posteriores quando aplicavel.
+
+### Painel de Monetizacao
+
+O painel de monetizacao do Super Admin deve permitir consultar e alterar, com historico:
 
 - Assinaturas individuais e profissionais.
+- Configuracoes comerciais, precos e provedores de pagamento habilitados.
 - Periodo atual, estado e origem de cada assinatura.
 - Clientes vinculados a cada profissional.
 - Vagas pagas, vagas disponiveis e vagas patrocinadas.
 - Concessoes de cortesia e promocoes.
 - Datas de expiracao e revogacoes.
 - Motivos, responsaveis e observacoes administrativas.
+
+O painel tambem deve permitir conceder, agendar o fim e revogar acessos gratuitos por cortesia administrativa ou promocao, sem criar cobranca automatica para a pessoa beneficiada.
 
 Alteracoes de plano e de vagas devem ser aplicadas de forma atomica para evitar que um cliente fique temporariamente com permissao indevida ou sem um acesso que deveria possuir.
 

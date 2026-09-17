@@ -10,15 +10,20 @@ import {
 } from "@nextui-org/react"
 import Link from "next/link"
 import {
+	adminBottomNavigationItems,
 	bottomMainNavigationItems,
 	bottomMoreNavigationItems,
 } from "./navigation-config"
 import { BottomNavigationItems } from "./navigation-items"
 
-export function BottomNav() {
+export function BottomNav({ isAdminView }: { isAdminView: boolean }) {
 	const pathname = usePathname()
+	const moreNavigationItems = bottomMoreNavigationItems
+	const navigationItems = isAdminView
+		? adminBottomNavigationItems
+		: bottomMainNavigationItems
 
-	const isMoreActive = bottomMoreNavigationItems.some(
+	const isMoreActive = moreNavigationItems.some(
 		(item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
 	)
 
@@ -29,13 +34,17 @@ export function BottomNav() {
 		>
 			<div className="absolute inset-0 bg-surface/80 backdrop-blur-lg border-t border-border" />
 
-			<div className="relative flex items-center justify-around px-2 py-2 pb-safe">
+			<div
+				className={`relative flex items-center px-2 py-2 pb-safe ${
+					isAdminView ? "justify-center" : "justify-around"
+				}`}
+			>
 				<BottomNavigationItems
-					items={bottomMainNavigationItems}
+					items={navigationItems}
 					pathname={pathname}
 				/>
 
-				<Dropdown placement="top">
+				{!isAdminView && <Dropdown placement="top">
 					<DropdownTrigger>
 						<button
 							className={`flex flex-col items-center justify-center min-w-[64px] py-1.5 px-3 rounded-control transition-colors ${
@@ -61,7 +70,7 @@ export function BottomNav() {
 						</button>
 					</DropdownTrigger>
 					<DropdownMenu aria-label="Mais opções">
-						{bottomMoreNavigationItems.map((item) => {
+						{moreNavigationItems.map((item) => {
 							const Icon = item.icon
 
 							return (
@@ -82,7 +91,7 @@ export function BottomNav() {
 							)
 						})}
 					</DropdownMenu>
-				</Dropdown>
+				</Dropdown>}
 			</div>
 		</nav>
 	)

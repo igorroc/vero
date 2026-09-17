@@ -3,6 +3,7 @@
 import prisma from "@/lib/db"
 import { getUserBySession } from "@/lib/auth"
 import { dollarsToCents } from "@/types/finance"
+import { canManageInvestmentResource } from "@/features/billing"
 
 export interface UpdateTransferInput {
 	id: string
@@ -26,10 +27,27 @@ export async function updateTransfer(input: UpdateTransferInput) {
 			} as const
 		const transfer = await prisma.event.findFirst({
 			where: { id: input.id, userId: user.id, type: "TRANSFER" },
-			select: { id: true },
+			select: {
+				id: true,
+				account: { select: { type: true } },
+				destinationAccount: { select: { type: true } },
+			},
 		})
 		if (!transfer)
 			return { success: false, error: "Transferência não encontrada" } as const
+		if (
+			!(await canManageInvestmentResource(user.id, [
+				transfer.account.type,
+				...(transfer.destinationAccount
+					? [transfer.destinationAccount.type]
+					: []),
+			]))
+		) {
+			return {
+				success: false,
+				error: "O plano atual não permite gerir investimentos.",
+			} as const
+		}
 		await prisma.event.update({
 			where: { id: transfer.id },
 			data: { description, amount: -amount, date: input.date },

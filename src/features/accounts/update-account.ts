@@ -4,6 +4,7 @@ import prisma from "@/lib/db"
 import { getUserBySession } from "@/lib/auth"
 import type { Account, AccountType } from "@prisma/client"
 import { dollarsToCents } from "@/types/finance"
+import { canManageInvestmentResource } from "@/features/billing"
 
 export interface UpdateAccountInput {
 	id: string
@@ -34,6 +35,17 @@ export async function updateAccount(
 
 		if (!existing) {
 			return { success: false, error: "Account not found" }
+		}
+		if (
+			!(await canManageInvestmentResource(user.id, [
+				existing.type,
+				input.type ?? existing.type,
+			]))
+		) {
+			return {
+				success: false,
+				error: "O plano atual não permite gerir contas de investimento.",
+			}
 		}
 
 		// Build update data

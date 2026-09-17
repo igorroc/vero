@@ -11,6 +11,7 @@ import type {
 	RecurrenceFrequency,
 } from "@prisma/client"
 import { dollarsToCents } from "@/types/finance"
+import { canManageInvestmentResource } from "@/features/billing"
 
 export interface UpdateEventInput {
 	id: string
@@ -45,12 +46,14 @@ export async function updateEvent(
 				id: input.id,
 				userId: user.id,
 			},
+			include: { account: { select: { type: true } } },
 		})
 
 		if (!existing) {
 			return { success: false, error: "Event not found" }
 		}
 
+		let accountTypes = [existing.account.type]
 		// If changing account, verify new account ownership
 		if (input.accountId && input.accountId !== existing.accountId) {
 			const newAccount = await prisma.account.findFirst({
@@ -63,9 +66,18 @@ export async function updateEvent(
 			if (!newAccount) {
 				return { success: false, error: "Account not found" }
 			}
+			accountTypes = [newAccount.type]
 		}
 
 		const eventType = input.type ?? existing.type
+		if (
+			!(await canManageInvestmentResource(user.id, accountTypes, eventType))
+		) {
+			return {
+				success: false,
+				error: "O plano atual não permite gerir investimentos.",
+			}
+		}
 		if (input.categoryId !== undefined) {
 			if (!input.categoryId) {
 				return {

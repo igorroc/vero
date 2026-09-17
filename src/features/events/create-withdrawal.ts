@@ -4,6 +4,7 @@ import prisma from "@/lib/db"
 import { getUserBySession } from "@/lib/auth"
 import type { Event } from "@prisma/client"
 import { dollarsToCents } from "@/types/finance"
+import { canManageInvestmentResource, checkLimit } from "@/features/billing"
 
 export interface CreateWithdrawalInput {
 	fromAccountId: string // Must be INVESTMENT account
@@ -31,7 +32,6 @@ export async function createWithdrawal(
 		if (!user) {
 			return { success: false, error: "Not authenticated" }
 		}
-
 		// Validate source account (must be INVESTMENT)
 		const fromAccount = await prisma.account.findFirst({
 			where: {
@@ -69,6 +69,17 @@ export async function createWithdrawal(
 				error: "A conta de destino não pode ser uma conta de investimento",
 			}
 		}
+		if (
+			!(await canManageInvestmentResource(user.id, [
+				fromAccount.type,
+				toAccount.type,
+			]))
+		) {
+			return {
+				success: false,
+				error: "O plano atual não permite gerir investimentos.",
+			}
+		}
 
 		// Validate amount
 		if (input.amount <= 0) {
@@ -79,43 +90,60 @@ export async function createWithdrawal(
 		const description = input.description || `Resgate de ${fromAccount.name}`
 
 		// Create both events in a transaction
-		const result = await prisma.$transaction(async (tx) => {
-			// Create withdrawal event (negative on investment account)
-			const withdrawalEvent = await tx.event.create({
-				data: {
-					userId: user.id,
-					accountId: input.fromAccountId,
-					description: `Resgate: ${description}`,
-					amount: -amountCents, // Negative (money leaving)
-					type: "EXPENSE", // Treated as expense from investment
-					costType: "EXCEPTIONAL",
-					status: "CONFIRMED", // Already confirmed since it's a transfer
-					priority: "REQUIRED",
-					date: input.date,
-					isRecurrenceTemplate: false,
-				},
-			})
+		const result = await prisma.$transaction(
+			async (tx) => {
+				const eventLimit = await checkLimit(
+					user.id,
+					"events.create.monthly",
+					2,
+					tx,
+				)
+				if (!eventLimit.allowed) return null
+				// Create withdrawal event (negative on investment account)
+				const withdrawalEvent = await tx.event.create({
+					data: {
+						userId: user.id,
+						accountId: input.fromAccountId,
+						description: `Resgate: ${description}`,
+						amount: -amountCents, // Negative (money leaving)
+						type: "EXPENSE", // Treated as expense from investment
+						costType: "EXCEPTIONAL",
+						status: "CONFIRMED", // Already confirmed since it's a transfer
+						priority: "REQUIRED",
+						date: input.date,
+						isRecurrenceTemplate: false,
+					},
+				})
 
-			// Create deposit event (positive on destination account)
-			const depositEvent = await tx.event.create({
-				data: {
-					userId: user.id,
-					accountId: input.toAccountId,
-					description: `Resgate: ${description}`,
-					amount: amountCents, // Positive (money arriving)
-					type: "INCOME",
-					costType: null,
-					status: "CONFIRMED", // Already confirmed since it's a transfer
-					priority: "REQUIRED",
-					date: input.date,
-					isRecurrenceTemplate: false,
-					// Link to the withdrawal event for reference
-					recurrenceId: withdrawalEvent.id,
-				},
-			})
+				// Create deposit event (positive on destination account)
+				const depositEvent = await tx.event.create({
+					data: {
+						userId: user.id,
+						accountId: input.toAccountId,
+						description: `Resgate: ${description}`,
+						amount: amountCents, // Positive (money arriving)
+						type: "INCOME",
+						costType: null,
+						status: "CONFIRMED", // Already confirmed since it's a transfer
+						priority: "REQUIRED",
+						date: input.date,
+						isRecurrenceTemplate: false,
+						// Link to the withdrawal event for reference
+						recurrenceId: withdrawalEvent.id,
+					},
+				})
 
-			return { withdrawalEvent, depositEvent }
-		})
+				return { withdrawalEvent, depositEvent }
+			},
+			{ isolationLevel: "Serializable" },
+		)
+
+		if (!result) {
+			return {
+				success: false,
+				error: "Você atingiu o limite mensal de lançamentos do seu plano.",
+			}
+		}
 
 		return {
 			success: true,

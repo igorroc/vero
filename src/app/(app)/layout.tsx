@@ -2,6 +2,8 @@ import { redirect } from "next/navigation"
 import { getUserBySession } from "@/lib/auth"
 import { AppLayout } from "@/components/layout"
 import { getAccountBalances } from "@/features/accounts"
+import { isCurrentUserSuperAdmin } from "@/features/admin"
+import { getSessionView } from "@/lib/session-view"
 
 export default async function AppGroupLayout({
 	children,
@@ -14,11 +16,21 @@ export default async function AppGroupLayout({
 		redirect("/auth/login")
 	}
 
-	const accountBalances = await getAccountBalances()
+	const [accountBalances, isSuperAdmin] = await Promise.all([
+		getAccountBalances(),
+		isCurrentUserSuperAdmin(),
+	])
+	const sessionView = await getSessionView(isSuperAdmin)
 	const accounts = accountBalances.success ? accountBalances.accounts : []
 
 	return (
-		<AppLayout userName={user.name} userEmail={user.email} accounts={accounts}>
+		<AppLayout
+			userName={user.name}
+			userEmail={user.email}
+			accounts={accounts}
+			isSuperAdmin={isSuperAdmin}
+			sessionView={sessionView}
+		>
 			{children}
 		</AppLayout>
 	)

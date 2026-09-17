@@ -4,7 +4,10 @@ import { User } from "@prisma/client"
 import { cookies } from "next/headers"
 import { JWTPayload, SignJWT, jwtVerify } from "jose"
 
-const secretKey = process.env.AUTHENTICATION_SECRET_KEY
+import { env } from "./env"
+import { SESSION_VIEW_COOKIE } from "./session-view-types"
+
+const secretKey = env.AUTHENTICATION_SECRET_KEY
 const key = new TextEncoder().encode(secretKey)
 
 export async function encrypt(payload: any) {
@@ -34,7 +37,9 @@ export async function authenticateLogin(user: User) {
 }
 export async function authenticateLogout() {
 	const awaitedCookies = await cookies()
-	awaitedCookies.set("session", "", { httpOnly: true, expires: new Date(0) })
+	const expiredCookie = { httpOnly: true, expires: new Date(0), path: "/" }
+	awaitedCookies.set("session", "", expiredCookie)
+	awaitedCookies.set(SESSION_VIEW_COOKIE, "", expiredCookie)
 }
 
 export async function getSession() {

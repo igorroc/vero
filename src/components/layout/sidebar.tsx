@@ -5,15 +5,23 @@ import LogoImage from "@/app/icon.png"
 import { usePathname } from "next/navigation"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import Image from "next/image"
-import { sidebarNavigationGroups } from "./navigation-config"
+import {
+	adminNavigationGroups,
+	sidebarNavigationGroups,
+} from "./navigation-config"
 import { SidebarNavigationGroups } from "./navigation-items"
 
 interface SidebarProps {
 	collapsed: boolean
 	onCollapsedChange: (collapsed: boolean) => void
+	isAdminView: boolean
 }
 
-export function Sidebar({ collapsed, onCollapsedChange }: SidebarProps) {
+export function Sidebar({
+	collapsed,
+	onCollapsedChange,
+	isAdminView,
+}: SidebarProps) {
 	const pathname = usePathname()
 
 	return (
@@ -55,7 +63,7 @@ export function Sidebar({ collapsed, onCollapsedChange }: SidebarProps) {
 				className="h-[calc(100%-4rem)] space-y-5 overflow-y-auto p-4 pb-28"
 			>
 				<SidebarNavigationGroups
-					groups={sidebarNavigationGroups}
+					groups={isAdminView ? adminNavigationGroups : sidebarNavigationGroups}
 					pathname={pathname}
 					collapsed={collapsed}
 				/>

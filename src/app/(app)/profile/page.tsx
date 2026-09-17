@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { getUserBySession } from "@/lib/auth"
 import { ProfileContent } from "@/components/profile/profile-content"
 import { PageHeader } from "@/components/ui"
+import { getCurrentBillingState } from "@/features/billing/get-current-billing-state"
 
 export const metadata: Metadata = {
 	title: "Perfil | Vero",
@@ -9,6 +10,7 @@ export const metadata: Metadata = {
 
 export default async function ProfilePage() {
 	const user = await getUserBySession()
+	const billingState = await getCurrentBillingState()
 
 	return (
 		<>
@@ -16,7 +18,7 @@ export default async function ProfilePage() {
 				title="Meu Perfil"
 				subtitle="Gerencie suas informações pessoais"
 			/>
-			<ProfileContent user={user} />
+			<ProfileContent user={user} billingState={billingState} />
 		</>
 	)
 }

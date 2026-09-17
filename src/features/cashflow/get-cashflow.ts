@@ -7,6 +7,7 @@ import { buildCashflowProjection } from "@/lib/engines/cashflow"
 import type { CashflowProjection } from "@/types/finance"
 import { addDays, startOfDay } from "@/types/finance"
 import prisma from "@/lib/db"
+import { canUse } from "@/features/billing"
 
 export type GetCashflowResult =
 	| { success: true; projection: CashflowProjection }
@@ -19,6 +20,12 @@ export async function getCashflowProjection(
 		const user = await getUserBySession()
 		if (!user) {
 			return { success: false, error: "Not authenticated" }
+		}
+		if (!(await canUse(user.id, "cashflow.view"))) {
+			return {
+				success: false,
+				error: "O plano atual não permite visualizar o fluxo de caixa.",
+			}
 		}
 
 		// Get user settings for safety buffer

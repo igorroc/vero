@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, LogOut, User } from "lucide-react"
+import { ArrowLeftRight, Bell, LogOut, User } from "lucide-react"
 import Link from "next/link"
 import {
 	Button,
@@ -16,6 +16,8 @@ import Image from "next/image"
 import LogoImage from "@/app/icon.png"
 import { formatCurrency, type Cents } from "@/types/finance"
 import type { AccountType } from "@prisma/client"
+import { setSessionView } from "@/features/session-view"
+import { SessionView } from "@/lib/session-view-types"
 
 export interface HeaderAccountBalance {
 	id: string
@@ -28,9 +30,17 @@ interface HeaderProps {
 	userName?: string
 	userEmail?: string
 	accounts: HeaderAccountBalance[]
+	isSuperAdmin: boolean
+	sessionView: SessionView
 }
 
-export function Header({ userName, userEmail, accounts }: HeaderProps) {
+export function Header({
+	userName,
+	userEmail,
+	accounts,
+	isSuperAdmin,
+	sessionView,
+}: HeaderProps) {
 	const router = useRouter()
 	const visibleAccounts = accounts
 		.filter((account) => account.currentBalance !== 0)
@@ -52,6 +62,20 @@ export function Header({ userName, userEmail, accounts }: HeaderProps) {
 	const handleLogout = async () => {
 		await logoutAction()
 		router.push("/auth/login")
+	}
+
+	const handleSessionViewChange = async () => {
+		const nextView =
+			sessionView === SessionView.ADMIN
+				? SessionView.PERSONAL
+				: SessionView.ADMIN
+		const result = await setSessionView(nextView)
+		if (!result.success) return
+
+		router.replace(
+			nextView === SessionView.ADMIN ? "/admin/dashboard" : "/dashboard",
+		)
+		router.refresh()
 	}
 
 	const getInitials = (name?: string) => {
@@ -143,6 +167,16 @@ export function Header({ userName, userEmail, accounts }: HeaderProps) {
 							Meu Perfil
 						</DropdownItem>
 						<DropdownItem
+							key="session-view"
+							className={isSuperAdmin ? "" : "hidden"}
+							startContent={<ArrowLeftRight className="w-4 h-4" />}
+							onPress={handleSessionViewChange}
+						>
+							{sessionView === SessionView.ADMIN
+								? "Usar visão pessoal"
+								: "Trocar para visão administrativa"}
+						</DropdownItem>
+						<DropdownItem
 							key="notifications"
 							className="sm:hidden"
 							startContent={<Bell className="w-4 h-4" />}
@@ -192,9 +226,7 @@ function HeaderAccountGroup({
 					</p>
 					<p
 						className={`text-sm font-semibold financial-number ${
-							account.currentBalance < 0
-								? "text-danger"
-								: "text-text-primary"
+							account.currentBalance < 0 ? "text-danger" : "text-text-primary"
 						}`}
 					>
 						{formatCurrency(account.currentBalance)}

@@ -11,6 +11,7 @@ import type {
 	RecurrenceFrequency,
 } from "@prisma/client"
 import { dollarsToCents, startOfDay } from "@/types/finance"
+import { canManageInvestmentResource, withLimit } from "@/features/billing"
 
 export interface CreateEventInput {
 	accountId: string
@@ -39,7 +40,6 @@ export async function createEvent(
 		if (!user) {
 			return { success: false, error: "Not authenticated" }
 		}
-
 		// Validate account ownership
 		const account = await prisma.account.findFirst({
 			where: {
@@ -50,6 +50,14 @@ export async function createEvent(
 
 		if (!account) {
 			return { success: false, error: "Account not found" }
+		}
+		if (
+			!(await canManageInvestmentResource(user.id, [account.type], input.type))
+		) {
+			return {
+				success: false,
+				error: "O plano atual não permite gerir investimentos.",
+			}
 		}
 
 		if (!input.categoryId) {
@@ -79,7 +87,8 @@ export async function createEvent(
 		if (category.categoryGroup.id === "debts") {
 			return {
 				success: false,
-				error: "Pagamentos de dívida devem ser registrados no painel de Dívidas",
+				error:
+					"Pagamentos de dívida devem ser registrados no painel de Dívidas",
 			}
 		}
 
@@ -126,11 +135,17 @@ export async function createEvent(
 			recurrenceEndDate: input.isRecurring ? input.recurrenceEndDate : null,
 		}
 
-		const event = await prisma.event.create({
-			data: eventData,
-		})
+		const event = await withLimit(user.id, "events.create.monthly", 1, (tx) =>
+			tx.event.create({ data: eventData }),
+		)
+		if (!event.allowed) {
+			return {
+				success: false,
+				error: "Você atingiu o limite mensal de lançamentos do seu plano.",
+			}
+		}
 
-		return { success: true, event }
+		return { success: true, event: event.value }
 	} catch (error) {
 		console.error("Failed to create event:", error)
 		return { success: false, error: "Failed to create event" }
@@ -151,7 +166,6 @@ export async function createRecurrenceInstance(
 		if (!user) {
 			return { success: false, error: "Not authenticated" }
 		}
-
 		// Get the template
 		const template = await prisma.event.findFirst({
 			where: {
@@ -159,31 +173,52 @@ export async function createRecurrenceInstance(
 				userId: user.id,
 				isRecurrenceTemplate: true,
 			},
+			include: { account: { select: { type: true } } },
 		})
 
 		if (!template) {
 			return { success: false, error: "Template not found" }
 		}
+		if (
+			!(await canManageInvestmentResource(
+				user.id,
+				[template.account.type],
+				template.type,
+			))
+		) {
+			return {
+				success: false,
+				error: "O plano atual não permite gerir investimentos.",
+			}
+		}
 
 		// Create instance linked to template
-		const event = await prisma.event.create({
-			data: {
-				userId: user.id,
-				accountId: template.accountId,
-				categoryId: template.categoryId,
-				description: template.description,
-				amount: template.amount,
-				type: template.type,
-				costType: template.costType,
-				status,
-				priority: template.priority,
-				date,
-				isRecurrenceTemplate: false,
-				recurrenceId: templateId,
-			},
-		})
+		const event = await withLimit(user.id, "events.create.monthly", 1, (tx) =>
+			tx.event.create({
+				data: {
+					userId: user.id,
+					accountId: template.accountId,
+					categoryId: template.categoryId,
+					description: template.description,
+					amount: template.amount,
+					type: template.type,
+					costType: template.costType,
+					status,
+					priority: template.priority,
+					date,
+					isRecurrenceTemplate: false,
+					recurrenceId: templateId,
+				},
+			}),
+		)
+		if (!event.allowed) {
+			return {
+				success: false,
+				error: "Você atingiu o limite mensal de lançamentos do seu plano.",
+			}
+		}
 
-		return { success: true, event }
+		return { success: true, event: event.value }
 	} catch (error) {
 		console.error("Failed to create recurrence instance:", error)
 		return { success: false, error: "Failed to create event instance" }
