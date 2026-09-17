@@ -6,6 +6,7 @@ import { getUserBySession } from "@/lib/auth"
 import prisma from "@/lib/db"
 
 import { getPaymentProvider } from "./providers"
+import { getActiveCommercialOffer } from "./commercial-catalog"
 import { getApplicationUrl } from "./urls"
 
 export type BillingActionResult =
@@ -28,6 +29,10 @@ export async function createPlusCheckoutSession(): Promise<BillingActionResult> 
 	}
 
 	const provider = getPaymentProvider()
+	const offer = await getActiveCommercialOffer(provider.id, "PLUS")
+	if (!offer) {
+		return { success: false, error: "O Vero Plus não está disponível para contratação." }
+	}
 	const billingCustomer = await prisma.billingCustomer.findUnique({
 		where: { userId_provider: { userId: user.id, provider: provider.id } },
 		select: { providerCustomerId: true },
@@ -37,6 +42,7 @@ export async function createPlusCheckoutSession(): Promise<BillingActionResult> 
 		user: { id: user.id, email: user.email, name: user.name },
 		providerCustomerId: billingCustomer?.providerCustomerId ?? null,
 		plan: "PLUS",
+		providerPriceId: offer.providerPriceId,
 		successUrl: `${origin}/profile?checkout=success`,
 		cancelUrl: `${origin}/profile?checkout=canceled`,
 	})
