@@ -16,4 +16,7 @@ model User {
     notifications   Notification[]
     budgets         Budget[]
     debts           Debt[]
+    subscriptions   Subscription[]
+    entitlements    Entitlement[]
+    billingCustomers BillingCustomer[]
 }

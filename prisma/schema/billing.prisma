@@ -1,0 +1,109 @@
+enum AccessPlan {
+  FREE
+  PLUS
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELING
+  PAST_DUE
+  UNPAID
+  CANCELED
+}
+
+enum EntitlementSource {
+  INDIVIDUAL_SUBSCRIPTION
+  PROFESSIONAL_SEAT
+  SPONSORED_SEAT
+  ADMINISTRATIVE_GRANT
+  PROMOTION
+}
+
+enum EntitlementStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+model Subscription {
+  id String @id @default(cuid())
+
+  plan              AccessPlan
+  status            SubscriptionStatus
+  currentPeriodEnd  DateTime
+  cancelAtPeriodEnd Boolean            @default(false)
+  canceledAt        DateTime?
+
+  provider               String
+  providerCustomerId     String
+  providerSubscriptionId String
+  providerPriceId        String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  entitlement Entitlement?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerSubscriptionId])
+  @@index([userId])
+  @@index([provider, providerCustomerId])
+  @@index([status, currentPeriodEnd])
+}
+
+model Entitlement {
+  id String @id @default(cuid())
+
+  plan            AccessPlan
+  source          EntitlementSource
+  status          EntitlementStatus
+  startsAt        DateTime
+  endsAt          DateTime?
+  reason          String?
+  grantedByUserId String?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  subscriptionId String?       @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status, startsAt, endsAt])
+}
+
+model BillingCustomer {
+  id String @id @default(cuid())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  provider           String
+  providerCustomerId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, provider])
+  @@unique([provider, providerCustomerId])
+}
+
+model PaymentWebhookEvent {
+  id String @id @default(cuid())
+
+  provider        String
+  providerEventId String
+
+  type            String
+  payload         Json
+  processedAt     DateTime?
+  processingError String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([provider, providerEventId])
+}
