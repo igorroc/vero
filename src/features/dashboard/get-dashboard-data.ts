@@ -33,6 +33,7 @@ import type {
 	PrioritySimulationResult,
 } from "@/types/finance"
 import { addDays, endOfMonth, startOfDay } from "@/types/finance"
+import { canUse } from "@/features/billing"
 
 export interface DashboardData {
 	// Balance info
@@ -56,7 +57,7 @@ export interface DashboardData {
 	}
 
 	// Spending limit
-	spendingLimit: SpendingLimitResult
+	spendingLimit: SpendingLimitResult | null
 	monthEndBalances: {
 		available: Cents
 		investments: Cents
@@ -103,6 +104,7 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 		if (!user) {
 			return { success: false, error: "Not authenticated" }
 		}
+		const canViewSpendingLimit = await canUse(user.id, "spending-limit.view")
 
 		// Get user settings
 		let settings = await prisma.userSettings.findUnique({
@@ -294,13 +296,15 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 		}
 
 		// Calculate spending limit
-		const spendingLimit = calculateSpendingLimitAuto(
-			availableBalance,
-			eventsForCalculation,
-			settings.horizonMode,
-			settings.safetyBuffer,
-			today,
-		)
+		const spendingLimit = canViewSpendingLimit
+			? calculateSpendingLimitAuto(
+					availableBalance,
+					eventsForCalculation,
+					settings.horizonMode,
+					settings.safetyBuffer,
+					today,
+				)
+			: null
 
 		// Upcoming events start tomorrow; events due today belong to today's activity.
 		const upcomingStart = addDays(startOfDay(today), 1)

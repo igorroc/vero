@@ -3,7 +3,7 @@ import type { DashboardData } from "@/features/dashboard"
 import { formatCurrency } from "@/types/finance"
 
 interface DashboardSpendingLimitProps {
-	breakdown: DashboardData["spendingLimit"]["breakdown"]
+	breakdown: NonNullable<DashboardData["spendingLimit"]>["breakdown"]
 }
 
 export function DashboardSpendingLimit({

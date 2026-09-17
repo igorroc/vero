@@ -4,7 +4,7 @@ import prisma from "@/lib/db"
 import { getUserBySession } from "@/lib/auth"
 import type { Event } from "@prisma/client"
 import { dollarsToCents } from "@/types/finance"
-import { checkLimit } from "@/features/billing"
+import { canManageInvestmentResource, withLimit } from "@/features/billing"
 
 export interface CreateTransferInput {
 	fromAccountId: string
@@ -24,13 +24,6 @@ export async function createTransfer(
 	try {
 		const user = await getUserBySession()
 		if (!user) return { success: false, error: "Não autenticado" }
-		const eventLimit = await checkLimit(user.id, "events.create.monthly")
-		if (!eventLimit.allowed) {
-			return {
-				success: false,
-				error: "Você atingiu o limite mensal de lançamentos do seu plano.",
-			}
-		}
 		if (input.fromAccountId === input.toAccountId) {
 			return { success: false, error: "Selecione contas diferentes" }
 		}
@@ -50,6 +43,7 @@ export async function createTransfer(
 			select: {
 				id: true,
 				name: true,
+				type: true,
 				initialBalance: true,
 				events: { where: { status: "CONFIRMED" }, select: { amount: true } },
 				incomingTransfers: {
@@ -66,6 +60,17 @@ export async function createTransfer(
 		)
 		if (!fromAccount || !toAccount)
 			return { success: false, error: "Conta inválida" }
+		if (
+			!(await canManageInvestmentResource(user.id, [
+				fromAccount.type,
+				toAccount.type,
+			]))
+		) {
+			return {
+				success: false,
+				error: "O plano atual não permite gerir investimentos.",
+			}
+		}
 
 		const sourceBalance =
 			fromAccount.initialBalance +
@@ -74,22 +79,30 @@ export async function createTransfer(
 				(sum, event) => sum + event.amount,
 				0,
 			)
-		const event = await prisma.event.create({
-			data: {
-				userId: user.id,
-				accountId: fromAccount.id,
-				destinationAccountId: toAccount.id,
-				description,
-				amount: -amount,
-				type: "TRANSFER",
-				status: "CONFIRMED",
-				date: input.date,
-				isRecurrenceTemplate: false,
-			},
-		})
+		const event = await withLimit(user.id, "events.create.monthly", 1, (tx) =>
+			tx.event.create({
+				data: {
+					userId: user.id,
+					accountId: fromAccount.id,
+					destinationAccountId: toAccount.id,
+					description,
+					amount: -amount,
+					type: "TRANSFER",
+					status: "CONFIRMED",
+					date: input.date,
+					isRecurrenceTemplate: false,
+				},
+			}),
+		)
+		if (!event.allowed) {
+			return {
+				success: false,
+				error: "Você atingiu o limite mensal de lançamentos do seu plano.",
+			}
+		}
 		return {
 			success: true,
-			event,
+			event: event.value,
 			warning:
 				sourceBalance < amount
 					? "A transferência deixou a conta de origem com saldo negativo."

@@ -9,7 +9,7 @@ import {
 	canRegisterDebtPayment,
 	distributeRemainingDebt,
 } from "@/lib/engines/debt"
-import { canUse } from "@/features/billing"
+import { canUse, checkLimit } from "@/features/billing"
 
 export interface CreateDebtInput {
 	creditor: string
@@ -308,55 +308,70 @@ export async function registerDebtPayment(input: RegisterDebtPaymentInput) {
 				error: "O pagamento não pode superar o saldo da dívida",
 			} as const
 
-		const result = await prisma.$transaction(async (tx) => {
-			const event = await tx.event.create({
-				data: {
-					userId: user.id,
-					accountId: account.id,
-					categoryId: installment.debt.categoryId,
-					description: `Pagamento ${installment.number}/${installment.debt.installmentCount} - ${installment.debt.creditor}`,
-					amount: -amount,
-					type: "EXPENSE",
-					costType: "RECURRENT",
-					status: "CONFIRMED",
-					priority: "REQUIRED",
-					date: paymentDate,
-				},
-			})
-			await tx.debtPayment.create({
-				data: { installmentId: installment.id, eventId: event.id, amount },
-			})
-			const remainingAmount = outstandingAmount - amount
-			const currentPlannedAmount = Math.max(
-				0,
-				installment.plannedAmount - amount,
-			)
-			const futureInstallments = installment.debt.installments.filter(
-				(item) => item.number > installment.number,
-			)
-			const distribution = distributeRemainingDebt(
-				remainingAmount - currentPlannedAmount,
-				futureInstallments,
-			)
-			await tx.debtInstallment.update({
-				where: { id: installment.id },
-				data: { plannedAmount: currentPlannedAmount },
-			})
-			await Promise.all(
-				distribution.map((item) =>
-					tx.debtInstallment.update({
-						where: { id: item.id },
-						data: { plannedAmount: item.plannedAmount },
-					}),
-				),
-			)
-			if (remainingAmount === 0)
-				await tx.debt.update({
-					where: { id: installment.debtId },
-					data: { status: "PAID" },
+		const result = await prisma.$transaction(
+			async (tx) => {
+				const eventLimit = await checkLimit(
+					user.id,
+					"events.create.monthly",
+					1,
+					tx,
+				)
+				if (!eventLimit.allowed) return null
+				const event = await tx.event.create({
+					data: {
+						userId: user.id,
+						accountId: account.id,
+						categoryId: installment.debt.categoryId,
+						description: `Pagamento ${installment.number}/${installment.debt.installmentCount} - ${installment.debt.creditor}`,
+						amount: -amount,
+						type: "EXPENSE",
+						costType: "RECURRENT",
+						status: "CONFIRMED",
+						priority: "REQUIRED",
+						date: paymentDate,
+					},
 				})
-			return event
-		})
+				await tx.debtPayment.create({
+					data: { installmentId: installment.id, eventId: event.id, amount },
+				})
+				const remainingAmount = outstandingAmount - amount
+				const currentPlannedAmount = Math.max(
+					0,
+					installment.plannedAmount - amount,
+				)
+				const futureInstallments = installment.debt.installments.filter(
+					(item) => item.number > installment.number,
+				)
+				const distribution = distributeRemainingDebt(
+					remainingAmount - currentPlannedAmount,
+					futureInstallments,
+				)
+				await tx.debtInstallment.update({
+					where: { id: installment.id },
+					data: { plannedAmount: currentPlannedAmount },
+				})
+				await Promise.all(
+					distribution.map((item) =>
+						tx.debtInstallment.update({
+							where: { id: item.id },
+							data: { plannedAmount: item.plannedAmount },
+						}),
+					),
+				)
+				if (remainingAmount === 0)
+					await tx.debt.update({
+						where: { id: installment.debtId },
+						data: { status: "PAID" },
+					})
+				return event
+			},
+			{ isolationLevel: "Serializable" },
+		)
+		if (!result)
+			return {
+				success: false,
+				error: "Você atingiu o limite mensal de lançamentos do seu plano.",
+			} as const
 		return { success: true, event: result } as const
 	} catch (error) {
 		console.error("Failed to register debt payment:", error)
