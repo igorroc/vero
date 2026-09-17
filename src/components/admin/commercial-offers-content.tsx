@@ -35,12 +35,13 @@ function formatDate(date: Date) {
 	)
 }
 
-export function CommercialOffersContent({ offers }: { offers: CommercialOffer[] }) {
+export function CommercialOffersContent({
+	offers,
+}: {
+	offers: CommercialOffer[]
+}) {
 	const router = useRouter()
 	const [isPending, startTransition] = useTransition()
-	const [amountCents, setAmountCents] = useState(1490)
-	const [currency, setCurrency] = useState("BRL")
-	const [providerProductId, setProviderProductId] = useState("")
 	const [providerPriceId, setProviderPriceId] = useState("")
 	const [effectiveAt, setEffectiveAt] = useState(
 		new Date().toISOString().slice(0, 10),
@@ -52,9 +53,6 @@ export function CommercialOffersContent({ offers }: { offers: CommercialOffer[] 
 		setError(null)
 		startTransition(() => {
 			void createCommercialOffer({
-				amountCents,
-				currency,
-				providerProductId,
 				providerPriceId,
 				effectiveAt: new Date(`${effectiveAt}T00:00:00.000Z`).toISOString(),
 			}).then((result) => {
@@ -62,7 +60,6 @@ export function CommercialOffersContent({ offers }: { offers: CommercialOffer[] 
 					setError(result.error ?? "Não foi possível salvar a oferta.")
 					return
 				}
-				setProviderProductId("")
 				setProviderPriceId("")
 				router.refresh()
 			})
@@ -85,33 +82,17 @@ export function CommercialOffersContent({ offers }: { offers: CommercialOffer[] 
 	return (
 		<div className="space-y-6">
 			<div className="modern-card p-5">
-				<h2 className="font-semibold text-text-primary">Nova configuração do Vero Plus</h2>
+				<h2 className="font-semibold text-text-primary">
+					Nova configuração do Vero Plus
+				</h2>
 				<p className="mt-1 text-sm text-text-muted">
-					A nova oferta vale apenas para novas contratações. Assinaturas existentes mantêm o preço Stripe já vinculado.
+					A nova oferta vale apenas para novas contratações. Assinaturas
+					existentes mantêm o preço Stripe já vinculado.
 				</p>
-				<form className="mt-5 grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
-					<Input
-						label="Preço mensal (centavos)"
-						type="number"
-						min="1"
-						value={String(amountCents)}
-						onValueChange={(value) => setAmountCents(Number(value))}
-						isRequired
-					/>
-					<Input
-						label="Moeda"
-						maxLength={3}
-						value={currency}
-						onValueChange={setCurrency}
-						isRequired
-					/>
-					<Input
-						label="ID do produto Stripe"
-						placeholder="prod_..."
-						value={providerProductId}
-						onValueChange={setProviderProductId}
-						isRequired
-					/>
+				<form
+					className="mt-5 grid gap-4 md:grid-cols-2"
+					onSubmit={handleSubmit}
+				>
 					<Input
 						label="ID do preço Stripe"
 						placeholder="price_..."
@@ -119,6 +100,10 @@ export function CommercialOffersContent({ offers }: { offers: CommercialOffer[] 
 						onValueChange={setProviderPriceId}
 						isRequired
 					/>
+					<p className="text-sm text-text-muted md:col-span-2">
+						O valor, a moeda e o produto são consultados diretamente no preço
+						Stripe.
+					</p>
 					<Input
 						label="Início da vigência"
 						type="date"
@@ -137,7 +122,9 @@ export function CommercialOffersContent({ offers }: { offers: CommercialOffer[] 
 
 			<div className="modern-card overflow-hidden">
 				<div className="border-b border-border px-5 py-4">
-					<h2 className="font-semibold text-text-primary">Histórico de ofertas</h2>
+					<h2 className="font-semibold text-text-primary">
+						Histórico de ofertas
+					</h2>
 				</div>
 				<div className="overflow-x-auto">
 					<table className="min-w-[900px] w-full text-left text-sm">
@@ -155,19 +142,39 @@ export function CommercialOffersContent({ offers }: { offers: CommercialOffer[] 
 						<tbody className="divide-y divide-border">
 							{offers.map((offer) => (
 								<tr key={offer.id} className="text-text-primary">
-									<td className="px-5 py-4 font-medium">{formatCurrency(offer.amountCents, offer.currency)}</td>
-									<td className="px-5 py-4 text-text-muted">{formatDate(offer.effectiveAt)}</td>
-									<td className="px-5 py-4 font-mono text-xs">{offer.providerProductId}</td>
-									<td className="px-5 py-4 font-mono text-xs">{offer.providerPriceId}</td>
-									<td className="px-5 py-4 text-text-muted">{offer.createdByUser.name}</td>
+									<td className="px-5 py-4 font-medium">
+										{formatCurrency(offer.amountCents, offer.currency)}
+									</td>
+									<td className="px-5 py-4 text-text-muted">
+										{formatDate(offer.effectiveAt)}
+									</td>
+									<td className="px-5 py-4 font-mono text-xs">
+										{offer.providerProductId}
+									</td>
+									<td className="px-5 py-4 font-mono text-xs">
+										{offer.providerPriceId}
+									</td>
+									<td className="px-5 py-4 text-text-muted">
+										{offer.createdByUser.name}
+									</td>
 									<td className="px-5 py-4">
-										<span className={offer.isActive ? "text-success" : "text-text-muted"}>
+										<span
+											className={
+												offer.isActive ? "text-success" : "text-text-muted"
+											}
+										>
 											{offer.isActive ? "Ativa" : "Inativa"}
 										</span>
 									</td>
 									<td className="px-5 py-4">
 										{offer.isActive && (
-											<Button size="sm" color="danger" variant="light" onPress={() => handleDeactivate(offer.id)} isDisabled={isPending}>
+											<Button
+												size="sm"
+												color="danger"
+												variant="light"
+												onPress={() => handleDeactivate(offer.id)}
+												isDisabled={isPending}
+											>
 												Desativar
 											</Button>
 										)}
@@ -175,7 +182,14 @@ export function CommercialOffersContent({ offers }: { offers: CommercialOffer[] 
 								</tr>
 							))}
 							{offers.length === 0 && (
-								<tr><td colSpan={7} className="px-5 py-8 text-center text-text-muted">Nenhuma oferta configurada.</td></tr>
+								<tr>
+									<td
+										colSpan={7}
+										className="px-5 py-8 text-center text-text-muted"
+									>
+										Nenhuma oferta configurada.
+									</td>
+								</tr>
 							)}
 						</tbody>
 					</table>

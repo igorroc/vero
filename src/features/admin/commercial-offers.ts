@@ -6,15 +6,11 @@ import { z } from "zod"
 import prisma from "@/lib/db"
 import { BillingProvider } from "@/lib/billing-provider"
 
+import { getPaymentProvider } from "@/features/billing/providers"
+
 import { requireSuperAdmin } from "./require-super-admin"
 
 const commercialOfferSchema = z.object({
-	amountCents: z.number().int().positive(),
-	currency: z
-		.string()
-		.trim()
-		.regex(/^[A-Za-z]{3}$/),
-	providerProductId: z.string().trim().min(1),
 	providerPriceId: z.string().trim().min(1),
 	effectiveAt: z.string().datetime(),
 })
@@ -30,9 +26,6 @@ export async function getCommercialOffers() {
 }
 
 export async function createCommercialOffer(input: {
-	amountCents: number
-	currency: string
-	providerProductId: string
 	providerPriceId: string
 	effectiveAt: string
 }): Promise<{ success: boolean; error?: string }> {
@@ -42,15 +35,27 @@ export async function createCommercialOffer(input: {
 		return { success: false, error: "Dados da oferta inválidos." }
 
 	const effectiveAt = new Date(parsed.data.effectiveAt)
+	let price
+	try {
+		price = await getPaymentProvider(BillingProvider.STRIPE).getPrice(
+			parsed.data.providerPriceId,
+		)
+	} catch (error) {
+		console.error("Failed to validate Stripe price", error)
+		return {
+			success: false,
+			error: "O preço Stripe precisa ser mensal e ativo.",
+		}
+	}
 
 	try {
 		await prisma.commercialOffer.create({
 			data: {
 				plan: "PLUS",
-				amountCents: parsed.data.amountCents,
-				currency: parsed.data.currency.toUpperCase(),
+				amountCents: price.amountCents,
+				currency: price.currency,
 				provider: BillingProvider.STRIPE,
-				providerProductId: parsed.data.providerProductId,
+				providerProductId: price.providerProductId,
 				providerPriceId: parsed.data.providerPriceId,
 				effectiveAt,
 				createdByUserId: admin.id,
