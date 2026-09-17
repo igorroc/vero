@@ -53,6 +53,28 @@ model Subscription {
   @@index([status, currentPeriodEnd])
 }
 
+model CommercialOffer {
+  id String @id @default(cuid())
+
+  plan        AccessPlan
+  amountCents Int
+  currency    String
+  isActive    Boolean    @default(true)
+  effectiveAt DateTime
+
+  provider          String
+  providerProductId String
+  providerPriceId   String
+
+  createdByUser   User      @relation("CommercialOfferCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdByUserId String
+  createdAt       DateTime  @default(now())
+  deactivatedAt   DateTime?
+
+  @@unique([provider, providerPriceId])
+  @@index([plan, provider, isActive, effectiveAt])
+}
+
 model Entitlement {
   id String @id @default(cuid())
 

@@ -1,35 +1,37 @@
 model User {
-    id       String @id @default(cuid())
-    name     String
-    email    String @unique
-    password String
+  id       String @id @default(cuid())
+  name     String
+  email    String @unique
+  password String
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    accounts        Account[]
-    categories      Category[]
-    events          Event[]
-    investmentPlans InvestmentPlan[]
-    netWorthGoal    NetWorthGoal?
-    settings        UserSettings?
-    notifications   Notification[]
-    budgets         Budget[]
-    debts           Debt[]
-    subscriptions   Subscription[]
-    entitlements    Entitlement[]
-    billingCustomers BillingCustomer[]
-    superAdminRole SuperAdminRole?
-    grantedSuperAdminRoles SuperAdminRole[] @relation("SuperAdminGrantedBy")
+  accounts         Account[]
+  categories       Category[]
+  events           Event[]
+  investmentPlans  InvestmentPlan[]
+  netWorthGoal     NetWorthGoal?
+  settings         UserSettings?
+  notifications    Notification[]
+  budgets          Budget[]
+  debts            Debt[]
+  subscriptions    Subscription[]
+  entitlements     Entitlement[]
+  billingCustomers BillingCustomer[]
+
+  createdCommercialOffers CommercialOffer[] @relation("CommercialOfferCreatedBy")
+  superAdminRole          SuperAdminRole?
+  grantedSuperAdminRoles  SuperAdminRole[]  @relation("SuperAdminGrantedBy")
 }
 
 model SuperAdminRole {
-    userId String @id
-    grantedAt DateTime @default(now())
-    grantedByUserId String?
+  userId          String   @id
+  grantedAt       DateTime @default(now())
+  grantedByUserId String?
 
-    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-    grantedByUser User? @relation("SuperAdminGrantedBy", fields: [grantedByUserId], references: [id], onDelete: SetNull)
+  user          User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grantedByUser User? @relation("SuperAdminGrantedBy", fields: [grantedByUserId], references: [id], onDelete: SetNull)
 
-    @@index([grantedByUserId])
+  @@index([grantedByUserId])
 }
