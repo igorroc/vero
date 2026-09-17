@@ -4,6 +4,7 @@ import prisma from "@/lib/db"
 import { getUserBySession } from "@/lib/auth"
 import type { Account, AccountType } from "@prisma/client"
 import { dollarsToCents } from "@/types/finance"
+import { canUse, checkLimit } from "@/features/billing"
 
 export interface CreateAccountInput {
 	name: string
@@ -21,6 +22,24 @@ export async function createAccount(
 		const user = await getUserBySession()
 		if (!user) {
 			return { success: false, error: "Not authenticated" }
+		}
+		if (
+			input.type === "INVESTMENT" &&
+			!(await canUse(user.id, "investments.manage"))
+		) {
+			return {
+				success: false,
+				error: "O plano atual não permite contas de investimento.",
+			}
+		}
+		if (input.type !== "INVESTMENT") {
+			const accountLimit = await checkLimit(user.id, "accounts.active")
+			if (!accountLimit.allowed) {
+				return {
+					success: false,
+					error: "Você atingiu o limite de contas ativas do seu plano.",
+				}
+			}
 		}
 
 		// Validate input

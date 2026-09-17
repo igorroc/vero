@@ -11,6 +11,7 @@ import type {
 	RecurrenceFrequency,
 } from "@prisma/client"
 import { dollarsToCents, startOfDay } from "@/types/finance"
+import { canUse, checkLimit } from "@/features/billing"
 
 export interface CreateEventInput {
 	accountId: string
@@ -38,6 +39,22 @@ export async function createEvent(
 		const user = await getUserBySession()
 		if (!user) {
 			return { success: false, error: "Not authenticated" }
+		}
+		if (
+			input.type === "INVESTMENT" &&
+			!(await canUse(user.id, "investments.manage"))
+		) {
+			return {
+				success: false,
+				error: "O plano atual não permite gerir investimentos.",
+			}
+		}
+		const eventLimit = await checkLimit(user.id, "events.create.monthly")
+		if (!eventLimit.allowed) {
+			return {
+				success: false,
+				error: "Você atingiu o limite mensal de lançamentos do seu plano.",
+			}
 		}
 
 		// Validate account ownership
@@ -79,7 +96,8 @@ export async function createEvent(
 		if (category.categoryGroup.id === "debts") {
 			return {
 				success: false,
-				error: "Pagamentos de dívida devem ser registrados no painel de Dívidas",
+				error:
+					"Pagamentos de dívida devem ser registrados no painel de Dívidas",
 			}
 		}
 
@@ -150,6 +168,13 @@ export async function createRecurrenceInstance(
 		const user = await getUserBySession()
 		if (!user) {
 			return { success: false, error: "Not authenticated" }
+		}
+		const eventLimit = await checkLimit(user.id, "events.create.monthly")
+		if (!eventLimit.allowed) {
+			return {
+				success: false,
+				error: "Você atingiu o limite mensal de lançamentos do seu plano.",
+			}
 		}
 
 		// Get the template

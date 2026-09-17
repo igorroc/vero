@@ -4,6 +4,7 @@ import prisma from "@/lib/db"
 import { getUserBySession } from "@/lib/auth"
 import type { Event } from "@prisma/client"
 import { dollarsToCents } from "@/types/finance"
+import { checkLimit } from "@/features/billing"
 
 export interface CreateTransferInput {
 	fromAccountId: string
@@ -23,6 +24,13 @@ export async function createTransfer(
 	try {
 		const user = await getUserBySession()
 		if (!user) return { success: false, error: "Não autenticado" }
+		const eventLimit = await checkLimit(user.id, "events.create.monthly")
+		if (!eventLimit.allowed) {
+			return {
+				success: false,
+				error: "Você atingiu o limite mensal de lançamentos do seu plano.",
+			}
+		}
 		if (input.fromAccountId === input.toAccountId) {
 			return { success: false, error: "Selecione contas diferentes" }
 		}

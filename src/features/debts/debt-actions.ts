@@ -9,6 +9,7 @@ import {
 	canRegisterDebtPayment,
 	distributeRemainingDebt,
 } from "@/lib/engines/debt"
+import { canUse } from "@/features/billing"
 
 export interface CreateDebtInput {
 	creditor: string
@@ -57,6 +58,12 @@ export async function createDebt(input: CreateDebtInput) {
 	try {
 		const user = await getUserBySession()
 		if (!user) return { success: false, error: "Não autenticado" } as const
+		if (!(await canUse(user.id, "debts.manage"))) {
+			return {
+				success: false,
+				error: "O plano atual não permite gerir dívidas.",
+			} as const
+		}
 		const totalAmount = dollarsToCents(input.totalAmount)
 		if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
 			return {
@@ -107,6 +114,12 @@ export async function generateDebtInstallments(
 	try {
 		const user = await getUserBySession()
 		if (!user) return { success: false, error: "Não autenticado" } as const
+		if (!(await canUse(user.id, "debts.manage"))) {
+			return {
+				success: false,
+				error: "O plano atual não permite gerir dívidas.",
+			} as const
+		}
 		if (
 			!Number.isInteger(input.installmentCount) ||
 			input.installmentCount <= 0 ||
@@ -237,6 +250,12 @@ export async function registerDebtPayment(input: RegisterDebtPaymentInput) {
 	try {
 		const user = await getUserBySession()
 		if (!user) return { success: false, error: "Não autenticado" } as const
+		if (!(await canUse(user.id, "debt-payments.manage"))) {
+			return {
+				success: false,
+				error: "O plano atual não permite registrar pagamentos de dívidas.",
+			} as const
+		}
 		const amount = dollarsToCents(input.amount)
 		if (!Number.isFinite(amount) || amount <= 0)
 			return {

@@ -4,6 +4,7 @@ import prisma from "@/lib/db"
 import { getUserBySession } from "@/lib/auth"
 import type { Event } from "@prisma/client"
 import { dollarsToCents } from "@/types/finance"
+import { canUse, checkLimit } from "@/features/billing"
 
 export interface CreateWithdrawalInput {
 	fromAccountId: string // Must be INVESTMENT account
@@ -30,6 +31,19 @@ export async function createWithdrawal(
 		const user = await getUserBySession()
 		if (!user) {
 			return { success: false, error: "Not authenticated" }
+		}
+		if (!(await canUse(user.id, "investments.manage"))) {
+			return {
+				success: false,
+				error: "O plano atual não permite gerir investimentos.",
+			}
+		}
+		const eventLimit = await checkLimit(user.id, "events.create.monthly", 2)
+		if (!eventLimit.allowed) {
+			return {
+				success: false,
+				error: "Você atingiu o limite mensal de lançamentos do seu plano.",
+			}
 		}
 
 		// Validate source account (must be INVESTMENT)
