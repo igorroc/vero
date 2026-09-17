@@ -32,7 +32,12 @@ async function createCheckout(
 	})
 
 	if (!session.url) throw new Error("Stripe did not return a checkout URL")
-	return { providerCustomerId, url: session.url }
+	return {
+		providerCustomerId,
+		providerCheckoutId: session.id,
+		url: session.url,
+		expiresAt: new Date(session.expires_at * 1000),
+	}
 }
 
 async function createCustomerPortal(input: {

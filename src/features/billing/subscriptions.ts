@@ -44,7 +44,11 @@ export async function synchronizeProviderSubscription(
 
 		await tx.billingCustomer.upsert({
 			where: { userId_provider: { userId, provider } },
-			create: { userId, provider, providerCustomerId: providerSubscription.providerCustomerId },
+			create: {
+				userId,
+				provider,
+				providerCustomerId: providerSubscription.providerCustomerId,
+			},
 			update: { providerCustomerId: providerSubscription.providerCustomerId },
 		})
 
@@ -57,6 +61,9 @@ export async function synchronizeProviderSubscription(
 			},
 			create: { userId, provider, ...subscriptionData },
 			update: subscriptionData,
+		})
+		await tx.billingCheckout.deleteMany({
+			where: { userId, provider },
 		})
 
 		const accessRemainsActive =
@@ -114,7 +121,10 @@ export async function processPaymentWebhookEvent(input: {
 				},
 			})
 		} catch (error) {
-			if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
+			if (
+				!(error instanceof Prisma.PrismaClientKnownRequestError) ||
+				error.code !== "P2002"
+			) {
 				throw error
 			}
 		}
@@ -132,7 +142,8 @@ export async function processPaymentWebhookEvent(input: {
 			data: { processedAt: new Date(), processingError: null },
 		})
 	} catch (error) {
-		const message = error instanceof Error ? error.message : "Unknown processing error"
+		const message =
+			error instanceof Error ? error.message : "Unknown processing error"
 		await prisma.paymentWebhookEvent.update({
 			where: {
 				provider_providerEventId: {

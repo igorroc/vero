@@ -10,14 +10,26 @@ import {
 } from "./subscriptions"
 import { getCommercialOfferByProviderPrice } from "./commercial-catalog"
 
-function getSubscriptionStatus(
-	subscription: Stripe.Subscription,
+export function mapStripeSubscriptionStatus(
+	status: Stripe.Subscription.Status,
+	cancelAtPeriodEnd: boolean,
 ): ProviderSubscription["status"] {
-	if (subscription.status === "canceled") return "CANCELED"
-	if (subscription.status === "unpaid") return "UNPAID"
-	if (subscription.status === "past_due") return "PAST_DUE"
-	if (subscription.cancel_at_period_end) return "CANCELING"
-	return "ACTIVE"
+	switch (status) {
+		case "active":
+		case "trialing":
+			return cancelAtPeriodEnd ? "CANCELING" : "ACTIVE"
+		case "past_due":
+			return "PAST_DUE"
+		case "canceled":
+			return "CANCELED"
+		case "incomplete":
+		case "incomplete_expired":
+		case "paused":
+		case "unpaid":
+			return "UNPAID"
+		default:
+			return "UNPAID"
+	}
 }
 
 function getPeriodEnd(subscription: Stripe.Subscription): Date {
@@ -59,7 +71,10 @@ export async function synchronizeStripeSubscription(
 		providerPriceId,
 		userId: stripeSubscription.metadata.userId,
 		plan: offer.plan,
-		status: getSubscriptionStatus(stripeSubscription),
+		status: mapStripeSubscriptionStatus(
+			stripeSubscription.status,
+			stripeSubscription.cancel_at_period_end,
+		),
 		currentPeriodStart: getPeriodStart(stripeSubscription),
 		currentPeriodEnd: getPeriodEnd(stripeSubscription),
 		cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
