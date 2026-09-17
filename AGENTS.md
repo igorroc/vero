@@ -45,7 +45,8 @@ Mantenha as responsabilidades separadas:
 
 ## Banco de dados
 
-- Altere o schema somente em `prisma/schema.prisma` e rode `bun run prisma:generate` para atualizar o schema. Não rode migration se não for solicitado pelo usuário.
+- Altere o schema somente em `prisma/schema.prisma` e rode `bun run generate` para atualizar o cliente Prisma.
+- Nunca crie, edite ou aplique arquivos de migration manualmente. A criação e a execução de migrations são responsabilidade do usuário.
 - Avalie dados existentes antes de tornar campos obrigatorios, remover colunas ou alterar semantica de valores.
 - Nao execute `migrate:reset` sem solicitacao explicita: o comando remove os dados locais.
 - Mantenha transactions Prisma curtas e atomicas. Nunca execute loops, geracao em massa ou trabalho potencialmente lento dentro de uma transaction; prefira operacoes em lote como `createMany` ou uma acao dedicada.
@@ -60,4 +61,4 @@ bun test
 bun run build
 ```
 
-Para alteracoes no schema, tambem execute `bunx prisma generate` e valide a migracao apropriada. Relate claramente qualquer verificacao que nao puder ser executada.
+Para alteracoes no schema, tambem execute `bun run generate`. Não crie, aplique ou valide migrations; informe ao usuário quando uma migration for necessária. Relate claramente qualquer verificacao que nao puder ser executada.
