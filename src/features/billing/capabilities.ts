@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client"
+import { Prisma, type AccountType, type EventType } from "@prisma/client"
 
 import prisma from "@/lib/db"
 
@@ -95,6 +95,16 @@ export const capabilityCatalog = {
 
 export type Capability = keyof typeof capabilityCatalog
 
+export const initialPlanCapabilities = Object.entries(
+	capabilityCatalog,
+).flatMap(([capability, definition]) =>
+	Object.entries(definition.defaults).map(([plan, configuration]) => ({
+		plan: plan as AccessPlan,
+		capability,
+		...configuration,
+	})),
+)
+
 type CapabilityClient = Pick<
 	Prisma.TransactionClient,
 	"entitlement" | "planCapability" | "account" | "event"
@@ -121,7 +131,7 @@ async function resolveCapability(
 		select: { isEnabled: true, limit: true },
 	})
 
-	return configured ?? capabilityCatalog[capability].defaults[plan]
+	return configured ?? { isEnabled: false, limit: null }
 }
 
 export async function canUse(
@@ -175,4 +185,32 @@ export async function checkLimit(
 		used,
 		limit: configuration.limit,
 	}
+}
+
+export async function withLimit<T>(
+	userId: string,
+	capability: Extract<Capability, "accounts.active" | "events.create.monthly">,
+	quantity: number,
+	work: (tx: Prisma.TransactionClient) => Promise<T>,
+): Promise<{ allowed: true; value: T } | { allowed: false }> {
+	return prisma.$transaction(
+		async (tx) => {
+			const limit = await checkLimit(userId, capability, quantity, tx)
+			if (!limit.allowed) return { allowed: false }
+			return { allowed: true, value: await work(tx) }
+		},
+		{ isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+	)
+}
+
+export async function canManageInvestmentResource(
+	userId: string,
+	accountTypes: AccountType[],
+	eventType?: EventType,
+): Promise<boolean> {
+	if (eventType !== "INVESTMENT" && !accountTypes.includes("INVESTMENT")) {
+		return true
+	}
+
+	return canUse(userId, "investments.manage")
 }
