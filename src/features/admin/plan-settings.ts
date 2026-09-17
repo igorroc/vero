@@ -85,6 +85,6 @@ export async function updatePlanCapability(
 		update: { isEnabled, limit },
 	})
 
-	revalidatePath("/admin/planos")
+	revalidatePath("/admin/plans")
 	return { success: true }
 }

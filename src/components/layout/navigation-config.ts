@@ -70,11 +70,12 @@ export const adminNavigationGroups: NavigationGroup[] = [
 	{
 		label: "Administração",
 		items: [
-			{ icon: UsersRound, label: "Usuários", href: "/admin" },
+			{ icon: LayoutDashboard, label: "Dashboard", href: "/admin/dashboard" },
+			{ icon: UsersRound, label: "Usuários", href: "/admin/users" },
 			{
 				icon: BadgeDollarSign,
 				label: "Planos e cobrança",
-				href: "/admin/planos",
+				href: "/admin/plans",
 			},
 		],
 	},
@@ -100,6 +101,7 @@ export const bottomMoreNavigationItems: NavigationItem[] = [
 ]
 
 export const adminBottomNavigationItems: NavigationItem[] = [
-	{ icon: UsersRound, label: "Usuários", href: "/admin" },
-	{ icon: BadgeDollarSign, label: "Planos", href: "/admin/planos" },
+	{ icon: LayoutDashboard, label: "Início", href: "/admin/dashboard" },
+	{ icon: UsersRound, label: "Usuários", href: "/admin/users" },
+	{ icon: BadgeDollarSign, label: "Planos", href: "/admin/plans" },
 ]

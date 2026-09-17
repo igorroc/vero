@@ -48,6 +48,7 @@ export async function grantPlanToUser(input: {
 		},
 	})
 
-	revalidatePath("/admin")
+	revalidatePath("/admin/dashboard")
+	revalidatePath("/admin/users")
 	return { success: true }
 }

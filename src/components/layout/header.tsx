@@ -72,7 +72,9 @@ export function Header({
 		const result = await setSessionView(nextView)
 		if (!result.success) return
 
-		router.replace(nextView === SessionView.ADMIN ? "/admin" : "/dashboard")
+		router.replace(
+			nextView === SessionView.ADMIN ? "/admin/dashboard" : "/dashboard",
+		)
 		router.refresh()
 	}
 
@@ -224,9 +226,7 @@ function HeaderAccountGroup({
 					</p>
 					<p
 						className={`text-sm font-semibold financial-number ${
-							account.currentBalance < 0
-								? "text-danger"
-								: "text-text-primary"
+							account.currentBalance < 0 ? "text-danger" : "text-text-primary"
 						}`}
 					>
 						{formatCurrency(account.currentBalance)}

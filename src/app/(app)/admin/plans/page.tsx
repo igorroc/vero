@@ -14,7 +14,7 @@ import {
 import { getSessionView } from "@/lib/session-view"
 import { SessionView } from "@/lib/session-view-types"
 
-export const metadata: Metadata = { title: "Planos | Vero" }
+export const metadata: Metadata = { title: "Plans | Vero" }
 
 export default async function AdminPlansPage() {
 	const isSuperAdmin = await isCurrentUserSuperAdmin()

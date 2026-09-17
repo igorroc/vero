@@ -73,7 +73,8 @@ export async function createCommercialOffer(input: {
 		throw error
 	}
 
-	revalidatePath("/admin/planos")
+	revalidatePath("/admin/plans")
+	revalidatePath("/admin/dashboard")
 	revalidatePath("/profile")
 	return { success: true }
 }
@@ -89,7 +90,8 @@ export async function deactivateCommercialOffer(
 		data: { isActive: false, deactivatedAt: new Date() },
 	})
 
-	revalidatePath("/admin/planos")
+	revalidatePath("/admin/plans")
+	revalidatePath("/admin/dashboard")
 	revalidatePath("/profile")
 	return { success: true }
 }
