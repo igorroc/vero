@@ -20,21 +20,21 @@ Este checklist acompanha a entrega de planos, assinaturas, acessos e administrac
 - [ ] Criar e aplicar a migration do schema de cobranca.
 - [ ] Testar Checkout, Customer Portal e webhook com a Stripe em modo de teste.
 - [ ] Configurar o endpoint de webhook e os eventos necessarios no painel da Stripe.
-- [ ] Configurar `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PLUS_PRICE_ID`, `BILLING_PROVIDER` e `NEXT_PUBLIC_APP_URL` no ambiente de cada deploy.
+- [ ] Configurar `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `BILLING_PROVIDER` e `NEXT_PUBLIC_APP_URL` no ambiente de cada deploy.
 - [ ] Adicionar testes de integracao para sincronizacao de assinatura, idempotencia e falhas de webhook.
 - [ ] Definir monitoramento e alerta para webhooks com `processingError`.
 
 ## Catalogo e Precos
 
 - [x] Especificar que configuracoes comerciais pertencem ao painel de Super Admin.
-- [ ] Criar modelo de catalogo comercial no banco para planos, moedas, valores em centavos, vigencia e situacao de venda.
-- [ ] Criar modelo de configuracao de preco por provedor, com IDs externos de produto e preco.
-- [ ] Substituir `STRIPE_PLUS_PRICE_ID` pela consulta da configuracao comercial ativa no banco.
-- [ ] Preservar o preco e o ID externo contratados em cada assinatura.
-- [ ] Implementar historico de preco e vigencia para novas contratacoes.
+- [x] Criar modelo de catalogo comercial no banco para planos, moedas, valores em centavos, vigencia e situacao de venda.
+- [x] Criar modelo de configuracao de preco por provedor, com IDs externos de produto e preco.
+- [x] Substituir `STRIPE_PLUS_PRICE_ID` pela consulta da configuracao comercial ativa no banco.
+- [x] Preservar o preco e o ID externo contratados em cada assinatura.
+- [x] Implementar historico de preco e vigencia para novas contratacoes.
 - [ ] Implementar migracao administrativa e atomica de assinaturas existentes quando um preco for alterado.
 - [ ] Implementar os catalogos Profissional 3, 5 e 10 e cliente adicional.
-- [ ] Impedir a contratacao de planos inativos.
+- [x] Impedir a contratacao de planos inativos.
 
 ## Super Admin e Operacao
 
@@ -42,7 +42,7 @@ Este checklist acompanha a entrega de planos, assinaturas, acessos e administrac
 - [ ] Modelar o papel de Super Admin no banco e a atribuicao por outro Super Admin.
 - [ ] Criar guard de autorizacao de Super Admin no servidor.
 - [ ] Restringir a listagem atual de usuarios a operadores autorizados antes de criar o painel.
-- [ ] Criar painel para planos, configuracoes de preco e provedores habilitados.
+- [x] Criar painel para planos e configuracoes de preco Stripe.
 - [ ] Criar painel para consultar assinaturas, clientes externos, beneficios e eventos de webhook.
 - [ ] Registrar auditoria de acoes administrativas, incluindo responsavel, motivo e valores antes/depois.
 - [ ] Criar filtros operacionais para inadimplencia, cancelamentos, expiracoes e erros de webhook.
