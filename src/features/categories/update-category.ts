@@ -3,6 +3,7 @@
 import { Prisma } from "@prisma/client"
 import prisma from "@/lib/db"
 import { getUserBySession } from "@/lib/auth"
+import { canUse } from "@/features/billing"
 
 export interface UpdateCategoryInput {
 	id: string
@@ -19,6 +20,12 @@ export async function updateCategory(
 	try {
 		const user = await getUserBySession()
 		if (!user) return { success: false, error: "Não autenticado" }
+		if (!(await canUse(user.id, "categories.manage"))) {
+			return {
+				success: false,
+				error: "A edição de categorias não está disponível no seu plano.",
+			}
+		}
 
 		const name = input.name.trim()
 		if (!name)

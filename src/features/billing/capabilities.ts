@@ -27,6 +27,14 @@ export const capabilityCatalog = {
 			PLUS: { isEnabled: true, limit: null },
 		},
 	},
+	"categories.manage": {
+		description: "Gestão de categorias",
+		type: "BOOLEAN",
+		defaults: {
+			FREE: { isEnabled: true, limit: null },
+			PLUS: { isEnabled: true, limit: null },
+		},
+	},
 	"investments.manage": {
 		description: "Gestão de investimentos",
 		type: "BOOLEAN",
@@ -131,7 +139,7 @@ async function resolveCapability(
 		select: { isEnabled: true, limit: true },
 	})
 
-	return configured ?? { isEnabled: false, limit: null }
+	return configured ?? capabilityCatalog[capability].defaults[plan]
 }
 
 export async function canUse(

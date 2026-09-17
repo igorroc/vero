@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/db"
 import { getUserBySession } from "@/lib/auth"
+import { canUse } from "@/features/billing"
 
 export type DeleteCategoryResult =
 	{ success: true } | { success: false; error: string }
@@ -12,6 +13,12 @@ export async function deleteCategory(
 	try {
 		const user = await getUserBySession()
 		if (!user) return { success: false, error: "Não autenticado" }
+		if (!(await canUse(user.id, "categories.manage"))) {
+			return {
+				success: false,
+				error: "A exclusão de categorias não está disponível no seu plano.",
+			}
+		}
 
 		const category = await prisma.category.findFirst({
 			where: { id: categoryId, userId: user.id },
