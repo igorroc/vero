@@ -1,6 +1,14 @@
 export { hasPlusAccess, resolveAccessPlan } from "./access"
 export type { AccessPlan, ActiveEntitlement } from "./access"
-export { canUse, checkLimit, getLimit, capabilityCatalog } from "./capabilities"
+export {
+	canManageInvestmentResource,
+	canUse,
+	checkLimit,
+	getLimit,
+	capabilityCatalog,
+	initialPlanCapabilities,
+	withLimit,
+} from "./capabilities"
 export type { Capability } from "./capabilities"
 export {
 	createBillingPortalSession,

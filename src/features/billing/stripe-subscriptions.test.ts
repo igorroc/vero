@@ -17,5 +17,6 @@ describe("mapStripeSubscriptionStatus", () => {
 	it("preserves active and scheduled-cancellation subscriptions", () => {
 		expect(mapStripeSubscriptionStatus("active", false)).toBe("ACTIVE")
 		expect(mapStripeSubscriptionStatus("active", true)).toBe("CANCELING")
+		expect(mapStripeSubscriptionStatus("past_due", false)).toBe("PAST_DUE")
 	})
 })

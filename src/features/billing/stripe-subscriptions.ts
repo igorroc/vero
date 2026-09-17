@@ -56,6 +56,7 @@ function getCustomerId(subscription: Stripe.Subscription): string {
 
 export async function synchronizeStripeSubscription(
 	stripeSubscription: Stripe.Subscription,
+	providerUpdatedAt: Date,
 ): Promise<void> {
 	const providerPriceId = stripeSubscription.items.data[0]?.price.id
 	if (!providerPriceId) return
@@ -77,6 +78,7 @@ export async function synchronizeStripeSubscription(
 		),
 		currentPeriodStart: getPeriodStart(stripeSubscription),
 		currentPeriodEnd: getPeriodEnd(stripeSubscription),
+		providerUpdatedAt,
 		cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
 		canceledAt: stripeSubscription.canceled_at
 			? new Date(stripeSubscription.canceled_at * 1000)
@@ -100,6 +102,7 @@ export async function processStripeWebhookEvent(
 			) {
 				await synchronizeStripeSubscription(
 					event.data.object as Stripe.Subscription,
+					new Date(event.created * 1000),
 				)
 			}
 		},

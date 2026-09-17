@@ -12,6 +12,7 @@ export type ProviderSubscription = {
 	status: "ACTIVE" | "CANCELING" | "PAST_DUE" | "UNPAID" | "CANCELED"
 	currentPeriodStart: Date
 	currentPeriodEnd: Date
+	providerUpdatedAt: Date
 	cancelAtPeriodEnd: boolean
 	canceledAt: Date | null
 }
@@ -26,71 +27,76 @@ export async function synchronizeProviderSubscription(
 		...subscriptionData
 	} = providerSubscription
 
-	await prisma.$transaction(async (tx) => {
-		const existing = await tx.subscription.findUnique({
-			where: {
-				provider_providerSubscriptionId: {
-					provider,
-					providerSubscriptionId: providerSubscription.providerSubscriptionId,
+	await prisma.$transaction(
+		async (tx) => {
+			const existing = await tx.subscription.findUnique({
+				where: {
+					provider_providerSubscriptionId: {
+						provider,
+						providerSubscriptionId: providerSubscription.providerSubscriptionId,
+					},
 				},
-			},
-		})
-		const userId = existing?.userId ?? providerSubscription.userId
-		if (!userId) {
-			throw new Error(
-				`Subscription ${providerSubscription.providerSubscriptionId} has no Vero user`,
-			)
-		}
+			})
+			const userId = existing?.userId ?? providerSubscription.userId
+			if (!userId) {
+				throw new Error(
+					`Subscription ${providerSubscription.providerSubscriptionId} has no Vero user`,
+				)
+			}
+		if (
+			existing &&
+			existing.providerUpdatedAt &&
+			existing.providerUpdatedAt > providerSubscription.providerUpdatedAt
+			) {
+				return
+			}
 
-		await tx.billingCustomer.upsert({
-			where: { userId_provider: { userId, provider } },
-			create: {
-				userId,
-				provider,
-				providerCustomerId: providerSubscription.providerCustomerId,
-			},
-			update: { providerCustomerId: providerSubscription.providerCustomerId },
-		})
-
-		const subscription = await tx.subscription.upsert({
-			where: {
-				provider_providerSubscriptionId: {
+			await tx.billingCustomer.upsert({
+				where: { userId_provider: { userId, provider } },
+				create: {
+					userId,
 					provider,
-					providerSubscriptionId: providerSubscription.providerSubscriptionId,
+					providerCustomerId: providerSubscription.providerCustomerId,
 				},
-			},
-			create: { userId, provider, ...subscriptionData },
-			update: subscriptionData,
-		})
-		await tx.billingCheckout.deleteMany({
-			where: { userId, provider },
-		})
+				update: { providerCustomerId: providerSubscription.providerCustomerId },
+			})
 
-		const accessRemainsActive =
-			providerSubscription.status !== "CANCELED" &&
-			providerSubscription.status !== "UNPAID"
-		const entitlementEndsAt =
-			providerSubscription.status === "PAST_DUE"
-				? null
-				: providerSubscription.currentPeriodEnd
+			const subscription = existing
+				? await tx.subscription.update({
+						where: { id: existing.id },
+						data: subscriptionData,
+					})
+				: await tx.subscription.create({
+						data: { userId, provider, ...subscriptionData },
+					})
+			await tx.billingCheckout.deleteMany({
+				where: { userId, provider },
+			})
 
-		await tx.entitlement.upsert({
-			where: { subscriptionId: subscription.id },
-			create: {
-				userId,
-				plan: providerSubscription.plan,
-				source: "INDIVIDUAL_SUBSCRIPTION",
-				status: accessRemainsActive ? "ACTIVE" : "EXPIRED",
-				startsAt: currentPeriodStart,
-				endsAt: accessRemainsActive ? entitlementEndsAt : new Date(),
-				subscriptionId: subscription.id,
-			},
-			update: {
-				status: accessRemainsActive ? "ACTIVE" : "EXPIRED",
-				endsAt: accessRemainsActive ? entitlementEndsAt : new Date(),
-			},
-		})
-	})
+			const accessRemainsActive =
+				providerSubscription.status !== "CANCELED" &&
+				providerSubscription.status !== "UNPAID"
+			const entitlementEndsAt = providerSubscription.currentPeriodEnd
+
+			await tx.entitlement.upsert({
+				where: { subscriptionId: subscription.id },
+				create: {
+					userId,
+					plan: providerSubscription.plan,
+					source: "INDIVIDUAL_SUBSCRIPTION",
+					status: accessRemainsActive ? "ACTIVE" : "EXPIRED",
+					startsAt: currentPeriodStart,
+					endsAt: accessRemainsActive ? entitlementEndsAt : new Date(),
+					subscriptionId: subscription.id,
+				},
+				update: {
+					status: accessRemainsActive ? "ACTIVE" : "EXPIRED",
+					endsAt: accessRemainsActive ? entitlementEndsAt : new Date(),
+				},
+			})
+		},
+		{ isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+	)
 }
 
 export async function processPaymentWebhookEvent(input: {

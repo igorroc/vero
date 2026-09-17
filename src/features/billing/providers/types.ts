@@ -17,11 +17,18 @@ export type PaymentProviderCheckoutResult = {
 	expiresAt: Date
 }
 
+export type PaymentProviderPrice = {
+	amountCents: number
+	currency: string
+	providerProductId: string
+}
+
 export type PaymentProvider = {
 	id: BillingProvider
 	createCheckout(
 		input: PaymentProviderCheckoutInput,
 	): Promise<PaymentProviderCheckoutResult>
+	getPrice(providerPriceId: string): Promise<PaymentProviderPrice>
 	createCustomerPortal(input: {
 		providerCustomerId: string
 		returnUrl: string

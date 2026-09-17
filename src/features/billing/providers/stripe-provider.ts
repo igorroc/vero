@@ -5,6 +5,7 @@ import type {
 	PaymentProvider,
 	PaymentProviderCheckoutInput,
 	PaymentProviderCheckoutResult,
+	PaymentProviderPrice,
 } from "./types"
 
 async function createCheckout(
@@ -51,8 +52,33 @@ async function createCustomerPortal(input: {
 	return session.url
 }
 
+async function getPrice(
+	providerPriceId: string,
+): Promise<PaymentProviderPrice> {
+	const price = await getStripe().prices.retrieve(providerPriceId)
+	const providerProductId =
+		typeof price.product === "string" ? price.product : price.product.id
+	if (
+		!price.active ||
+		price.type !== "recurring" ||
+		price.recurring?.interval !== "month"
+	) {
+		throw new Error("Stripe price must be an active monthly recurring price")
+	}
+	if (price.unit_amount === null || price.unit_amount <= 0) {
+		throw new Error("Stripe price must have a positive fixed amount")
+	}
+
+	return {
+		amountCents: price.unit_amount,
+		currency: price.currency.toUpperCase(),
+		providerProductId,
+	}
+}
+
 export const stripePaymentProvider: PaymentProvider = {
 	id: BillingProvider.STRIPE,
 	createCheckout,
+	getPrice,
 	createCustomerPortal,
 }
