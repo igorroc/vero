@@ -46,7 +46,7 @@ export function CommercialOffersContent({
 	const [isPending, startTransition] = useTransition()
 	const [providerPriceId, setProviderPriceId] = useState("")
 	const [provider, setProvider] = useState<BillingProvider>(
-		BillingProvider.STRIPE,
+		BillingProvider.POLAR,
 	)
 	const [effectiveAt, setEffectiveAt] = useState(
 		new Date().toISOString().slice(0, 10),
@@ -93,7 +93,7 @@ export function CommercialOffersContent({
 				</h2>
 				<p className="mt-1 text-sm text-text-muted">
 					A nova oferta vale apenas para novas contratações. Assinaturas
-					existentes mantêm o preço Stripe já vinculado.
+					existentes mantêm o produto e preço do provedor já vinculados.
 				</p>
 				<form
 					className="mt-5 grid gap-4 md:grid-cols-2"
@@ -112,21 +112,25 @@ export function CommercialOffersContent({
 								<option key={providerOption} value={providerOption}>
 									{providerOption === BillingProvider.STRIPE
 										? "Stripe"
-										: providerOption}
+										: providerOption === BillingProvider.POLAR
+											? "Polar"
+											: providerOption}
 								</option>
 							))}
 						</select>
 					</label>
 					<Input
 						label="ID do preço do provedor"
-						placeholder="price_..."
+						placeholder={
+							provider === BillingProvider.POLAR ? "Produto Polar" : "price_..."
+						}
 						value={providerPriceId}
 						onValueChange={setProviderPriceId}
 						isRequired
 					/>
 					<p className="text-sm text-text-muted md:col-span-2">
-						O valor, a moeda e o produto são consultados diretamente no preço do
-						provedor selecionado.
+						O valor, a moeda e o produto são consultados diretamente no provedor
+						selecionado. Para Polar, informe o ID do produto recorrente.
 					</p>
 					<Input
 						label="Início da vigência"

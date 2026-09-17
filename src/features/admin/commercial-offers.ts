@@ -43,10 +43,10 @@ export async function createCommercialOffer(input: {
 			parsed.data.providerPriceId,
 		)
 	} catch (error) {
-		console.error("Failed to validate Stripe price", error)
+		console.error("Failed to validate provider price", error)
 		return {
 			success: false,
-			error: "O preço Stripe precisa ser mensal e ativo.",
+			error: "O produto do provedor precisa ser mensal e ativo.",
 		}
 	}
 
