@@ -19,6 +19,7 @@ model User {
   subscriptions    Subscription[]
   entitlements     Entitlement[]
   billingCustomers BillingCustomer[]
+  billingCheckouts BillingCheckout[]
 
   createdCommercialOffers CommercialOffer[] @relation("CommercialOfferCreatedBy")
   superAdminRole          SuperAdminRole?
