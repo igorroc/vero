@@ -12,11 +12,18 @@ export type PaymentProviderCheckoutInput = {
 
 export type PaymentProviderCheckoutResult = {
 	providerCustomerId: string
+	providerCheckoutId: string
 	url: string
+	expiresAt: Date
 }
 
 export type PaymentProvider = {
 	id: BillingProvider
-	createCheckout(input: PaymentProviderCheckoutInput): Promise<PaymentProviderCheckoutResult>
-	createCustomerPortal(input: { providerCustomerId: string; returnUrl: string }): Promise<string>
+	createCheckout(
+		input: PaymentProviderCheckoutInput,
+	): Promise<PaymentProviderCheckoutResult>
+	createCustomerPortal(input: {
+		providerCustomerId: string
+		returnUrl: string
+	}): Promise<string>
 }
