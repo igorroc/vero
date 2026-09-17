@@ -55,7 +55,7 @@ cd meu-projeto
 2. **Instale as dependências:**
 
 ```bash
-npm install
+bun install
 # ou
 bun install
 ```
@@ -82,7 +82,7 @@ Substitua os valores pelos seus próprios:
 4. **Inicie o banco de dados PostgreSQL:**
 
 ```bash
-npm run compose:up
+bun run compose:up
 ```
 
 Isso iniciará um container PostgreSQL usando Docker Compose.
@@ -90,7 +90,7 @@ Isso iniciará um container PostgreSQL usando Docker Compose.
 5. **Execute as migrações do banco de dados:**
 
 ```bash
-npm run migrate
+bun run migrate
 ```
 
 Isso criará o schema do banco de dados e gerará o Prisma Client.
@@ -98,22 +98,22 @@ Isso criará o schema do banco de dados e gerará o Prisma Client.
 6. **Inicie o servidor de desenvolvimento:**
 
 ```bash
-npm run dev
+bun run dev
 ```
 
 Abra [http://localhost:3000](http://localhost:3000) no seu navegador para ver seu app.
 
 ## Scripts Disponíveis
 
-- `npm run dev` - Inicia o servidor de desenvolvimento
-- `npm run build` - Faz build para produção
-- `npm run start` - Inicia o servidor de produção
-- `npm run lint` - Executa o ESLint
-- `npm run ts-check` - Verifica tipos sem emitir arquivos
-- `npm run compose:up` - Inicia o container PostgreSQL
-- `npm run migrate` - Executa as migrações do Prisma
-- `npm run migrate:reset` - Reseta o banco de dados e executa as migrações
-- `npm run prisma:studio` - Abre o Prisma Studio (GUI do banco de dados)
+- `bun run dev` - Inicia o servidor de desenvolvimento
+- `bun run build` - Faz build para produção
+- `bun run start` - Inicia o servidor de produção
+- `bun run lint` - Executa o ESLint
+- `bun run ts-check` - Verifica tipos sem emitir arquivos
+- `bun run compose:up` - Inicia o container PostgreSQL
+- `bun run migrate` - Executa as migrações do Prisma
+- `bun run migrate:reset` - Reseta o banco de dados e executa as migrações
+- `bun run prisma:studio` - Abre o Prisma Studio (GUI do banco de dados)
 
 ## Estrutura do Projeto
 
@@ -169,8 +169,8 @@ O template inclui um sistema completo de autenticação:
 O template usa Prisma com PostgreSQL:
 
 - Edite `prisma/schema.prisma` para modificar seu schema de banco de dados
-- Execute `npm run migrate` para aplicar as mudanças
-- Use `npm run prisma:studio` para visualizar seus dados
+- Execute `bun run migrate` para aplicar as mudanças
+- Use `bun run prisma:studio` para visualizar seus dados
 
 ## Deploy na Vercel
 
@@ -252,8 +252,8 @@ export default async function PaginaProdutos() {
 Modifique `prisma/schema.prisma` para adicionar ou alterar models, depois execute:
 
 ```bash
-npm run migrate:create-only  # Cria migração sem aplicar
-npm run migrate              # Aplica as migrações
+bun run migrate:create-only  # Cria migração sem aplicar
+bun run migrate              # Aplica as migrações
 ```
 
 ### Exemplos de Imports

@@ -55,9 +55,9 @@ Mantenha as responsabilidades separadas:
 Depois de alterar codigo, execute os comandos aplicaveis:
 
 ```bash
-npm run ts-check
-npm test
-npm run build
+bun run ts-check
+bun test
+bun run build
 ```
 
-Para alteracoes no schema, tambem execute `npx prisma generate` e valide a migracao apropriada. Relate claramente qualquer verificacao que nao puder ser executada.
+Para alteracoes no schema, tambem execute `bunx prisma generate` e valide a migracao apropriada. Relate claramente qualquer verificacao que nao puder ser executada.
