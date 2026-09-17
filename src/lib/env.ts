@@ -11,7 +11,6 @@ const envSchema = z.object({
 	AUTHENTICATION_SECRET_KEY: z.string().min(1),
 	STRIPE_SECRET_KEY: z.string().min(1).optional(),
 	STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
-	STRIPE_PLUS_PRICE_ID: z.string().min(1).optional(),
 	BILLING_PROVIDER: z.literal("stripe").default("stripe"),
 	NEXT_PUBLIC_APP_URL: z.url().optional(),
 })
