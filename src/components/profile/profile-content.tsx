@@ -22,6 +22,7 @@ type ProfileContentProps = {
 	billingState: {
 		plan: "FREE" | "PLUS"
 		hasBillingCustomer: boolean
+		plusOffer: { amountCents: number; currency: string } | null
 	} | null
 }
 
@@ -42,6 +43,11 @@ export function ProfileContent({ user, billingState }: ProfileContentProps) {
 			day: "numeric",
 		})
 	}
+
+	const formatPrice = (amountCents: number, currency: string) =>
+		new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(
+			amountCents / 100,
+		)
 
 	const getInitials = (name?: string | null) => {
 		if (!name) return "U"
@@ -162,7 +168,9 @@ export function ProfileContent({ user, billingState }: ProfileContentProps) {
 						<p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
 							{billingState?.plan === "PLUS"
 								? "Você tem acesso a todos os recursos do Vero Plus."
-								: "Use o Vero gratuitamente ou assine o Plus para liberar todos os recursos."}
+								: billingState?.plusOffer
+									? "Use o Vero gratuitamente ou assine o Plus para liberar todos os recursos."
+									: "O Vero Plus está temporariamente indisponível para contratação."}
 						</p>
 					</div>
 					<div className="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
@@ -184,8 +192,11 @@ export function ProfileContent({ user, billingState }: ProfileContentProps) {
 							color="primary"
 							onPress={() => redirectToBilling(createPlusCheckoutSession)}
 							isLoading={isBillingLoading}
+							isDisabled={!billingState?.plusOffer}
 						>
-							Assinar Vero Plus por R$ 14,90/mês
+							{billingState?.plusOffer
+								? `Assinar Vero Plus por ${formatPrice(billingState.plusOffer.amountCents, billingState.plusOffer.currency)}/mês`
+								: "Vero Plus indisponível"}
 						</Button>
 					)}
 					{billingState?.hasBillingCustomer && billingState.plan !== "PLUS" && (
