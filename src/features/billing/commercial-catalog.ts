@@ -14,7 +14,7 @@ export async function getActiveCommercialOffer(
 			isActive: true,
 			effectiveAt: { lte: new Date() },
 		},
-		orderBy: { effectiveAt: "desc" },
+		orderBy: [{ effectiveAt: "desc" }, { createdAt: "desc" }],
 	})
 }
 

@@ -10,7 +10,10 @@ import { requireSuperAdmin } from "./require-super-admin"
 
 const commercialOfferSchema = z.object({
 	amountCents: z.number().int().positive(),
-	currency: z.string().trim().regex(/^[A-Za-z]{3}$/),
+	currency: z
+		.string()
+		.trim()
+		.regex(/^[A-Za-z]{3}$/),
 	providerProductId: z.string().trim().min(1),
 	providerPriceId: z.string().trim().min(1),
 	effectiveAt: z.string().datetime(),
@@ -35,39 +38,30 @@ export async function createCommercialOffer(input: {
 }): Promise<{ success: boolean; error?: string }> {
 	const admin = await requireSuperAdmin()
 	const parsed = commercialOfferSchema.safeParse(input)
-	if (!parsed.success) return { success: false, error: "Dados da oferta inválidos." }
+	if (!parsed.success)
+		return { success: false, error: "Dados da oferta inválidos." }
 
 	const effectiveAt = new Date(parsed.data.effectiveAt)
 
 	try {
-		await prisma.$transaction(async (tx) => {
-			if (effectiveAt.getTime() <= Date.now()) {
-				await tx.commercialOffer.updateMany({
-					where: {
-						plan: "PLUS",
-						provider: BillingProvider.STRIPE,
-						isActive: true,
-					},
-					data: { isActive: false, deactivatedAt: new Date() },
-				})
-			}
-
-			await tx.commercialOffer.create({
-				data: {
-					plan: "PLUS",
-					amountCents: parsed.data.amountCents,
-					currency: parsed.data.currency.toUpperCase(),
-					provider: BillingProvider.STRIPE,
-					providerProductId: parsed.data.providerProductId,
-					providerPriceId: parsed.data.providerPriceId,
-					effectiveAt,
-					createdByUserId: admin.id,
-				},
-			})
+		await prisma.commercialOffer.create({
+			data: {
+				plan: "PLUS",
+				amountCents: parsed.data.amountCents,
+				currency: parsed.data.currency.toUpperCase(),
+				provider: BillingProvider.STRIPE,
+				providerProductId: parsed.data.providerProductId,
+				providerPriceId: parsed.data.providerPriceId,
+				effectiveAt,
+				createdByUserId: admin.id,
+			},
 		})
 	} catch (error) {
 		if (error instanceof Error && error.message.includes("Unique constraint")) {
-			return { success: false, error: "Este ID de preço Stripe já está cadastrado." }
+			return {
+				success: false,
+				error: "Já existe uma oferta com este preço ou esta vigência.",
+			}
 		}
 		throw error
 	}
