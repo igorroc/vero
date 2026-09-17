@@ -1,9 +1,14 @@
 "use client"
 
 import { Avatar, Button, Divider } from "@nextui-org/react"
-import { User, Mail, Calendar, Shield, LogOut } from "lucide-react"
+import { User, Mail, Calendar, Shield, LogOut, CreditCard } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useState } from "react"
 import { logoutAction } from "@/features/auth"
+import {
+	createBillingPortalSession,
+	createPlusCheckoutSession,
+} from "@/features/billing"
 
 type UserType = {
 	id: string
@@ -14,10 +19,16 @@ type UserType = {
 
 type ProfileContentProps = {
 	user: UserType | null
+	billingState: {
+		plan: "FREE" | "PLUS"
+		hasBillingCustomer: boolean
+	} | null
 }
 
-export function ProfileContent({ user }: ProfileContentProps) {
+export function ProfileContent({ user, billingState }: ProfileContentProps) {
 	const router = useRouter()
+	const [billingError, setBillingError] = useState<string | null>(null)
+	const [isBillingLoading, setIsBillingLoading] = useState(false)
 
 	if (!user) {
 		return null
@@ -44,6 +55,18 @@ export function ProfileContent({ user }: ProfileContentProps) {
 	const handleLogout = async () => {
 		await logoutAction()
 		router.push("/auth/login")
+	}
+
+	const redirectToBilling = async (action: () => Promise<{ success: boolean; url?: string; error?: string }>) => {
+		setBillingError(null)
+		setIsBillingLoading(true)
+		const result = await action()
+		if (result.success && result.url) {
+			window.location.assign(result.url)
+			return
+		}
+		setBillingError(result.error ?? "Não foi possível iniciar o pagamento.")
+		setIsBillingLoading(false)
 	}
 
 	return (
@@ -128,6 +151,54 @@ export function ProfileContent({ user }: ProfileContentProps) {
 						</div>
 					</div>
 				</div>
+			</div>
+
+			<div className="modern-card p-6">
+				<div className="flex items-start justify-between gap-4">
+					<div>
+						<h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+							Plano Vero
+						</h3>
+						<p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+							{billingState?.plan === "PLUS"
+								? "Você tem acesso a todos os recursos do Vero Plus."
+								: "Use o Vero gratuitamente ou assine o Plus para liberar todos os recursos."}
+						</p>
+					</div>
+					<div className="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
+						<CreditCard className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+					</div>
+				</div>
+
+				<div className="mt-5 flex flex-col gap-3 sm:flex-row">
+					{billingState?.plan === "PLUS" ? (
+						<Button
+							color="primary"
+							onPress={() => redirectToBilling(createBillingPortalSession)}
+							isLoading={isBillingLoading}
+						>
+							Gerenciar assinatura
+						</Button>
+					) : (
+						<Button
+							color="primary"
+							onPress={() => redirectToBilling(createPlusCheckoutSession)}
+							isLoading={isBillingLoading}
+						>
+							Assinar Vero Plus por R$ 14,90/mês
+						</Button>
+					)}
+					{billingState?.hasBillingCustomer && billingState.plan !== "PLUS" && (
+						<Button
+							variant="flat"
+							onPress={() => redirectToBilling(createBillingPortalSession)}
+							disabled={isBillingLoading}
+						>
+							Gerenciar cobrança
+						</Button>
+					)}
+				</div>
+				{billingError && <p className="mt-3 text-sm text-danger">{billingError}</p>}
 			</div>
 
 			{/* Actions */}
