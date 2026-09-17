@@ -4,13 +4,14 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 import prisma from "@/lib/db"
-import { BillingProvider } from "@/lib/billing-provider"
+import { BillingProvider, isBillingProvider } from "@/lib/billing-provider"
 
 import { getPaymentProvider } from "@/features/billing/providers"
 
 import { requireSuperAdmin } from "./require-super-admin"
 
 const commercialOfferSchema = z.object({
+	provider: z.string().refine(isBillingProvider),
 	providerPriceId: z.string().trim().min(1),
 	effectiveAt: z.string().datetime(),
 })
@@ -19,13 +20,14 @@ export async function getCommercialOffers() {
 	await requireSuperAdmin()
 
 	return prisma.commercialOffer.findMany({
-		where: { plan: "PLUS", provider: BillingProvider.STRIPE },
+		where: { plan: "PLUS" },
 		include: { createdByUser: { select: { name: true, email: true } } },
 		orderBy: { effectiveAt: "desc" },
 	})
 }
 
 export async function createCommercialOffer(input: {
+	provider: BillingProvider
 	providerPriceId: string
 	effectiveAt: string
 }): Promise<{ success: boolean; error?: string }> {
@@ -37,7 +39,7 @@ export async function createCommercialOffer(input: {
 	const effectiveAt = new Date(parsed.data.effectiveAt)
 	let price
 	try {
-		price = await getPaymentProvider(BillingProvider.STRIPE).getPrice(
+		price = await getPaymentProvider(parsed.data.provider).getPrice(
 			parsed.data.providerPriceId,
 		)
 	} catch (error) {
@@ -54,7 +56,7 @@ export async function createCommercialOffer(input: {
 				plan: "PLUS",
 				amountCents: price.amountCents,
 				currency: price.currency,
-				provider: BillingProvider.STRIPE,
+				provider: parsed.data.provider,
 				providerProductId: price.providerProductId,
 				providerPriceId: parsed.data.providerPriceId,
 				effectiveAt,
@@ -71,7 +73,7 @@ export async function createCommercialOffer(input: {
 		throw error
 	}
 
-	revalidatePath("/admin")
+	revalidatePath("/admin/planos")
 	revalidatePath("/profile")
 	return { success: true }
 }
@@ -87,7 +89,7 @@ export async function deactivateCommercialOffer(
 		data: { isActive: false, deactivatedAt: new Date() },
 	})
 
-	revalidatePath("/admin")
+	revalidatePath("/admin/planos")
 	revalidatePath("/profile")
 	return { success: true }
 }

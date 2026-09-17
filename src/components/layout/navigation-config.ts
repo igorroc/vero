@@ -9,6 +9,7 @@ import {
 	TrendingUp,
 	Wallet,
 	UsersRound,
+	BadgeDollarSign,
 } from "lucide-react"
 import type { ElementType } from "react"
 
@@ -68,7 +69,14 @@ export const sidebarNavigationGroups: NavigationGroup[] = [
 export const adminNavigationGroups: NavigationGroup[] = [
 	{
 		label: "Administração",
-		items: [{ icon: UsersRound, label: "Super Admin", href: "/admin" }],
+		items: [
+			{ icon: UsersRound, label: "Usuários", href: "/admin" },
+			{
+				icon: BadgeDollarSign,
+				label: "Planos e cobrança",
+				href: "/admin/planos",
+			},
+		],
 	},
 ]
 
@@ -92,5 +100,6 @@ export const bottomMoreNavigationItems: NavigationItem[] = [
 ]
 
 export const adminBottomNavigationItems: NavigationItem[] = [
-	{ icon: UsersRound, label: "Super Admin", href: "/admin" },
+	{ icon: UsersRound, label: "Usuários", href: "/admin" },
+	{ icon: BadgeDollarSign, label: "Planos", href: "/admin/planos" },
 ]

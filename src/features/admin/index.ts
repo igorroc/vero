@@ -8,3 +8,9 @@ export {
 	deactivateCommercialOffer,
 	getCommercialOffers,
 } from "./commercial-offers"
+export {
+	getPlanCapabilityConfigurations,
+	updatePlanCapability,
+	type PlanCapabilityConfiguration,
+} from "./plan-settings"
+export { grantPlanToUser } from "./grant-plan"

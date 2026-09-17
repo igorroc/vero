@@ -8,6 +8,7 @@ import {
 	createCommercialOffer,
 	deactivateCommercialOffer,
 } from "@/features/admin"
+import { BillingProvider } from "@/lib/billing-provider"
 
 type CommercialOffer = {
 	id: string
@@ -17,6 +18,7 @@ type CommercialOffer = {
 	effectiveAt: Date
 	providerProductId: string
 	providerPriceId: string
+	provider: string
 	createdAt: Date
 	deactivatedAt: Date | null
 	createdByUser: { name: string; email: string }
@@ -43,6 +45,9 @@ export function CommercialOffersContent({
 	const router = useRouter()
 	const [isPending, startTransition] = useTransition()
 	const [providerPriceId, setProviderPriceId] = useState("")
+	const [provider, setProvider] = useState<BillingProvider>(
+		BillingProvider.STRIPE,
+	)
 	const [effectiveAt, setEffectiveAt] = useState(
 		new Date().toISOString().slice(0, 10),
 	)
@@ -53,6 +58,7 @@ export function CommercialOffersContent({
 		setError(null)
 		startTransition(() => {
 			void createCommercialOffer({
+				provider,
 				providerPriceId,
 				effectiveAt: new Date(`${effectiveAt}T00:00:00.000Z`).toISOString(),
 			}).then((result) => {
@@ -93,16 +99,34 @@ export function CommercialOffersContent({
 					className="mt-5 grid gap-4 md:grid-cols-2"
 					onSubmit={handleSubmit}
 				>
+					<label className="flex flex-col gap-2 text-sm text-text-primary">
+						Provedor de pagamento
+						<select
+							value={provider}
+							onChange={(event) =>
+								setProvider(event.target.value as BillingProvider)
+							}
+							className="h-10 rounded-lg border border-border bg-surface px-3 text-text-primary"
+						>
+							{Object.values(BillingProvider).map((providerOption) => (
+								<option key={providerOption} value={providerOption}>
+									{providerOption === BillingProvider.STRIPE
+										? "Stripe"
+										: providerOption}
+								</option>
+							))}
+						</select>
+					</label>
 					<Input
-						label="ID do preço Stripe"
+						label="ID do preço do provedor"
 						placeholder="price_..."
 						value={providerPriceId}
 						onValueChange={setProviderPriceId}
 						isRequired
 					/>
 					<p className="text-sm text-text-muted md:col-span-2">
-						O valor, a moeda e o produto são consultados diretamente no preço
-						Stripe.
+						O valor, a moeda e o produto são consultados diretamente no preço do
+						provedor selecionado.
 					</p>
 					<Input
 						label="Início da vigência"
@@ -132,8 +156,9 @@ export function CommercialOffersContent({
 							<tr>
 								<th className="px-5 py-3 font-semibold">Preço</th>
 								<th className="px-5 py-3 font-semibold">Vigência</th>
-								<th className="px-5 py-3 font-semibold">Produto Stripe</th>
-								<th className="px-5 py-3 font-semibold">Preço Stripe</th>
+								<th className="px-5 py-3 font-semibold">Provedor</th>
+								<th className="px-5 py-3 font-semibold">Produto</th>
+								<th className="px-5 py-3 font-semibold">Preço</th>
 								<th className="px-5 py-3 font-semibold">Configurado por</th>
 								<th className="px-5 py-3 font-semibold">Situação</th>
 								<th className="px-5 py-3 font-semibold" />
@@ -147,6 +172,9 @@ export function CommercialOffersContent({
 									</td>
 									<td className="px-5 py-4 text-text-muted">
 										{formatDate(offer.effectiveAt)}
+									</td>
+									<td className="px-5 py-4 font-mono text-xs">
+										{offer.provider}
 									</td>
 									<td className="px-5 py-4 font-mono text-xs">
 										{offer.providerProductId}
@@ -184,7 +212,7 @@ export function CommercialOffersContent({
 							{offers.length === 0 && (
 								<tr>
 									<td
-										colSpan={7}
+										colSpan={8}
 										className="px-5 py-8 text-center text-text-muted"
 									>
 										Nenhuma oferta configurada.
