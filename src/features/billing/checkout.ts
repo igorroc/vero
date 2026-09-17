@@ -42,15 +42,21 @@ export async function createPlusCheckoutSession(): Promise<BillingActionResult> 
 		})
 
 		await prisma.$transaction([
-			prisma.billingCustomer.upsert({
-				where: { userId_provider: { userId: user.id, provider: provider.id } },
-				create: {
-					userId: user.id,
-					provider: provider.id,
-					providerCustomerId: checkout.providerCustomerId,
-				},
-				update: { providerCustomerId: checkout.providerCustomerId },
-			}),
+			...(checkout.providerCustomerId
+				? [
+						prisma.billingCustomer.upsert({
+							where: {
+								userId_provider: { userId: user.id, provider: provider.id },
+							},
+							create: {
+								userId: user.id,
+								provider: provider.id,
+								providerCustomerId: checkout.providerCustomerId,
+							},
+							update: { providerCustomerId: checkout.providerCustomerId },
+						}),
+					]
+				: []),
 			prisma.billingCheckout.update({
 				where: { id: reservation.id },
 				data: {
@@ -63,7 +69,7 @@ export async function createPlusCheckoutSession(): Promise<BillingActionResult> 
 
 		return { success: true, url: checkout.url }
 	} catch (error) {
-		console.error("Failed to create Stripe checkout session", error)
+		console.error("Failed to create billing checkout session", error)
 		return {
 			success: false,
 			error:
@@ -172,6 +178,7 @@ export async function createBillingPortalSession(): Promise<BillingActionResult>
 	const origin = getApplicationUrl((await headers()).get("origin"))
 	const url = await provider.createCustomerPortal({
 		providerCustomerId: billingCustomer.providerCustomerId,
+		userId: user.id,
 		returnUrl: `${origin}/profile`,
 	})
 

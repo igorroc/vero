@@ -2,11 +2,11 @@
 
 import { getUserBySession } from "@/lib/auth"
 import prisma from "@/lib/db"
-import { BillingProvider } from "@/lib/billing-provider"
 
 import { resolveAccessPlan, type AccessPlan } from "./access"
 import { capabilityCatalog } from "./capabilities"
 import { getActiveCommercialOffer } from "./commercial-catalog"
+import { getPaymentProvider } from "./providers"
 
 export type CurrentBillingState = {
 	plan: "FREE" | "PLUS"
@@ -40,7 +40,7 @@ export async function getCurrentBillingState(): Promise<CurrentBillingState | nu
 					endsAt: true,
 				},
 			}),
-			getActiveCommercialOffer(BillingProvider.STRIPE, "PLUS"),
+			getActiveCommercialOffer(getPaymentProvider().id, "PLUS"),
 			prisma.subscription.findFirst({
 				where: { userId: user.id },
 				orderBy: { currentPeriodEnd: "desc" },
