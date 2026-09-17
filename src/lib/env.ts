@@ -9,7 +9,7 @@ const envSchema = z.object({
 	DATABASE_DB: z.string().min(1).optional(),
 	DATABASE_USER: z.string().min(1).optional(),
 	DATABASE_PASSWORD: z.string().min(1).optional(),
-	POSTGRES_PRISMA_URL: z.string().url(),
+	POSTGRES_PRISMA_URL: z.url(),
 	AUTHENTICATION_SECRET_KEY: z.string().min(1),
 	STRIPE_PUBLIC_KEY: z.string().min(1).optional(),
 	STRIPE_SECRET_KEY: z.string().min(1).optional(),
