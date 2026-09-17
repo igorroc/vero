@@ -20,6 +20,7 @@
 		"migrate:create-only": "bunx prisma migrate dev --create-only",
 		"prisma:studio": "bunx prisma studio",
 		"seed:category-groups": "node prisma/seed-category-groups.js",
+		"seed:plan-capabilities": "bun scripts/seed-plan-capabilities.ts",
 		"ts-check": "tsc --noEmit",
 		"test": "vitest run",
 		"test:watch": "vitest"
