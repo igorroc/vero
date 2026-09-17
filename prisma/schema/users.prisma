@@ -19,4 +19,17 @@ model User {
     subscriptions   Subscription[]
     entitlements    Entitlement[]
     billingCustomers BillingCustomer[]
+    superAdminRole SuperAdminRole?
+    grantedSuperAdminRoles SuperAdminRole[] @relation("SuperAdminGrantedBy")
+}
+
+model SuperAdminRole {
+    userId String @id
+    grantedAt DateTime @default(now())
+    grantedByUserId String?
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    grantedByUser User? @relation("SuperAdminGrantedBy", fields: [grantedByUserId], references: [id], onDelete: SetNull)
+
+    @@index([grantedByUserId])
 }
