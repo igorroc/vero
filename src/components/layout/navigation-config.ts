@@ -65,10 +65,12 @@ export const sidebarNavigationGroups: NavigationGroup[] = [
 	},
 ]
 
-export const superAdminNavigationGroup: NavigationGroup = {
-	label: "Operação interna",
-	items: [{ icon: UsersRound, label: "Super Admin", href: "/admin" }],
-}
+export const adminNavigationGroups: NavigationGroup[] = [
+	{
+		label: "Administração",
+		items: [{ icon: UsersRound, label: "Super Admin", href: "/admin" }],
+	},
+]
 
 export const bottomMainNavigationItems: NavigationItem[] = [
 	{ icon: LayoutDashboard, label: "Home", href: "/dashboard" },
@@ -89,8 +91,6 @@ export const bottomMoreNavigationItems: NavigationItem[] = [
 	{ icon: Settings, label: "Configurações", href: "/settings" },
 ]
 
-export const superAdminBottomNavigationItem: NavigationItem = {
-	icon: UsersRound,
-	label: "Super Admin",
-	href: "/admin",
-}
+export const adminBottomNavigationItems: NavigationItem[] = [
+	{ icon: UsersRound, label: "Super Admin", href: "/admin" },
+]

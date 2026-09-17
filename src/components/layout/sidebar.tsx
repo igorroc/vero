@@ -6,21 +6,21 @@ import { usePathname } from "next/navigation"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import {
+	adminNavigationGroups,
 	sidebarNavigationGroups,
-	superAdminNavigationGroup,
 } from "./navigation-config"
 import { SidebarNavigationGroups } from "./navigation-items"
 
 interface SidebarProps {
 	collapsed: boolean
 	onCollapsedChange: (collapsed: boolean) => void
-	isSuperAdmin: boolean
+	isAdminView: boolean
 }
 
 export function Sidebar({
 	collapsed,
 	onCollapsedChange,
-	isSuperAdmin,
+	isAdminView,
 }: SidebarProps) {
 	const pathname = usePathname()
 
@@ -63,11 +63,7 @@ export function Sidebar({
 				className="h-[calc(100%-4rem)] space-y-5 overflow-y-auto p-4 pb-28"
 			>
 				<SidebarNavigationGroups
-					groups={
-						isSuperAdmin
-							? [...sidebarNavigationGroups, superAdminNavigationGroup]
-							: sidebarNavigationGroups
-					}
+					groups={isAdminView ? adminNavigationGroups : sidebarNavigationGroups}
 					pathname={pathname}
 					collapsed={collapsed}
 				/>

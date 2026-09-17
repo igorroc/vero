@@ -7,13 +7,16 @@ import {
 	getCommercialOffers,
 	isCurrentUserSuperAdmin,
 } from "@/features/admin"
+import { getSessionView } from "@/lib/session-view"
+import { SessionView } from "@/lib/session-view-types"
 
 export const metadata: Metadata = {
 	title: "Super Admin | Vero",
 }
 
 export default async function AdminPage() {
-	if (!(await isCurrentUserSuperAdmin())) {
+	const isSuperAdmin = await isCurrentUserSuperAdmin()
+	if (!isSuperAdmin || (await getSessionView(isSuperAdmin)) !== SessionView.ADMIN) {
 		redirect("/dashboard")
 	}
 

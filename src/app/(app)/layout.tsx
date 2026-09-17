@@ -3,6 +3,7 @@ import { getUserBySession } from "@/lib/auth"
 import { AppLayout } from "@/components/layout"
 import { getAccountBalances } from "@/features/accounts"
 import { isCurrentUserSuperAdmin } from "@/features/admin"
+import { getSessionView } from "@/lib/session-view"
 
 export default async function AppGroupLayout({
 	children,
@@ -19,6 +20,7 @@ export default async function AppGroupLayout({
 		getAccountBalances(),
 		isCurrentUserSuperAdmin(),
 	])
+	const sessionView = await getSessionView(isSuperAdmin)
 	const accounts = accountBalances.success ? accountBalances.accounts : []
 
 	return (
@@ -27,6 +29,7 @@ export default async function AppGroupLayout({
 			userEmail={user.email}
 			accounts={accounts}
 			isSuperAdmin={isSuperAdmin}
+			sessionView={sessionView}
 		>
 			{children}
 		</AppLayout>
