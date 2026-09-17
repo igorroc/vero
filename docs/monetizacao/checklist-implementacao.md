@@ -17,7 +17,7 @@ Este checklist acompanha a entrega de planos, assinaturas, acessos e administrac
 - [x] Criar webhook Stripe assinado em `/api/stripe/webhook`.
 - [x] Adicionar acoes de contratar e gerenciar assinatura no perfil.
 - [x] Cobrir a resolucao de acesso com testes unitarios.
-- [ ] Criar e aplicar a migration do schema de cobranca.
+- [x] Criar e aplicar a migration do schema de cobranca.
 - [ ] Testar Checkout, Customer Portal e webhook com a Stripe em modo de teste.
 - [ ] Configurar o endpoint de webhook e os eventos necessarios no painel da Stripe.
 - [ ] Configurar `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `BILLING_PROVIDER` e `NEXT_PUBLIC_APP_URL` no ambiente de cada deploy.
@@ -39,9 +39,10 @@ Este checklist acompanha a entrega de planos, assinaturas, acessos e administrac
 ## Super Admin e Operacao
 
 - [x] Especificar o papel e as responsabilidades de Super Admin.
-- [ ] Modelar o papel de Super Admin no banco e a atribuicao por outro Super Admin.
-- [ ] Criar guard de autorizacao de Super Admin no servidor.
-- [ ] Restringir a listagem atual de usuarios a operadores autorizados antes de criar o painel.
+- [x] Modelar o papel de Super Admin no banco.
+- [ ] Implementar atribuicao e revogacao de Super Admin por outro Super Admin, com historico.
+- [x] Criar guard de autorizacao de Super Admin no servidor.
+- [x] Restringir a listagem de usuarios a operadores autorizados.
 - [x] Criar painel para planos e configuracoes de preco Stripe.
 - [ ] Criar painel para consultar assinaturas, clientes externos, beneficios e eventos de webhook.
 - [ ] Registrar auditoria de acoes administrativas, incluindo responsavel, motivo e valores antes/depois.
@@ -90,9 +91,8 @@ Este checklist acompanha a entrega de planos, assinaturas, acessos e administrac
 
 ## Proximas Entregas Recomendadas
 
-1. Criar a migration e homologar o fluxo Stripe em modo de teste.
-2. Implementar catalogo comercial no banco e remover o preco Stripe das variaveis de ambiente.
-3. Criar papel, autorizacao, auditoria e painel minimo de Super Admin.
-4. Aplicar os guards do Gratuito e Plus nas Server Actions antes de cobrar usuarios reais.
-5. Implementar cortesias administrativas no painel de Super Admin.
-6. Iniciar o dominio Profissional somente depois de estabilizar assinatura individual e controle de acesso.
+1. Homologar Checkout, Customer Portal e webhooks Stripe em modo de teste, com monitoramento de falhas.
+2. Aplicar os guards do Gratuito e Plus nas Server Actions antes de cobrar usuarios reais.
+3. Implementar cortesias administrativas, auditoria e consultas operacionais no painel de Super Admin.
+4. Completar comunicacoes de pagamento, cancelamento e expiracao, alem da politica de inadimplencia.
+5. Iniciar o dominio Profissional somente depois de estabilizar assinatura individual e controle de acesso.

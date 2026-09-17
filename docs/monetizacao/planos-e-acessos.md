@@ -2,7 +2,7 @@
 
 ## Status
 
-Esta e uma especificacao de produto para orientar a implementacao futura de monetizacao, assinaturas e acessos compartilhados. Nenhuma das regras deste documento deve ser considerada implementada ate que exista suporte correspondente na aplicacao e no banco de dados.
+Esta e uma especificacao de produto para monetizacao, assinaturas e acessos compartilhados. A base de assinatura individual Plus, catalogo comercial, Stripe e papel de Super Admin ja existe; o checklist indica as regras e dominios ainda pendentes. Nenhuma regra deve ser considerada concluida sem suporte correspondente na aplicacao, no banco e na operacao de producao.
 
 ## Objetivo
 

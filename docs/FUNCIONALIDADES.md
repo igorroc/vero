@@ -31,7 +31,7 @@ O dashboard oferece uma visão completa da sua saúde financeira em tempo real:
 
 #### Limite de Gastos Detalhado
 
-Exibe a decomposição do cálculo:
+O motor calcula a decomposição abaixo. A interface atual apresenta o limite semanal e o horizonte; a visualização completa da decomposição ainda está pendente:
 
 - Saldo atual
 - Despesas futuras planejadas
@@ -109,18 +109,22 @@ Configure eventos que se repetem automaticamente:
 
 O sistema gera automaticamente as ocorrências futuras para projeção.
 
+> O motor de recorrência e a geração de projeções existem, mas a criação e a gestão de recorrências ainda não estão disponíveis na interface de lançamentos.
+
 #### Filtros de Visualização
 
 - Todos os eventos
-- Eventos passados
-- Eventos de hoje
-- Eventos futuros
+- Eventos pendentes
+- Eventos confirmados
+
+> A action suporta intervalo de datas, mas os filtros de passado, hoje e futuro ainda não estão expostos na interface.
 
 #### Ações Disponíveis
 
 - Criar novo evento
 - Confirmar evento (marca como realizado)
 - Ignorar evento (cancela)
+- Editar evento ou transferência
 - Excluir evento
 
 ---
@@ -208,6 +212,8 @@ Automatize e acompanhe seus aportes em investimentos.
 - Ver total de investimento mensal
 - Excluir planos
 
+> Os planos ainda não geram lançamentos nem são incluídos nas projeções de fluxo de caixa e limite diário.
+
 #### Cálculo Mensal
 
 O sistema converte diferentes frequências para valor mensal:
@@ -264,7 +270,7 @@ O sistema possui um motor que gera automaticamente eventos futuros a partir de t
 
 ### Stack Tecnológico
 
-- **Frontend**: Next.js 15 + React + TypeScript
+- **Frontend**: Next.js 16 + React + TypeScript
 - **UI**: NextUI + Tailwind CSS + Lucide Icons
 - **Backend**: Next.js Server Actions
 - **Banco de Dados**: PostgreSQL via Prisma ORM
@@ -351,21 +357,21 @@ Todos os valores são armazenados como **inteiros em centavos** para evitar prob
 
 - ✅ Categorias personalizadas para despesas, organizadas em grupos predefinidos
 - ❌ Tags ou etiquetas para organização
-- ❌ Relatórios de gastos por categoria
-- ❌ Gráficos e visualizações históricas
+- ✅ Relatório de gastos por categoria
+- ✅ Gráficos de saldo projetado e distribuição de gastos por categoria
 - ❌ Comparativo mês a mês
 - ❌ Análise de tendências de gastos
 
 #### Orçamentos
 
-- ❌ Definição de orçamentos por categoria
-- ❌ Alertas de estouro de orçamento
+- ✅ Definição e acompanhamento de orçamentos por categoria
+- ❌ Notificações proativas de estouro de orçamento
 - ❌ Metas de economia
 
 #### Meta de Patrimônio Líquido
 
-- ❌ Interface para definir meta de patrimônio (modelo existe no banco)
-- ❌ Acompanhamento de progresso da meta
+- ✅ Interface para definir meta de patrimônio
+- ✅ Acompanhamento do progresso da meta
 - ❌ Projeção de quando atingirá a meta
 - ❌ Cálculo de quanto precisa investir por mês
 
@@ -373,8 +379,7 @@ Todos os valores são armazenados como **inteiros em centavos** para evitar prob
 
 - ❌ Notificações por email
 - ❌ Notificações push no navegador
-- ❌ Lembretes de contas a vencer
-- ❌ Alertas de eventos não confirmados (atrasados)
+- 🟡 Lembretes e alertas internos existem no domínio, mas não possuem acionamento periódico nem interface de leitura
 
 #### Cartões de Crédito
 
@@ -397,7 +402,7 @@ Todos os valores são armazenados como **inteiros em centavos** para evitar prob
 
 #### Edição de Eventos
 
-- ❌ Editar eventos existentes (apenas criar/excluir)
+- ✅ Editar eventos existentes e transferências
 - ❌ Editar eventos recorrentes em lote
 - ❌ Duplicar eventos
 
@@ -443,9 +448,10 @@ Todos os valores são armazenados como **inteiros em centavos** para evitar prob
 
 | Funcionalidade     | Status     | Observação                                                                     |
 | ------------------ | ---------- | ------------------------------------------------------------------------------ |
-| Meta de Patrimônio | 🟡 Parcial | Modelo no banco, sem interface                                                 |
-| Notificações       | 🟡 Parcial | Modelo no banco, sem envio                                                     |
-| Tipos de Conta     | 🟡 Parcial | Existe CHECKING/SAVINGS/CREDIT_CARD no schema, mas UI usa BANK/CASH/INVESTMENT |
+| Meta de Patrimônio | 🟡 Parcial | Interface e progresso existem; projeções e aporte mensal ainda não            |
+| Notificações       | 🟡 Parcial | Actions e modelo existem, sem tarefa periódica ou interface                    |
+| Recorrência        | 🟡 Parcial | Motor e projeções existem; configuração na interface está pendente             |
+| Planos de investimento | 🟡 Parcial | Cadastro existe; aportes e integração às projeções estão pendentes        |
 | Dark Mode          | 🟡 Parcial | CSS preparado, sem toggle                                                      |
 
 ---
@@ -453,13 +459,13 @@ Todos os valores são armazenados como **inteiros em centavos** para evitar prob
 ### Próximos Passos Sugeridos (Prioridade)
 
 1. **Alta Prioridade**
-   - Edição de eventos existentes
-   - Categorias para eventos
-   - Relatórios básicos com gráficos
+   - Aplicar regras de plano Free e Plus no servidor
+   - Eliminar conversões monetárias por ponto flutuante
+   - Completar recorrência e planos de investimento nas projeções
 
 2. **Média Prioridade**
-   - Interface para meta de patrimônio
-   - Notificações por email
+   - Expor limite diário detalhado e filtros por período
+   - Interface e agendamento para notificações
    - Importação de CSV
 
 3. **Baixa Prioridade**
