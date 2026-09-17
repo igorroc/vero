@@ -1,13 +1,12 @@
 import type Stripe from "stripe"
 import { Prisma } from "@prisma/client"
 
-import { env } from "@/lib/env"
-
 import {
 	processPaymentWebhookEvent,
 	synchronizeProviderSubscription,
 	type ProviderSubscription,
 } from "./subscriptions"
+import { getCommercialOfferByProviderPrice } from "./commercial-catalog"
 
 function getSubscriptionStatus(
 	subscription: Stripe.Subscription,
@@ -45,17 +44,16 @@ export async function synchronizeStripeSubscription(
 	stripeSubscription: Stripe.Subscription,
 ): Promise<void> {
 	const providerPriceId = stripeSubscription.items.data[0]?.price.id
-	const configuredPriceId = env.STRIPE_PLUS_PRICE_ID
-	if (!configuredPriceId)
-		throw new Error("STRIPE_PLUS_PRICE_ID is not configured")
-	if (providerPriceId !== configuredPriceId) return
+	if (!providerPriceId) return
+	const offer = await getCommercialOfferByProviderPrice("stripe", providerPriceId)
+	if (!offer || offer.plan !== "PLUS") return
 
 	await synchronizeProviderSubscription("stripe", {
 		providerCustomerId: getCustomerId(stripeSubscription),
 		providerSubscriptionId: stripeSubscription.id,
 		providerPriceId,
 		userId: stripeSubscription.metadata.userId,
-		plan: "PLUS",
+		plan: offer.plan,
 		status: getSubscriptionStatus(stripeSubscription),
 		currentPeriodStart: getPeriodStart(stripeSubscription),
 		currentPeriodEnd: getPeriodEnd(stripeSubscription),

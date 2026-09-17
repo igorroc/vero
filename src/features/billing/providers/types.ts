@@ -4,6 +4,7 @@ export type PaymentProviderCheckoutInput = {
 	user: { id: string; name: string; email: string }
 	providerCustomerId: string | null
 	plan: Exclude<AccessPlan, "FREE">
+	providerPriceId: string
 	successUrl: string
 	cancelUrl: string
 }
