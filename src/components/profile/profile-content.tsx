@@ -8,7 +8,7 @@ import { logoutAction } from "@/features/auth"
 import {
 	createBillingPortalSession,
 	createPlusCheckoutSession,
-} from "@/features/billing"
+} from "@/features/billing/checkout"
 
 type UserType = {
 	id: string
@@ -63,7 +63,9 @@ export function ProfileContent({ user, billingState }: ProfileContentProps) {
 		router.push("/auth/login")
 	}
 
-	const redirectToBilling = async (action: () => Promise<{ success: boolean; url?: string; error?: string }>) => {
+	const redirectToBilling = async (
+		action: () => Promise<{ success: boolean; url?: string; error?: string }>,
+	) => {
 		setBillingError(null)
 		setIsBillingLoading(true)
 		const result = await action()
@@ -209,7 +211,9 @@ export function ProfileContent({ user, billingState }: ProfileContentProps) {
 						</Button>
 					)}
 				</div>
-				{billingError && <p className="mt-3 text-sm text-danger">{billingError}</p>}
+				{billingError && (
+					<p className="mt-3 text-sm text-danger">{billingError}</p>
+				)}
 			</div>
 
 			{/* Actions */}

@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { getUserBySession } from "@/lib/auth"
 import { ProfileContent } from "@/components/profile/profile-content"
 import { PageHeader } from "@/components/ui"
-import { getCurrentBillingState } from "@/features/billing"
+import { getCurrentBillingState } from "@/features/billing/get-current-billing-state"
 
 export const metadata: Metadata = {
 	title: "Perfil | Vero",
