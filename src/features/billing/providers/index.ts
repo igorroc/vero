@@ -1,3 +1,4 @@
+import { polarPaymentProvider } from "./polar-provider"
 import { stripePaymentProvider } from "./stripe-provider"
 import type { PaymentProvider } from "./types"
 
@@ -5,6 +6,7 @@ import { env } from "@/lib/env"
 import { BillingProvider, isBillingProvider } from "@/lib/billing-provider"
 
 const providers: Record<BillingProvider, PaymentProvider> = {
+	[BillingProvider.POLAR]: polarPaymentProvider,
 	[BillingProvider.STRIPE]: stripePaymentProvider,
 }
 

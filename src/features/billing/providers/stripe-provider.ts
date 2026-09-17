@@ -43,6 +43,7 @@ async function createCheckout(
 
 async function createCustomerPortal(input: {
 	providerCustomerId: string
+	userId: string
 	returnUrl: string
 }): Promise<string> {
 	const session = await getStripe().billingPortal.sessions.create({

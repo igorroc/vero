@@ -11,7 +11,7 @@ export type PaymentProviderCheckoutInput = {
 }
 
 export type PaymentProviderCheckoutResult = {
-	providerCustomerId: string
+	providerCustomerId: string | null
 	providerCheckoutId: string
 	url: string
 	expiresAt: Date
@@ -31,6 +31,7 @@ export type PaymentProvider = {
 	getPrice(providerPriceId: string): Promise<PaymentProviderPrice>
 	createCustomerPortal(input: {
 		providerCustomerId: string
+		userId: string
 		returnUrl: string
 	}): Promise<string>
 }
