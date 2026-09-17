@@ -15,6 +15,7 @@
 		"compose:up": "docker compose up -d",
 		"vercel-build": "bunx prisma generate && bunx prisma migrate deploy && next build",
 		"migrate": "bunx prisma migrate dev && bunx prisma generate",
+		"generate": "bunx prisma generate",
 		"migrate:reset": "bunx prisma migrate reset --force",
 		"migrate:create-only": "bunx prisma migrate dev --create-only",
 		"prisma:studio": "bunx prisma studio",
