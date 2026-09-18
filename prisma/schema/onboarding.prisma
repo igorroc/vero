@@ -1,0 +1,10 @@
+model UserOnboarding {
+  userId                 String   @id
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  settingsConfiguredAt   DateTime?
+  dismissedAt            DateTime?
+  limitPreviewStartedAt  DateTime?
+  completedAt            DateTime?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
