@@ -69,6 +69,9 @@ export async function createPlusCheckoutSession(): Promise<BillingActionResult> 
 
 		return { success: true, url: checkout.url }
 	} catch (error) {
+		await prisma.billingCheckout.deleteMany({
+			where: { id: reservation.id, userId: user.id, provider: provider.id },
+		})
 		console.error("Failed to create billing checkout session", error)
 		return {
 			success: false,
