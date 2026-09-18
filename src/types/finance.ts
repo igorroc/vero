@@ -1,5 +1,6 @@
 import type {
 	Account,
+	AccountType,
 	Event,
 	EventType,
 	EventStatus,
@@ -13,6 +14,7 @@ import type {
 // Re-export Prisma types for convenience
 export type {
 	Account,
+	AccountType,
 	Event,
 	EventType,
 	EventStatus,
@@ -211,6 +213,12 @@ export interface BalanceSeriesPoint {
 	dateKey: string
 	realBalance: Cents | null
 	projectedBalance: Cents | null
+	availableBalance: Cents
+	investmentBalance: Cents
+	realAvailableBalance: Cents | null
+	projectedAvailableBalance: Cents | null
+	realInvestmentBalance: Cents | null
+	projectedInvestmentBalance: Cents | null
 }
 
 /**
@@ -315,6 +323,7 @@ export interface CashflowInput {
 	accounts: Array<{
 		id: string
 		name: string
+		type?: AccountType
 		initialBalance: Cents
 	}>
 	events: Array<{

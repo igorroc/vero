@@ -535,6 +535,47 @@ describe("buildBalanceSeries", () => {
 		expect(series[0].realBalance).toBe(80000)
 		expect(series[1].projectedBalance).toBe(80000)
 	})
+
+	it("should separate account and investment balances while preserving transfers", () => {
+		const series = buildBalanceSeries(
+			{
+				accounts: [
+					{ id: "cash", name: "Conta", type: "BANK", initialBalance: 100000 },
+					{ id: "investment", name: "Investimentos", type: "INVESTMENT", initialBalance: 50000 },
+				],
+				events: [
+					{
+						id: "transfer",
+						description: "Aporte",
+						amount: -20000,
+						type: "TRANSFER",
+						costType: null,
+						status: "PLANNED",
+						priority: "IMPORTANT",
+						date: utcDate(2024, 1, 3),
+						accountId: "cash",
+						destinationAccountId: "investment",
+					},
+				],
+				startDate: utcDate(2024, 1, 1),
+				endDate: utcDate(2024, 1, 4),
+			},
+			utcDate(2024, 1, 2),
+		)
+
+		expect(series[1]).toMatchObject({
+			availableBalance: 100000,
+			investmentBalance: 50000,
+			realAvailableBalance: 100000,
+			realInvestmentBalance: 50000,
+		})
+		expect(series[2]).toMatchObject({
+			availableBalance: 80000,
+			investmentBalance: 70000,
+			projectedAvailableBalance: 80000,
+			projectedInvestmentBalance: 70000,
+		})
+	})
 })
 
 describe("calculateRedeemedBalance", () => {

@@ -391,6 +391,7 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 				accounts: accounts.map((account) => ({
 					id: account.id,
 					name: account.name,
+					type: account.type,
 					initialBalance: account.initialBalance,
 				})),
 				events: priorConfirmedEvents

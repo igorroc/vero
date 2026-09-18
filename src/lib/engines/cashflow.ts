@@ -196,20 +196,56 @@ export function buildBalanceSeries(
 	const rangeStart = startOfDay(input.startDate)
 	const rangeEnd = startOfDay(input.endDate)
 	const todayStart = startOfDay(today)
-	let realBalance = input.accounts.reduce(
-		(total, account) => total + account.initialBalance,
-		0,
+	const accountTypes = new Map(
+		input.accounts.map((account) => [account.id, account.type ?? "BANK"]),
 	)
-	let projectedBalance = realBalance
+	const realAccountBalances = new Map(
+		input.accounts.map((account) => [account.id, account.initialBalance]),
+	)
+	const projectedAccountBalances = new Map(realAccountBalances)
+
+	function applyEvent(
+		balances: Map<string, number>,
+		event: CashflowInput["events"][number],
+	) {
+		const sourceBalance = balances.get(event.accountId)
+
+		if (event.type === "TRANSFER") {
+			if (!event.destinationAccountId || sourceBalance === undefined) return
+			const destinationBalance = balances.get(event.destinationAccountId)
+			if (destinationBalance === undefined) return
+			balances.set(event.accountId, sourceBalance + event.amount)
+			balances.set(event.destinationAccountId, destinationBalance - event.amount)
+			return
+		}
+
+		if (sourceBalance !== undefined) {
+			balances.set(event.accountId, sourceBalance + event.amount)
+		}
+	}
+
+	function getBalancesByType(balances: Map<string, number>) {
+		let availableBalance = 0
+		let investmentBalance = 0
+
+		for (const [accountId, balance] of balances) {
+			if (accountTypes.get(accountId) === "INVESTMENT") {
+				investmentBalance += balance
+			} else {
+				availableBalance += balance
+			}
+		}
+
+		return { availableBalance, investmentBalance }
+	}
 
 	for (const event of input.events) {
 		if (
 			event.status === "CONFIRMED" &&
-			startOfDay(event.date).getTime() < rangeStart.getTime() &&
-			event.type !== "TRANSFER"
+			startOfDay(event.date).getTime() < rangeStart.getTime()
 		) {
-			realBalance += event.amount
-			projectedBalance += event.amount
+			applyEvent(realAccountBalances, event)
+			applyEvent(projectedAccountBalances, event)
 		}
 	}
 
@@ -223,20 +259,47 @@ export function buildBalanceSeries(
 		const date = addDays(rangeStart, index)
 		const isFuture = date.getTime() > todayStart.getTime()
 		for (const event of eventsByDate.get(formatDateISO(date)) ?? []) {
-			if (event.type === "TRANSFER") continue
 			if (event.status === "CONFIRMED") {
-				realBalance += event.amount
-				projectedBalance += event.amount
+				applyEvent(realAccountBalances, event)
+				applyEvent(projectedAccountBalances, event)
 			} else if (event.status === "PLANNED" && isFuture) {
-				projectedBalance += event.amount
+				applyEvent(projectedAccountBalances, event)
 			}
 		}
+		const realBalances = getBalancesByType(realAccountBalances)
+		const projectedBalances = getBalancesByType(projectedAccountBalances)
+		const balancesForDate = date.getTime() <= todayStart.getTime()
+			? realBalances
+			: projectedBalances
 
 		points.push({
 			dateKey: formatDateISO(date),
-			realBalance: date.getTime() <= todayStart.getTime() ? realBalance : null,
+			realBalance:
+				date.getTime() <= todayStart.getTime()
+					? realBalances.availableBalance + realBalances.investmentBalance
+					: null,
 			projectedBalance:
-				date.getTime() >= todayStart.getTime() ? projectedBalance : null,
+				date.getTime() >= todayStart.getTime()
+					? projectedBalances.availableBalance + projectedBalances.investmentBalance
+					: null,
+			availableBalance: balancesForDate.availableBalance,
+			investmentBalance: balancesForDate.investmentBalance,
+			realAvailableBalance:
+				date.getTime() <= todayStart.getTime()
+					? realBalances.availableBalance
+					: null,
+			projectedAvailableBalance:
+				date.getTime() >= todayStart.getTime()
+					? projectedBalances.availableBalance
+					: null,
+			realInvestmentBalance:
+				date.getTime() <= todayStart.getTime()
+					? realBalances.investmentBalance
+					: null,
+			projectedInvestmentBalance:
+				date.getTime() >= todayStart.getTime()
+					? projectedBalances.investmentBalance
+					: null,
 		})
 	}
 

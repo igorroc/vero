@@ -39,20 +39,24 @@ export function DashboardBalanceChart({
 						Saldo ao longo do mês
 					</h2>
 					<p className="mt-0.5 text-sm text-text-secondary">
-						A linha pontilhada considera os lançamentos planejados.
+						Trechos pontilhados consideram os lançamentos planejados.
 					</p>
 				</div>
 				<div
-					className="flex gap-3 text-xs text-text-secondary"
+					className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-secondary"
 					aria-label="Legenda do gráfico"
 				>
 					<span className="flex items-center gap-1.5">
 						<i className="h-0.5 w-4 bg-primary" />
-						Saldo real
+						Saldo em conta
 					</span>
 					<span className="flex items-center gap-1.5">
-						<i className="h-0 w-4 border-t-2 border-dashed border-info" />
-						Saldo projetado
+						<i className="h-0.5 w-4 bg-info" />
+						Investimentos
+					</span>
+					<span className="flex items-center gap-1.5">
+						<i className="h-0 w-4 border-t-2 border-dashed border-text-muted" />
+						Planejado
 					</span>
 				</div>
 			</div>
@@ -119,8 +123,8 @@ export function DashboardBalanceChart({
 						)}
 						<Line
 							type="monotone"
-							dataKey="realBalance"
-							name="Saldo real"
+							dataKey="realAvailableBalance"
+							name="Saldo em conta"
 							stroke="rgb(var(--color-primary))"
 							strokeWidth={3}
 							dot={false}
@@ -129,8 +133,29 @@ export function DashboardBalanceChart({
 						/>
 						<Line
 							type="monotone"
-							dataKey="projectedBalance"
-							name="Saldo projetado"
+							dataKey="projectedAvailableBalance"
+							name="Saldo em conta planejado"
+							stroke="rgb(var(--color-primary))"
+							strokeWidth={3}
+							strokeDasharray="7 7"
+							dot={false}
+							connectNulls={false}
+							isAnimationActive={false}
+						/>
+						<Line
+							type="monotone"
+							dataKey="realInvestmentBalance"
+							name="Investimentos"
+							stroke="rgb(var(--color-info))"
+							strokeWidth={3}
+							dot={false}
+							connectNulls={false}
+							isAnimationActive={false}
+						/>
+						<Line
+							type="monotone"
+							dataKey="projectedInvestmentBalance"
+							name="Investimentos planejados"
 							stroke="rgb(var(--color-info))"
 							strokeWidth={3}
 							strokeDasharray="7 7"
