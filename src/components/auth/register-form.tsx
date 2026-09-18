@@ -5,6 +5,7 @@ import { toast } from "react-toastify"
 import { registerAction } from "@/features/auth/register"
 import { useState } from "react"
 import { Mail, Lock, User, UserPlus } from "lucide-react"
+import Link from "next/link"
 
 export function RegisterForm() {
 	const [isLoading, setIsLoading] = useState(false)
@@ -82,8 +83,21 @@ export function RegisterForm() {
 			</Button>
 
 			<p className="text-xs text-slate-400 text-center mt-2">
-				Ao criar uma conta, você concorda com nossos termos de uso e política de
-				privacidade.
+				Ao criar uma conta, você concorda com nossos{" "}
+				<Link
+					href="/termos-de-uso"
+					className="underline underline-offset-2 hover:text-slate-600"
+				>
+					termos de uso
+				</Link>{" "}
+				e{" "}
+				<Link
+					href="/politica-de-privacidade"
+					className="underline underline-offset-2 hover:text-slate-600"
+				>
+					política de privacidade
+				</Link>
+				.
 			</p>
 		</form>
 	)
