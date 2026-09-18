@@ -74,7 +74,7 @@ export function ProfileContent({ user, billingState }: ProfileContentProps) {
 				UNPAID: { label: "Pagamento não realizado", color: "danger" as const },
 				CANCELED: { label: "Assinatura encerrada", color: "default" as const },
 			}[billingState.subscription.status]
-		: { label: "Acesso ativo", color: "success" as const }
+		: { label: "", color: "success" as const }
 	const subscriptionDateLabel = billingState?.subscription
 		? billingState.subscription.status === "CANCELED"
 			? "Último período"
@@ -150,13 +150,15 @@ export function ProfileContent({ user, billingState }: ProfileContentProps) {
 										: "Seu plano atual cobre o essencial para organizar sua vida financeira."}
 							</p>
 						</div>
-						<Chip
-							color={billingStatus.color}
-							variant="flat"
-							className="shrink-0"
-						>
-							{billingStatus.label}
-						</Chip>
+						{billingStatus.label && (
+							<Chip
+								color={billingStatus.color}
+								variant="flat"
+								className="shrink-0"
+							>
+								{billingStatus.label}
+							</Chip>
+						)}
 					</div>
 
 					<div className="mt-6 grid gap-3 border-y border-border py-5 sm:grid-cols-2">
