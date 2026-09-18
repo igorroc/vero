@@ -238,6 +238,23 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 			(event) =>
 				startOfDay(event.date).getTime() >= startOfDay(today).getTime(),
 		)
+		const accountTypes = new Map(
+			accounts.map((account) => [account.id, account.type]),
+		)
+		const hasFutureDate = (date: Date) =>
+			startOfDay(date).getTime() > startOfDay(today).getTime()
+		const getCashTransferImpact = (event: (typeof remainingMonthlyEvents)[number]) => {
+			if (event.type !== "TRANSFER" || !event.destinationAccountId) return 0
+			const sourceType = accountTypes.get(event.accountId)
+			const destinationType = accountTypes.get(event.destinationAccountId)
+			if (sourceType === "INVESTMENT" && destinationType !== "INVESTMENT") {
+				return -event.amount
+			}
+			if (sourceType !== "INVESTMENT" && destinationType === "INVESTMENT") {
+				return event.amount
+			}
+			return 0
+		}
 
 		// Map events for spending limit calculation
 		const eventsForCalculation = remainingMonthlyEvents
@@ -247,6 +264,7 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 				status: e.status,
 				priority: e.priority,
 				date: e.date,
+				cashTransferImpact: getCashTransferImpact(e),
 			}))
 			.concat(
 				monthlyDebtInstallments.map((installment) => ({
@@ -255,6 +273,7 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 					status: "PLANNED" as const,
 					priority: "REQUIRED" as const,
 					date: installment.dueDate,
+					cashTransferImpact: 0,
 				})),
 			)
 		const projectedAccountBalances = projectPlannedAccountBalances(
@@ -264,7 +283,9 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 				initialBalance: account.currentBalance,
 			})),
 			remainingMonthlyEvents
-				.filter((event) => event.status === "PLANNED")
+				.filter(
+					(event) => event.status === "PLANNED" || hasFutureDate(event.date),
+				)
 				.map((event) => ({
 					id: event.id,
 					description: event.description,

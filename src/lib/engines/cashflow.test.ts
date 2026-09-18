@@ -113,8 +113,45 @@ describe("buildCashflowProjection", () => {
 			],
 		)
 
-		expect(balances.get("cash")).toBe(50000)
+		expect(balances.get("cash")).toBe(40000)
 		expect(balances.get("investment")).toBe(230000)
+	})
+
+	it("should include future confirmed income and investment redemptions", () => {
+		const balances = projectPlannedAccountBalances(
+			[
+				{ id: "cash", name: "Conta", initialBalance: 100000 },
+				{ id: "investment", name: "Investimento", initialBalance: 200000 },
+			],
+			[
+				{
+					id: "income",
+					description: "Receita futura",
+					amount: 50000,
+					type: "INCOME",
+					costType: null,
+					status: "PLANNED",
+					priority: "IMPORTANT",
+					date: utcDate(2024, 1, 10),
+					accountId: "cash",
+				},
+				{
+					id: "redemption",
+					description: "Resgate futuro",
+					amount: -80000,
+					type: "TRANSFER",
+					costType: null,
+					status: "CONFIRMED",
+					priority: "IMPORTANT",
+					date: utcDate(2024, 1, 15),
+					accountId: "investment",
+					destinationAccountId: "cash",
+				},
+			],
+		)
+
+		expect(balances.get("cash")).toBe(230000)
+		expect(balances.get("investment")).toBe(120000)
 	})
 
 	it("should apply confirmed events to balance", () => {

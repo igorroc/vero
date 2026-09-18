@@ -119,6 +119,26 @@ describe("calculateDailySpendingLimit", () => {
 		expect(result.breakdown.availableForSpending).toBe(340000)
 	})
 
+	it("should include a future investment redemption in available cash", () => {
+		const result = calculateDailySpendingLimit({
+			...baseInput,
+			currentBalance: 50000,
+			events: [
+				{
+					amount: -100000,
+					type: "TRANSFER",
+					status: "CONFIRMED",
+					priority: "IMPORTANT",
+					date: utcDate(2024, 1, 15),
+					cashTransferImpact: 100000,
+				},
+			],
+		})
+
+		expect(result.breakdown.cashNow).toBe(150000)
+		expect(result.breakdown.availableForSpending).toBe(140000)
+	})
+
 	it("should ignore CONFIRMED events (only count PLANNED)", () => {
 		const input: SpendingLimitInput = {
 			...baseInput,

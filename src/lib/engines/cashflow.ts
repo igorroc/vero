@@ -324,7 +324,7 @@ function groupEventsByDate(
 	return map
 }
 
-/** Project account balances from a confirmed balance snapshot using planned events. */
+/** Project account balances from a confirmed balance snapshot using future events. */
 export function projectPlannedAccountBalances(
 	accounts: CashflowInput["accounts"],
 	events: CashflowInput["events"],
@@ -334,7 +334,7 @@ export function projectPlannedAccountBalances(
 	)
 
 	for (const event of events) {
-		if (event.status !== "PLANNED") continue
+		if (event.status === "SKIPPED") continue
 
 		const sourceBalance = balances.get(event.accountId)
 		if (sourceBalance !== undefined) {

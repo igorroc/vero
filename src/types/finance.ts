@@ -354,6 +354,7 @@ export interface SpendingLimitInput {
 		status: EventStatus
 		priority: EventPriority
 		date: Date
+		cashTransferImpact?: Cents
 	}>
 	horizonDate: Date
 	horizonMode: HorizonMode

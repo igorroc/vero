@@ -59,10 +59,17 @@ export function calculateDailySpendingLimit(
 		const isAfterToday = eventDate.getTime() > todayStart.getTime()
 		const isWithinHorizon = eventDate.getTime() <= horizonStart.getTime()
 		const isPlanned = e.status === "PLANNED"
+		const isProjectedTransfer =
+			e.type === "TRANSFER" &&
+			(e.cashTransferImpact ?? 0) !== 0 &&
+			(isPlanned || isAfterToday)
 
 		// Expenses only count from tomorrow (today's expenses affect currentBalance)
 		if (e.type === "EXPENSE") {
 			return isAfterToday && isWithinHorizon && isPlanned
+		}
+		if (e.type === "TRANSFER") {
+			return isWithinHorizon && isProjectedTransfer
 		}
 		// Income and investments count from today
 		return isOnOrAfterToday && isWithinHorizon && isPlanned
@@ -82,9 +89,12 @@ export function calculateDailySpendingLimit(
 	const futureIncome = futureEvents
 		.filter((e) => e.type === "INCOME" && e.amount > 0)
 		.reduce((sum, e) => sum + e.amount, 0)
+	const cashTransferImpact = futureEvents
+		.filter((e) => e.type === "TRANSFER")
+		.reduce((sum, e) => sum + (e.cashTransferImpact ?? 0), 0)
 
-	// Available cash includes current balance + future income
-	const effectiveCash = currentBalance + futureIncome
+	// Available cash includes planned income and transfers that move money into cash accounts.
+	const effectiveCash = currentBalance + futureIncome + cashTransferImpact
 
 	// Calculate available for discretionary spending
 	const availableForSpending =
