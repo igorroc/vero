@@ -13,6 +13,7 @@ import { DashboardMonthlyComparison } from "./dashboard-monthly-comparison"
 import { DashboardMonthEndBalance } from "./dashboard-month-end-balance"
 import { DashboardSpendingLimit } from "./dashboard-spending-limit"
 import { DashboardUpcomingEvents } from "./dashboard-upcoming-events"
+import { OnboardingChecklist } from "./onboarding-checklist"
 
 export function DashboardContent() {
 	const queryClient = useQueryClient()
@@ -70,6 +71,7 @@ export function DashboardContent() {
 
 	return (
 		<div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+			<OnboardingChecklist onPreviewStarted={invalidateDashboard} />
 			{data.spendingLimit && (
 				<DashboardSpendingLimit breakdown={data.spendingLimit.breakdown} />
 			)}

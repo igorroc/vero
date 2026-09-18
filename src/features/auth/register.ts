@@ -64,5 +64,5 @@ export async function registerAction(formData: FormData) {
 		}
 	}
 
-	redirect("/profile")
+	redirect("/dashboard")
 }

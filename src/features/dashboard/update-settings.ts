@@ -46,6 +46,11 @@ export async function updateSettings(
 				...updateData,
 			},
 		})
+		await prisma.userOnboarding.upsert({
+			where: { userId: user.id },
+			create: { userId: user.id, settingsConfiguredAt: new Date() },
+			update: { settingsConfiguredAt: new Date() },
+		})
 
 		return { success: true, settings }
 	} catch (error) {

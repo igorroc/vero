@@ -34,6 +34,7 @@ import type {
 } from "@/types/finance"
 import { addDays, endOfMonth, startOfDay } from "@/types/finance"
 import { canUse } from "@/features/billing"
+import { isLimitPreviewActive } from "@/features/onboarding"
 
 export interface DashboardData {
 	// Balance info
@@ -104,7 +105,16 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 		if (!user) {
 			return { success: false, error: "Not authenticated" }
 		}
-		const canViewSpendingLimit = await canUse(user.id, "spending-limit.view")
+		const [canViewSpendingLimit, onboarding] = await Promise.all([
+			canUse(user.id, "spending-limit.view"),
+			prisma.userOnboarding.findUnique({
+				where: { userId: user.id },
+				select: { limitPreviewStartedAt: true },
+			}),
+		])
+		const canShowSpendingLimit =
+			canViewSpendingLimit ||
+			isLimitPreviewActive(onboarding?.limitPreviewStartedAt)
 
 		// Get user settings
 		let settings = await prisma.userSettings.findUnique({
@@ -296,7 +306,7 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 		}
 
 		// Calculate spending limit
-		const spendingLimit = canViewSpendingLimit
+		const spendingLimit = canShowSpendingLimit
 			? calculateSpendingLimitAuto(
 					availableBalance,
 					eventsForCalculation,
