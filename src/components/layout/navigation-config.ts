@@ -10,6 +10,8 @@ import {
 	Wallet,
 	UsersRound,
 	BadgeDollarSign,
+	ShieldCheck,
+	UserRound,
 } from "lucide-react"
 import type { ElementType } from "react"
 
@@ -62,7 +64,11 @@ export const sidebarNavigationGroups: NavigationGroup[] = [
 	},
 	{
 		label: "Preferências",
-		items: [{ icon: Settings, label: "Configurações", href: "/settings" }],
+		items: [
+			{ icon: Settings, label: "Configurações", href: "/settings" },
+			{ icon: UserRound, label: "Perfil", href: "/profile" },
+			{ icon: ShieldCheck, label: "Segurança", href: "/security" },
+		],
 	},
 ]
 
@@ -98,6 +104,8 @@ export const bottomMoreNavigationItems: NavigationItem[] = [
 	{ icon: TrendingUp, label: "Investimentos", href: "/investments" },
 	{ icon: HandCoins, label: "Dívidas", href: "/debts" },
 	{ icon: Settings, label: "Configurações", href: "/settings" },
+	{ icon: UserRound, label: "Perfil", href: "/profile" },
+	{ icon: ShieldCheck, label: "Segurança", href: "/security" },
 ]
 
 export const adminBottomNavigationItems: NavigationItem[] = [
