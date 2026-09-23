@@ -33,7 +33,7 @@ export default async function AppGroupLayout({
 			sessionView={sessionView}
 		>
 			{children}
-			<AssistantWidget />
+			<AssistantWidget userName={user.name} />
 		</AppLayout>
 	)
 }

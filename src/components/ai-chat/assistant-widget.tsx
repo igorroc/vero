@@ -15,7 +15,7 @@ import { ChatPanel } from "./chat-panel"
  * Widget global: speed-dial com 2 funções — abrir o modal de novo lançamento
  * e abrir o chat como painel flutuante.
  */
-export function AssistantWidget() {
+export function AssistantWidget({ userName }: { userName: string }) {
 	const [menuOpen, setMenuOpen] = useState(false)
 	const [eventOpen, setEventOpen] = useState(false)
 	const [chatOpen, setChatOpen] = useState(false)
@@ -63,7 +63,10 @@ export function AssistantWidget() {
 							exit={{ opacity: 0, y: 12, scale: 0.97 }}
 							className="mb-1"
 						>
-							<ChatPanel onClose={() => setChatOpen(false)} />
+							<ChatPanel
+								userName={userName}
+								onClose={() => setChatOpen(false)}
+							/>
 						</motion.div>
 					)}
 				</AnimatePresence>

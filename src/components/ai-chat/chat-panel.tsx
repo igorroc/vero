@@ -3,34 +3,69 @@
 import { useEffect, useRef, useState } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-import { Button, Card, CardBody, CardHeader, Input } from "@nextui-org/react"
-import { Send, Sparkles, X } from "lucide-react"
+import { Button, Card, CardBody } from "@nextui-org/react"
+import {
+	BarChart3,
+	Check,
+	Minus,
+	PiggyBank,
+	Send,
+	ShieldCheck,
+	UtensilsCrossed,
+	X,
+} from "lucide-react"
 import { stripThinkingBlocks } from "@/features/ai-chat/text"
+import { MarkdownText } from "./markdown-text"
+import {
+	deriveIntermediateSteps,
+	deriveThoughtSteps,
+	splitMessageSteps,
+	ThoughtBlock,
+} from "./thought-steps"
 
 const SUGGESTIONS = [
-	"Quanto posso gastar por dia?",
-	"Como está meu saldo?",
-	"O que vence nos próximos 7 dias?",
+	{ label: "Posso gastar hoje?", icon: UtensilsCrossed },
+	{ label: "Como está meu caixa?", icon: PiggyBank },
+	{ label: "Últimos lançamentos", icon: BarChart3 },
 ]
 
-function MessageText({ text }: { text: string }) {
-	const visible = stripThinkingBlocks(text)
-	if (!visible) return null
-	return (
-		<p className="whitespace-pre-wrap text-sm leading-relaxed">{visible}</p>
-	)
+function sentTimeKey(id: string): string {
+	return `sent-${id}`
 }
 
-export function ChatPanel({ onClose }: { onClose: () => void }) {
+export function ChatPanel({
+	userName,
+	onClose,
+}: {
+	userName: string
+	onClose: () => void
+}) {
 	const { messages, sendMessage, status, error } = useChat({
 		transport: new DefaultChatTransport({ api: "/api/ai/chat" }),
 	})
 	const [input, setInput] = useState("")
+	const [collapsed, setCollapsed] = useState(false)
+	const [sentAt, setSentAt] = useState<Record<string, string>>({})
 	const bottomRef = useRef<HTMLDivElement>(null)
 	const busy = status === "streaming" || status === "submitted"
 
 	useEffect(() => {
 		bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+	}, [messages, busy])
+
+	useEffect(() => {
+		setSentAt((current) => {
+			const next = { ...current }
+			for (const message of messages) {
+				if (!next[sentTimeKey(message.id)]) {
+					next[sentTimeKey(message.id)] = new Date().toLocaleTimeString(
+						"pt-BR",
+						{ hour: "2-digit", minute: "2-digit" },
+					)
+				}
+			}
+			return next
+		})
 	}, [messages])
 
 	function send(text: string) {
@@ -40,20 +75,31 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
 		setInput("")
 	}
 
+	const firstName = userName.trim().split(" ")[0] || "você"
+
 	return (
-		<Card className="flex max-h-[62vh] h-[480px] w-[calc(100vw-2rem)] max-w-sm flex-col shadow-2xl">
-			<CardHeader className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-700">
-				<span className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-700 text-white">
-					<Sparkles size={16} />
+		<Card className="flex max-h-[70vh] h-[560px] w-[calc(100vw-2rem)] max-w-md flex-col overflow-hidden shadow-2xl">
+			<div className="flex items-center gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+				<span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300">
+					<span className="text-lg font-black">V</span>
 				</span>
-				<div className="flex-1">
-					<p className="text-sm font-bold text-slate-900 dark:text-white">
-						Assistente Vero
-					</p>
-					<p className="text-[11px] text-slate-500">
-						Pergunte sobre seu financeiro
-					</p>
+				<div className="min-w-0 flex-1">
+					<div className="flex items-center gap-2">
+						<p className="truncate text-base font-bold text-slate-900 dark:text-white">
+							Pergunte à Vero
+						</p>
+					</div>
+					<p className="text-[11px] text-slate-400">Gerado pela IA</p>
 				</div>
+				<Button
+					size="sm"
+					variant="light"
+					isIconOnly
+					aria-label="Minimizar"
+					onPress={() => setCollapsed(!collapsed)}
+				>
+					<Minus size={16} />
+				</Button>
 				<Button
 					size="sm"
 					variant="light"
@@ -63,86 +109,156 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
 				>
 					<X size={16} />
 				</Button>
-			</CardHeader>
-			<CardBody className="flex flex-1 flex-col gap-2 overflow-y-auto">
-				{messages.length === 0 && (
-					<div className="flex flex-col gap-2">
-						<p className="text-sm text-slate-500">
-							Olá! Posso ajudar com saldos, limite diário, próximos lançamentos
-							e conciliação.
-						</p>
-						{SUGGESTIONS.map((suggestion) => (
-							<button
-								key={suggestion}
-								type="button"
-								onClick={() => send(suggestion)}
-								className="rounded-xl border border-slate-200 px-3 py-2 text-left text-sm text-teal-700 hover:bg-teal-50 dark:border-slate-700 dark:text-teal-300 dark:hover:bg-teal-950"
-							>
-								{suggestion}
-							</button>
-						))}
-					</div>
-				)}
-				{messages.map((message) => (
-					<div
-						key={message.id}
-						className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-					>
-						<div
-							className={`max-w-[85%] rounded-2xl px-3 py-2 ${
-								message.role === "user"
-									? "bg-teal-700 text-white"
-									: "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
-							}`}
-						>
-							{message.parts.map((part, i) =>
-								"text" in part && typeof part.text === "string" ? (
-									<MessageText key={i} text={part.text} />
-								) : null,
-							)}
-							{message.parts.some(
-								(part) =>
-									part.type !== "text" && !part.type.startsWith("data-"),
-							) && (
-								<p className="mt-1 text-[11px] opacity-70">
-									consultando seus dados…
-								</p>
-							)}
-						</div>
-					</div>
-				))}
-				{busy && (
-					<p className="text-xs text-slate-400">Vero está escrevendo…</p>
-				)}
-				{error && (
-					<p className="text-xs text-red-500">
-						Não foi possível responder. Tente de novo.
-					</p>
-				)}
-				<div ref={bottomRef} />
-			</CardBody>
-			<div className="flex gap-2 border-t border-slate-200 p-2 dark:border-slate-700">
-				<Input
-					size="sm"
-					aria-label="Mensagem"
-					placeholder="Pergunte…"
-					value={input}
-					onValueChange={setInput}
-					onKeyDown={(event) => {
-						if (event.key === "Enter") send(input)
-					}}
-				/>
-				<Button
-					size="sm"
-					color="primary"
-					isIconOnly
-					aria-label="Enviar"
-					isDisabled={!input.trim() || busy}
-					onPress={() => send(input)}
-				>
-					<Send size={15} />
-				</Button>
 			</div>
+
+			{!collapsed && (
+				<>
+					<CardBody className="flex flex-1 flex-col gap-3 overflow-y-auto px-3 sm:px-4">
+						{messages.length === 0 && (
+							<>
+								<div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/60">
+									<p className="text-[15px] font-semibold leading-snug text-slate-800 dark:text-slate-100">
+										Olá, {firstName}. Posso te ajudar a entender seus gastos e
+										planejar seus próximos passos.
+									</p>
+									<div className="mt-3 grid grid-cols-3 gap-2">
+										{SUGGESTIONS.map(({ label, icon: Icon }) => (
+											<button
+												key={label}
+												type="button"
+												onClick={() => send(label)}
+												className="flex flex-col items-start gap-1.5 rounded-xl border border-slate-200 bg-white p-2.5 text-left text-xs font-medium text-slate-700 hover:border-teal-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+											>
+												<Icon
+													size={16}
+													className="text-teal-700 dark:text-teal-300"
+												/>
+												{label}
+											</button>
+										))}
+									</div>
+								</div>
+							</>
+						)}
+
+						{messages.map((message) => {
+							if (message.role === "user") {
+								const text = message.parts
+									.filter(
+										(part): part is { type: "text"; text: string } =>
+											"text" in part && typeof part.text === "string",
+									)
+									.map((part) => part.text)
+									.join("")
+								return (
+									<div key={message.id} className="flex justify-end">
+										<div className="max-w-[85%]">
+											<div className="rounded-2xl rounded-br-md bg-teal-700 px-3.5 py-2.5 text-sm text-white">
+												{text}
+											</div>
+											<p className="mt-0.5 flex items-center justify-end gap-1 text-[11px] text-slate-400">
+												{sentAt[sentTimeKey(message.id)] ?? ""}
+												<Check size={12} strokeWidth={3} />
+											</p>
+										</div>
+									</div>
+								)
+							}
+
+							const looseParts = message.parts.map((part) => ({
+								type: part.type,
+								state: "state" in part ? String(part.state ?? "") : "",
+								toolName:
+									"toolName" in part && typeof part.toolName === "string"
+										? part.toolName
+										: undefined,
+							}))
+							const split = splitMessageSteps(looseParts)
+							const finalStep = split[split.length - 1] ?? []
+							// Títulos: steps intermediários + tools do step final.
+							// Texto: SOMENTE do step final (pensamento não renderiza).
+							const steps = [
+								...deriveIntermediateSteps(split),
+								...deriveThoughtSteps(finalStep),
+							]
+							const textBuckets: string[][] = [[]]
+							message.parts.forEach((part) => {
+								if (part.type === "step-start") {
+									textBuckets.push([])
+									return
+								}
+								if ("text" in part && typeof part.text === "string") {
+									textBuckets[textBuckets.length - 1].push(part.text)
+								}
+							})
+							const texts = (textBuckets[textBuckets.length - 1] ?? [])
+								.map((text) => stripThinkingBlocks(text))
+								.filter(Boolean)
+							const isStreaming =
+								busy && messages[messages.length - 1]?.id === message.id
+
+							return (
+								<div key={message.id} className="flex gap-2">
+									<span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-black text-teal-700 dark:bg-teal-950 dark:text-teal-300">
+										V
+									</span>
+									<div className="flex min-w-0 flex-1 flex-col gap-2 rounded-2xl rounded-tl-md border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+										{steps.length > 0 && (
+											<ThoughtBlock steps={steps} streaming={isStreaming} />
+										)}
+										{texts.map((text, i) => (
+											<MarkdownText key={i} text={text} />
+										))}
+										{isStreaming && texts.length === 0 && (
+											<p className="text-xs text-slate-400">
+												Vero está escrevendo…
+											</p>
+										)}
+										<p className="text-right text-[11px] text-slate-400">
+											{sentAt[sentTimeKey(message.id)] ?? ""}
+										</p>
+									</div>
+								</div>
+							)
+						})}
+
+						{error && (
+							<p className="text-xs text-red-500">
+								Não foi possível responder. Tente de novo.
+							</p>
+						)}
+						<div ref={bottomRef} />
+					</CardBody>
+
+					<div className="border-t border-slate-200 px-3 pb-2 pt-2.5 dark:border-slate-700 sm:px-4">
+						<div className="flex items-center gap-2 rounded-full border border-slate-200 py-1.5 pl-4 pr-1.5 dark:border-slate-700">
+							<input
+								aria-label="Mensagem"
+								placeholder="Pergunte sobre seus gastos, orçamento ou planos…"
+								value={input}
+								onChange={(event) => setInput(event.target.value)}
+								onKeyDown={(event) => {
+									if (event.key === "Enter") send(input)
+								}}
+								className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
+							/>
+							<button
+								type="button"
+								aria-label="Enviar"
+								disabled={!input.trim() || busy}
+								onClick={() => send(input)}
+								className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-teal-700 text-white transition-opacity disabled:opacity-40"
+							>
+								<Send size={16} />
+							</button>
+						</div>
+						<p className="mt-1.5 flex items-center justify-center gap-1 text-center text-[11px] text-slate-400">
+							<ShieldCheck size={12} />
+							Suas informações estão seguras e são usadas apenas para te ajudar.
+						</p>
+					</div>
+				</>
+			)}
 		</Card>
 	)
 }
