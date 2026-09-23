@@ -1,0 +1,41 @@
+ Extrato Conta Corrente 
+Conta ;123456789
+Período ;22/08/2026 a 22/09/2026
+Saldo ;203,63
+
+Data Lançamento;Histórico;Descrição;Valor;Saldo
+21/09/2026;Resgate;Cdb Obj Pj Banco Inter S A;50,00;203,63
+21/09/2026;Pix enviado ;Joao dos Santos;-50,00;153,63
+21/09/2026;Pix recebido;Mariana Silva Costa;800,00;203,63
+21/09/2026;Pix enviado ;Receita Federal;-615,01;-596,37
+18/09/2026;Pix enviado ;Joao dos Santos;-50,00;18,64
+18/09/2026;Resgate;Cdb Obj Pj Banco Inter S A;55,50;68,64
+18/09/2026;Resgate;Cdb Obj Pj Banco Inter S A;2.244,50;13,14
+18/09/2026;Pix enviado ;Joao dos Santos;-2.300,00;-2.231,36
+13/09/2026;Resgate;Cdb Obj Pj Banco Inter S A;598,21;68,64
+13/09/2026;Resgate;Cdb Obj Pj Banco Inter S A;401,79;-529,57
+13/09/2026;Pix enviado ;Joao dos Santos;-1.000,00;-931,36
+11/09/2026;Resgate;Cdb Obj Pj Banco Inter S A;600,00;68,64
+11/09/2026;Pix enviado ;Receita Federal;-229,98;-531,36
+11/09/2026;Pix enviado ;Receita Federal;-301,38;-301,38
+10/09/2026;Resgate;Cdb Obj Pj Banco Inter S A;299,27;0,00
+10/09/2026;Resgate;Cdb Obj Pj Banco Inter S A;1.000,73;-299,27
+10/09/2026;Pix enviado ;Contabil Modelo Ltda;-1.300,00;-1.300,00
+10/09/2026;Aplicação;Cdb Obj Pj Banco Inter S A;-702,13;0,00
+09/09/2026;Pix recebido;Comercio Exemplo Ltda;702,13;702,13
+05/09/2026;Pix enviado ;Joao dos Santos;-136,35;0,00
+04/09/2026;Histórico disponível;Cdb Credito;798,03;136,35
+04/09/2026;Histórico disponível;Cdb Credito;-798,03;-661,68
+04/09/2026;Pix enviado ;Joao dos Santos;-3.300,00;136,35
+02/09/2026;Aplicação;Cdb Obj Pj Banco Inter S A;-1.300,00;3.436,35
+01/09/2026;Pix recebido;Comercio Exemplo Ltda;10.250,00;4.736,35
+01/09/2026;Pix enviado ;Joao dos Santos;-1.300,00;-5.513,65
+01/09/2026;Pagamento efetuado;Pagamento Fatura - JOAO DOS SANTOS;-962,51;-4.213,65
+01/09/2026;Aplicação;Cdb Obj Pj Banco Inter S A;-1.000,00;-3.251,14
+01/09/2026;Aplicação;Cdb Obj Pj Banco Inter S A;-2.300,00;-2.251,14
+25/08/2026;Resgate;Cdb Credito Banco Inter S A;100,00;48,86
+25/08/2026;Pix enviado ;Joao dos Santos;-65,00;-51,14
+23/08/2026;Resgate;Cdb Obj Pj Banco Inter S A;45,00;13,86
+23/08/2026;Pix enviado ;Joao dos Santos;-45,00;-31,14
+22/08/2026;Resgate;Cdb Obj Pj Banco Inter S A;157,98;13,86
+22/08/2026;Pix enviado ;Joao dos Santos;-170,00;-144,12
