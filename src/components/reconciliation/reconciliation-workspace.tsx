@@ -18,15 +18,13 @@ import type { Divergence, NormalizedTx } from "@/lib/engines/reconciliation"
 import { AnalysisLoading } from "./analysis-loading"
 import { PdfReview } from "./pdf-review"
 import { ReconcileSidebar } from "./reconcile-sidebar"
-import {
-	ReconciliationStepper,
-	type ReconciliationStep,
-} from "./reconciliation-stepper"
+
 import { ReconciliationSummary } from "./reconciliation-summary"
 import { ReviewTable, type ReviewRow, type ReviewStatus } from "./review-table"
 import { StatementDropzone } from "./statement-dropzone"
 
 const MIN_ANALYSIS_MS = 5000
+export type ReconciliationStep = "import" | "analyzing" | "review"
 
 function statusOf(divergence: Divergence): ReviewStatus {
 	if (divergence.kind === "matched") return "matched"
@@ -353,8 +351,6 @@ export function ReconciliationWorkspace() {
 					</motion.div>
 				)}
 			</AnimatePresence>
-
-			<ReconciliationStepper current={step} />
 		</div>
 	)
 }
