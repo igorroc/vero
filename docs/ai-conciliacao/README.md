@@ -54,7 +54,7 @@ fase futura; fases 02–04 reutilizam contratos das anteriores quando presentes,
 trazem fallback próprio. Detalhes em cada arquivo:
 
 - [Fase 01 — Conciliação via CSV/OFX (sem IA)](./fase-01-conciliacao-csv-ofx.md) ✅ Concluída
-- [Fase 02 — Conciliação via PDF com IA (sem chat)](./fase-02-conciliacao-pdf-ia.md)
+- [Fase 02 — Conciliação via PDF com IA (sem chat)](./fase-02-conciliacao-pdf-ia.md) ✅ Concluída
 - [Fase 03 — Chat de IA para dúvidas + conciliação](./fase-03-chat-ia.md)
 - [Fase 04 — Limites por plano (Plus)](./fase-04-limites-por-plano.md)
 
