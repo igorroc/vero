@@ -3,10 +3,11 @@
 import prisma from "@/lib/db"
 import { getUserBySession } from "@/lib/auth"
 import {
+	mirrorIncomingTransfers,
 	reconcile,
+	type AccountEvent,
 	type Divergence,
 	type NormalizedTx,
-	type ReconcilableEvent,
 } from "@/lib/engines/reconciliation"
 
 export type StatementTxInput = NormalizedTx
@@ -65,13 +66,17 @@ export async function getDivergences(input: {
 		const events = await prisma.event.findMany({
 			where: {
 				userId: user.id,
-				accountId: input.accountId,
+				OR: [
+					{ accountId: input.accountId },
+					{ destinationAccountId: input.accountId },
+				],
 				isRecurrenceTemplate: false,
 				status: { in: ["CONFIRMED", "PLANNED"] },
 				date: { gte: from, lte: to },
 			},
 			select: {
 				id: true,
+				accountId: true,
 				date: true,
 				amount: true,
 				description: true,
@@ -81,14 +86,21 @@ export async function getDivergences(input: {
 			orderBy: { date: "asc" },
 		})
 
-		const reconcilable: ReconcilableEvent[] = events.map((event) => ({
+		const accountEvents: AccountEvent[] = events.map((event) => ({
 			id: event.id,
+			accountId: event.accountId,
 			date: event.date.toISOString().split("T")[0],
 			amountCents: event.amount,
 			description: event.description,
 			status: event.status as "CONFIRMED" | "PLANNED",
-			type: event.type as ReconcilableEvent["type"],
+			type: event.type as AccountEvent["type"],
 		}))
+
+		// Transferências recebidas entram espelhadas (+valor) como candidatas
+		const reconcilable = mirrorIncomingTransfers(
+			accountEvents,
+			input.accountId,
+		)
 
 		const divergences = reconcile(input.transactions, reconcilable, {
 			holderNames: user.name ? [user.name] : [],

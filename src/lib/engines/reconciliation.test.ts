@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest"
 import {
 	reconcile,
+	mirrorIncomingTransfers,
 	normalizeDescription,
 	descriptionSimilarity,
 	classifyTransferDirection,
@@ -34,6 +35,46 @@ function event(
 		...overrides,
 	}
 }
+
+describe("mirrorIncomingTransfers", () => {
+	const received = {
+		id: "t1",
+		accountId: "origem",
+		date: "2026-09-21",
+		amountCents: -10000,
+		description: "Resgate para mercado",
+		status: "CONFIRMED" as const,
+		type: "TRANSFER" as const,
+	}
+
+	it("espelha transferência recebida como valor positivo", () => {
+		const mirrored = mirrorIncomingTransfers([received], "destino")
+		expect(mirrored).toHaveLength(1)
+		expect(mirrored[0].amountCents).toBe(10000)
+	})
+
+	it("mantém transferência enviada como negativa", () => {
+		const mirrored = mirrorIncomingTransfers([received], "origem")
+		expect(mirrored[0].amountCents).toBe(-10000)
+	})
+
+	it("não altera lançamentos comuns", () => {
+		const expense = { ...received, type: "EXPENSE" as const, accountId: "outra" }
+		expect(mirrorIncomingTransfers([expense], "destino")[0].amountCents).toBe(
+			-10000,
+		)
+	})
+
+	it("concilia extrato de resgate com transferência recebida", () => {
+		const result = reconcile(
+			[tx({ date: "2026-09-21", amountCents: 10000, description: "Resgate RDB" })],
+			mirrorIncomingTransfers([received], "destino"),
+		)
+		expect(result).toHaveLength(1)
+		expect(result[0].kind).toBe("matched")
+		expect(result[0].eventId).toBe("t1")
+	})
+})
 
 describe("normalizeDescription", () => {
 	it("remove acentos, pontuação e caixa", () => {

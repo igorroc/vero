@@ -22,6 +22,29 @@ export type ReconcilableEvent = {
 	type: "INCOME" | "EXPENSE" | "INVESTMENT" | "TRANSFER"
 }
 
+/** Evento com a conta onde está persistido (transferência: conta de origem). */
+export type AccountEvent = ReconcilableEvent & {
+	accountId: string
+}
+
+/**
+ * Espelha transferências recebidas: no banco a transferência é um evento único
+ * negativo na conta de origem; na conta destino ela vale +valor e precisa
+ * participar do match como candidata.
+ */
+export function mirrorIncomingTransfers(
+	events: AccountEvent[],
+	accountId: string,
+): ReconcilableEvent[] {
+	return events.map((event) => {
+		const { accountId: origin, ...rest } = event
+		if (event.type === "TRANSFER" && origin !== accountId) {
+			return { ...rest, amountCents: -rest.amountCents }
+		}
+		return rest
+	})
+}
+
 export type DivergenceKind =
 	| "matched"
 	| "missing_in_vero"
