@@ -52,7 +52,7 @@ export async function registerAction(formData: FormData) {
 				},
 			})
 
-			await authenticateLogin(newUser)
+			await authenticateLogin(newUser, { rememberMe: true })
 		} catch (e) {
 			return {
 				error: "Error creating user. Please try again later.",

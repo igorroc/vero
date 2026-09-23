@@ -2,7 +2,7 @@
 
 import bcrypt from "bcrypt"
 
-import { authenticateLogin, getUserBySession } from "@/lib/auth"
+import { authenticateLogin, getUserBySession, isSessionRemembered } from "@/lib/auth"
 import db from "@/lib/db"
 
 export type ChangePasswordInput = {
@@ -49,7 +49,9 @@ export async function changePassword(
 		where: { id: user.id },
 		data: { password },
 	})
-	await authenticateLogin(updatedUser)
+	await authenticateLogin(updatedUser, {
+		rememberMe: await isSessionRemembered(),
+	})
 
 	return { success: true }
 }

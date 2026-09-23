@@ -6,12 +6,14 @@ import { redirect } from "next/navigation"
 import db from "@/lib/db"
 import { isEmail } from "@/lib/utils/validators"
 import { authenticateLogin } from "@/lib/auth"
+import { parseRememberMe } from "@/lib/auth-session"
 
 export async function loginAction(formData: FormData) {
 	const user = {
 		email: formData.get("email") as string,
 		password: formData.get("password") as string,
 	}
+	const rememberMe = parseRememberMe(formData.get("rememberMe"))
 
 	if (!user.email || !user.password) {
 		return {
@@ -49,7 +51,7 @@ export async function loginAction(formData: FormData) {
 			}
 		}
 
-		await authenticateLogin(existingUser)
+		await authenticateLogin(existingUser, { rememberMe })
 	} catch (e) {
 		return {
 			error: "Something went wrong. Please try again later.",

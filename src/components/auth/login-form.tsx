@@ -1,6 +1,6 @@
 "use client"
 
-import { Input, Button } from "@nextui-org/react"
+import { Input, Button, Checkbox } from "@nextui-org/react"
 import { toast } from "react-toastify"
 import { loginAction } from "@/features/auth/login"
 import { useState } from "react"
@@ -8,6 +8,7 @@ import { Mail, Lock, LogIn } from "lucide-react"
 
 export function LoginForm() {
 	const [isLoading, setIsLoading] = useState(false)
+	const [rememberMe, setRememberMe] = useState(true)
 
 	async function loginClient(formData: FormData) {
 		setIsLoading(true)
@@ -53,6 +54,22 @@ export function LoginForm() {
 					label: "text-slate-600 dark:text-slate-400",
 				}}
 			/>
+			<input
+				type="hidden"
+				name="rememberMe"
+				value={rememberMe ? "true" : "false"}
+			/>
+			<Checkbox
+				isSelected={rememberMe}
+				onValueChange={setRememberMe}
+				isDisabled={isLoading}
+				size="sm"
+				classNames={{
+					label: "text-sm text-slate-600 dark:text-slate-400",
+				}}
+			>
+				Lembrar de mim neste dispositivo
+			</Checkbox>
 			<Button
 				type="submit"
 				color="primary"
