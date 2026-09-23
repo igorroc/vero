@@ -14,7 +14,10 @@ import {
 	UtensilsCrossed,
 	X,
 } from "lucide-react"
-import { stripThinkingBlocks } from "@/features/ai-chat/text"
+import {
+	filterPortugueseParagraphs,
+	stripThinkingBlocks,
+} from "@/features/ai-chat/text"
 import { MarkdownText } from "./markdown-text"
 import {
 	deriveIntermediateSteps,
@@ -191,9 +194,11 @@ export function ChatPanel({
 									textBuckets[textBuckets.length - 1].push(part.text)
 								}
 							})
-							const texts = (textBuckets[textBuckets.length - 1] ?? [])
-								.map((text) => stripThinkingBlocks(text))
-								.filter(Boolean)
+						const texts = (textBuckets[textBuckets.length - 1] ?? [])
+							.map((text) =>
+								filterPortugueseParagraphs(stripThinkingBlocks(text)),
+							)
+							.filter(Boolean)
 							const isStreaming =
 								busy && messages[messages.length - 1]?.id === message.id
 
@@ -206,9 +211,15 @@ export function ChatPanel({
 										{steps.length > 0 && (
 											<ThoughtBlock steps={steps} streaming={isStreaming} />
 										)}
-										{texts.map((text, i) => (
-											<MarkdownText key={i} text={text} />
-										))}
+									{texts.map((text, i) => (
+										<MarkdownText key={i} text={text} />
+									))}
+									{!isStreaming && texts.length === 0 && (
+										<p className="text-xs text-slate-500">
+											Não consegui formular a resposta. Tente reformular a
+											pergunta.
+										</p>
+									)}
 										{isStreaming && texts.length === 0 && (
 											<p className="text-xs text-slate-400">
 												Vero está escrevendo…

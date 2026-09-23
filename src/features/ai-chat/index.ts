@@ -1,5 +1,5 @@
-export { ASSISTANT_SYSTEM_PROMPT } from "./prompts"
-export { stripThinkingBlocks } from "./text"
+export { ASSISTANT_SYSTEM_PROMPT, buildSystemPrompt } from "./prompts"
+export { filterPortugueseParagraphs, stripThinkingBlocks } from "./text"
 export {
 	chatTools,
 	formatDivergencesForChat,

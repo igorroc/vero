@@ -2,7 +2,7 @@ import { convertToModelMessages, stepCountIs, streamText } from "ai"
 
 import { getUserBySession } from "@/lib/auth"
 import { AiNotConfiguredError, getStatementModel } from "@/lib/ai/client"
-import { ASSISTANT_SYSTEM_PROMPT } from "@/features/ai-chat/prompts"
+import { buildSystemPrompt } from "@/features/ai-chat/prompts"
 import { chatTools } from "@/features/ai-chat/tools"
 
 export const maxDuration = 60
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
 	const { messages } = await req.json()
 	const result = streamText({
 		model,
-		system: ASSISTANT_SYSTEM_PROMPT,
+		system: buildSystemPrompt(),
 		messages: await convertToModelMessages(messages),
 		tools: chatTools,
 		// Default do SDK é 1 passo: a tool seria chamada e o resultado nunca
