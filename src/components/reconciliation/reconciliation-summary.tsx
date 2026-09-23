@@ -1,13 +1,12 @@
 "use client"
 
-import { Chip, Select, SelectItem } from "@nextui-org/react"
+import { Select, SelectItem } from "@nextui-org/react"
 import {
 	Building2,
 	CheckCircle2,
 	Clock,
 	FileText,
 	Landmark,
-	Sparkles,
 } from "lucide-react"
 import type { Account } from "@prisma/client"
 
@@ -65,14 +64,7 @@ export function ReconciliationSummary({
 				</div>
 			</div>
 
-			<Chip
-				variant="flat"
-				color="success"
-				startContent={<Sparkles size={14} />}
-				className="self-start font-semibold sm:self-center"
-			>
-				Conciliação com IA
-			</Chip>
+			<div />
 
 			<div className="flex items-center gap-4 sm:gap-5">
 				<div className="flex items-center gap-2">

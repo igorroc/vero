@@ -237,15 +237,11 @@ export function ReconciliationWorkspace() {
 									))}
 								</Select>
 							</div>
-							<div className="flex flex-1 flex-col justify-end gap-1.5 rounded-2xl bg-teal-50 p-4 sm:flex-row sm:items-center sm:gap-3 dark:bg-teal-950/40">
+							<div className="flex flex-1 flex-col justify-center items-end">
 								<span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-teal-100 px-3 py-1 text-xs font-bold text-teal-800 dark:bg-teal-900 dark:text-teal-200">
 									<Sparkles size={13} />
 									Conciliação com IA
 								</span>
-								<p className="text-xs leading-relaxed text-slate-600 sm:text-sm dark:text-slate-300">
-									A IA da Vero identifica lançamentos e sugere correspondências
-									automaticamente.
-								</p>
 							</div>
 						</div>
 
@@ -297,6 +293,7 @@ export function ReconciliationWorkspace() {
 							total={rows.length}
 							matched={matchedCount}
 							pending={pendingCount}
+							disabled
 						/>
 
 						{reviewTxs && (
