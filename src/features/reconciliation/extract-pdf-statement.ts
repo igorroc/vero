@@ -47,7 +47,23 @@ export async function extractPdfTransactions(
 		if (error instanceof AiNotConfiguredError) {
 			return { success: false, error: error.message }
 		}
-		console.error("Failed to extract PDF statement:", error)
+		// Log sanitizado: o erro cru da IA pode conter o extrato (PII) no corpo
+		console.error("Failed to extract PDF statement:", sanitizeAiError(error))
 		return { success: false, error: "Não foi possível extrair o PDF" }
 	}
+}
+
+/** Resume erros de IA sem vazar corpo de resposta (pode conter o extrato). */
+function sanitizeAiError(error: unknown): Record<string, unknown> {
+	if (error instanceof Error) {
+		const withStatus = error as Error & { statusCode?: unknown }
+		return {
+			name: error.name,
+			message: error.message.slice(0, 300),
+			...(typeof withStatus.statusCode !== "undefined"
+				? { statusCode: withStatus.statusCode }
+				: {}),
+		}
+	}
+	return { message: "unknown" }
 }

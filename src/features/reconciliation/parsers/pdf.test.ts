@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest"
 import { MockLanguageModelV4 } from "ai/test"
 import { AiNotConfiguredError } from "@/lib/ai/client"
-import { extractPdfStatement } from "./pdf"
+import { extractJsonObject, extractPdfStatement, extractViaText } from "./pdf"
 
 const FAKE_PDF = new Uint8Array([0x25, 0x50, 0x44, 0x46])
 
@@ -79,5 +79,76 @@ describe("extractPdfStatement (mock, sem custo)", () => {
 				aiConfig: { provider: "openai", openaiKey: "" },
 			}),
 		).rejects.toBeInstanceOf(AiNotConfiguredError)
+	})
+})
+
+describe("extractJsonObject", () => {
+	it("lê JSON com cercas e texto ao redor", () => {
+		const text = 'Aqui está:\n```json\n{"transactions": []}\n```\nFim.'
+		expect(extractJsonObject(text)).toEqual({ transactions: [] })
+	})
+
+	it("lê JSON puro e retorna null sem objeto", () => {
+		expect(extractJsonObject('{"transactions": []}')).toEqual({
+			transactions: [],
+		})
+		expect(extractJsonObject("sem json aqui")).toBeNull()
+		expect(extractJsonObject("{invalido")).toBeNull()
+	})
+})
+
+describe("extractViaText (fallback sem structured-outputs)", () => {
+	it("valida JSON em texto livre com o mesmo schema", async () => {
+		// Mock responde texto corrido com cercas, como modelo sem JSON mode
+		const textModel = new MockLanguageModelV4({
+			provider: "mock",
+			modelId: "mock-text",
+			doGenerate: async () => ({
+				content: [
+					{
+						type: "text",
+						text: 'Resultado:\n```json\n{"transactions": [{"date": "2026-02-25", "amountCents": -22851, "description": "PAG BOLETO — San Incorporacoes", "confidence": 0.9}]}\n```',
+					},
+				],
+				finishReason: { unified: "stop", raw: "stop" },
+				usage: {
+					inputTokens: {
+						total: 10,
+						noCache: 10,
+						cacheRead: undefined,
+						cacheWrite: undefined,
+					},
+					outputTokens: { total: 10, text: 10, reasoning: undefined },
+				},
+				warnings: [],
+			}),
+		})
+		const parsed = await extractViaText(textModel, FAKE_PDF)
+		expect(parsed).toHaveLength(1)
+		expect(parsed[0].amountCents).toBe(-22851)
+	})
+
+	it("rejeita texto fora do formato", async () => {
+		const bad = new MockLanguageModelV4({
+			provider: "mock",
+			modelId: "mock-bad",
+			doGenerate: async () => ({
+				content: [{ type: "text", text: "não entendi o documento" }],
+				finishReason: { unified: "stop", raw: "stop" },
+				usage: {
+					inputTokens: {
+						total: 10,
+						noCache: 10,
+						cacheRead: undefined,
+						cacheWrite: undefined,
+					},
+					outputTokens: { total: 10, text: 10, reasoning: undefined },
+				},
+				warnings: [],
+			}),
+		})
+		await expect(extractViaText(bad, FAKE_PDF)).rejects.toThrow(
+			"fora do formato esperado",
+		)
 	})
 })
