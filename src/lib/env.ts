@@ -19,6 +19,13 @@ const envSchema = z.object({
 	POLAR_ENVIRONMENT: z.enum(["sandbox", "production"]).default("sandbox"),
 	BILLING_PROVIDER: z.enum(BillingProvider).default(BillingProvider.POLAR),
 	NEXT_PUBLIC_APP_URL: z.url().optional(),
+	// IA (fase 02+): provedor trocável via AI SDK. Tudo opcional: sem chave,
+	// recursos de IA desabilitam com mensagem e o resto do app funciona.
+	AI_PROVIDER: z.enum(["openai", "google", "openrouter"]).default("openai"),
+	AI_MODEL: z.string().min(1).optional(),
+	OPENAI_API_KEY: z.string().min(1).optional(),
+	GOOGLE_GENERATIVE_AI_API_KEY: z.string().min(1).optional(),
+	OPENROUTER_API_KEY: z.string().min(1).optional(),
 })
 
 export const env = envSchema.parse(process.env)
