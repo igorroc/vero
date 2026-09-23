@@ -72,6 +72,7 @@ export function AssistantWidget({ userName }: { userName: string }) {
 							<ChatPanel
 								userName={userName}
 								onClose={() => setChatOpen(false)}
+								conversationId={null}
 							/>
 						</motion.div>
 					)}

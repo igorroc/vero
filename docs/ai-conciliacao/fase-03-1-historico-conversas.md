@@ -31,8 +31,9 @@ Decisões do usuário (levantadas antes da escrita):
 - Título gerado pela IA (evolução futura).
 - Tempo real multi-dispositivo (cada aba carrega do banco ao abrir; sem socket).
 - Contadores/cotas (fase 04 — esta fase só cria a base que a 04 vai contar).
-- Widget flutuante: **continua sem histórico** (só sessão). Persistência é só
-  da página `/assistente`.
+- Widget flutuante: **persiste as conversas** (criadas no 1º envio, como na
+  página), mas **não exibe histórico** — cada abertura começa com chat vazio;
+  a conversa fica visível/gerenciável na página `/assistente`.
 
 ## Design
 
@@ -150,5 +151,5 @@ Deletar:
 - [ ] Recarregar a página preserva tudo; nova conversa começa vazia.
 - [ ] Renomear e excluir funcionam (excluir com confirmação).
 - [ ] Mensagens do usuário nunca vazam entre usuários (teste com 2 contas).
-- [ ] Widget flutuante inalterado (segue sem histórico).
+- [ ] Widget flutuante persiste (sem exibir histórico); página segue completa.
 - [ ] Fase 04 consegue contar `AiMessage` de `role = USER` no mês.
