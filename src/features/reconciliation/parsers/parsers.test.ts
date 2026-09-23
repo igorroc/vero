@@ -1,12 +1,17 @@
 import { describe, it, expect } from "vitest"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
+import { assertPathInsideCwd } from "@/lib/utils/paths"
 import { parseBRMoneyToCents, parseBRDateToISO } from "./normalize"
 import { parseStatementCsv } from "./csv"
 import { parseStatementOfx } from "./ofx"
 
 function sample(name: string): string {
-	return readFileSync(join(process.cwd(), "docs/ai-conciliacao", name), "utf-8")
+	// Guard resolve e impede qualquer acesso fora da pasta do projeto
+	return readFileSync(
+		assertPathInsideCwd(join("docs", "ai-conciliacao", name)),
+		"utf-8",
+	)
 }
 
 describe("parseBRMoneyToCents (sem float)", () => {

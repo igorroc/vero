@@ -1,5 +1,9 @@
 export { parseStatement, type ParseStatementResult } from "./parse-statement"
 export {
+	extractPdfTransactions,
+	type ExtractPdfActionResult,
+} from "./extract-pdf-statement"
+export {
 	getDivergences,
 	type GetDivergencesResult,
 	type StatementTxInput,
