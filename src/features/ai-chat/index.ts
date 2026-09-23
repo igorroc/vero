@@ -7,5 +7,7 @@ export {
 export {
 	chatTools,
 	formatDivergencesForChat,
+	formatMonthEndForChat,
 	type DivergenceSummaryInput,
+	type MonthEndForChatInput,
 } from "./tools"

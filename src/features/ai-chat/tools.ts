@@ -4,6 +4,7 @@ import { z } from "zod"
 import { getCategories } from "@/features/categories"
 import { getDashboardData } from "@/features/dashboard"
 import { getEvents } from "@/features/events"
+import { endOfMonth } from "@/types/finance"
 
 const KIND_LABELS: Record<string, string> = {
 	matched: "Conciliado",
@@ -53,15 +54,53 @@ export function formatDivergencesForChat(
 	return `Divergências encontradas (${divergences.length}):\n${lines.join("\n")}`
 }
 
+export type MonthEndForChatInput = {
+	availableCents: number
+	investmentsCents: number
+	afterRedeemingCents: number
+	/** Último dia do mês em YYYY-MM-DD. */
+	monthEndDate: string
+}
+
+/**
+ * Texto determinístico do saldo de fim do mês (puro, testável). Espelha a
+ * regra do card "Saldo projetado no fim do mês" da dashboard: conta separada
+ * de investimento, com recomendação de resgate quando a conta fica negativa.
+ * A IA apresenta esse texto; o cálculo continua sendo do motor de cashflow.
+ */
+export function formatMonthEndForChat(input: MonthEndForChatInput): string {
+	const [year, month, day] = input.monthEndDate.split("-")
+	const dateLabel =
+		year && month && day ? `${day}/${month}/${year}` : input.monthEndDate
+	const header = `Saldo projetado no fim do mês (${dateLabel}), considerando todos os lançamentos planejados e parcelas deste mês: saldo em conta ${formatBRL(input.availableCents)}; saldo em investimentos ${formatBRL(input.investmentsCents)}.`
+	if (input.afterRedeemingCents < 0) {
+		return `${header} Saldo insuficiente: faltariam ${formatBRL(Math.abs(input.afterRedeemingCents))} no fim do mês mesmo resgatando todos os investimentos. Recomende cortar ou adiar gastos.`
+	}
+	const rescueNeeded = Math.max(0, -input.availableCents)
+	if (rescueNeeded > 0) {
+		const remaining = input.investmentsCents - rescueNeeded
+		return `${header} Para cobrir os lançamentos do mês, recomende resgatar ${formatBRL(rescueNeeded)}. Restarão ${formatBRL(remaining)} em investimentos.`
+	}
+	return `${header} Não é preciso resgatar: a conta fecha o mês positiva e permanecem ${formatBRL(input.investmentsCents)} em investimentos.`
+}
+
 export const chatTools = {
 	get_financial_summary: tool({
 		description:
-			"Resumo financeiro atual: saldo total e por conta, limite diário de gastos, próximos eventos (7 dias), projeção de 30 dias e alertas críticos.",
+			"Resumo financeiro atual: saldo em conta e por conta, limite diário de gastos, próximos eventos (7 dias), saldo projetado no FIM DO MÊS CORRENTE (último dia corrido, com recomendação de resgate de investimentos) e projeção de 30 dias corridos. Para perguntas sobre 'fim do mês', 'desse mês' ou 'neste mês', use SEMPRE monthEndBalance (data exata no campo date). projection30d soma todas as contas em 30 dias corridos — nunca use para fim do mês.",
 		inputSchema: z.object({}),
 		execute: async () => {
 			const result = await getDashboardData()
 			if (!result.success) return { error: result.error }
 			const { data } = result
+			const monthEndDate = endOfMonth(new Date()).toISOString().split("T")[0]
+			const monthEnd = {
+				date: monthEndDate,
+				availableCents: data.monthEndBalances.available,
+				investmentsCents: data.monthEndBalances.investments,
+				afterRedeemingCents: data.monthEndBalances.afterRedeemingInvestments,
+				rescueNeededCents: Math.max(0, -data.monthEndBalances.available),
+			}
 			return {
 				totalBalanceCents: data.availableBalance,
 				accounts: data.accounts.map((account) => ({
@@ -76,6 +115,15 @@ export const chatTools = {
 						.toISOString()
 						.split("T")[0] ?? null,
 				safetyBufferCents: data.safetyBuffer,
+				monthEndBalance: {
+					...monthEnd,
+					guidance: formatMonthEndForChat({
+						availableCents: monthEnd.availableCents,
+						investmentsCents: monthEnd.investmentsCents,
+						afterRedeemingCents: monthEnd.afterRedeemingCents,
+						monthEndDate: monthEnd.date,
+					}),
+				},
 				upcomingEvents: data.upcomingEvents.slice(0, 10).map((event) => ({
 					description: event.description,
 					amountCents: event.amount,

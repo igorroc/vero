@@ -5,7 +5,7 @@ import {
 	sanitizeAssistantReply,
 	stripThinkingBlocks,
 } from "./text"
-import { formatDivergencesForChat } from "./tools"
+import { formatDivergencesForChat, formatMonthEndForChat } from "./tools"
 
 describe("buildSystemPrompt", () => {
 	it("injeta a data atual (Brasília) como âncora", () => {
@@ -23,6 +23,13 @@ describe("ASSISTANT_SYSTEM_PROMPT", () => {
 		expect(ASSISTANT_SYSTEM_PROMPT).toMatch(/CONFIRMAD/)
 		expect(ASSISTANT_SYSTEM_PROMPT).toMatch(/PLANNED/)
 		expect(ASSISTANT_SYSTEM_PROMPT).toMatch(/nunca invente/i)
+	})
+
+	it("ensina conta x investimento, fim do mês literal e posso comprar", () => {
+		expect(ASSISTANT_SYSTEM_PROMPT).toMatch(/monthEndBalance/)
+		expect(ASSISTANT_SYSTEM_PROMPT).toMatch(/RESGATAR|resgat/i)
+		expect(ASSISTANT_SYSTEM_PROMPT).toMatch(/projection30d/)
+		expect(ASSISTANT_SYSTEM_PROMPT).toMatch(/Posso comprar/i)
 	})
 })
 
@@ -154,6 +161,42 @@ describe("sanitizeAssistantReply", () => {
 			"<think>draft</think>Resposta.\n\nResposta.",
 		)
 		expect(clean).toBe("Resposta.")
+	})
+})
+
+describe("formatMonthEndForChat", () => {
+	it("recomenda resgate quando a conta fecha negativa e há investimento", () => {
+		const text = formatMonthEndForChat({
+			availableCents: -59723,
+			investmentsCents: 179388,
+			afterRedeemingCents: 119665,
+			monthEndDate: "2026-09-30",
+		})
+		expect(text).toMatch(/30\/09\/2026/)
+		expect(text).toMatch(/resgat/i)
+		expect(text).toMatch(/R\$\s?597,23/)
+		expect(text).toMatch(/1\.196,65/)
+	})
+
+	it("alerta insuficiência mesmo após resgatar tudo", () => {
+		const text = formatMonthEndForChat({
+			availableCents: -200000,
+			investmentsCents: 50000,
+			afterRedeemingCents: -150000,
+			monthEndDate: "2026-09-30",
+		})
+		expect(text).toMatch(/insuficiente/i)
+		expect(text).toMatch(/1\.500,00/)
+	})
+
+	it("dispensa resgate quando a conta fecha positiva", () => {
+		const text = formatMonthEndForChat({
+			availableCents: 150000,
+			investmentsCents: 179388,
+			afterRedeemingCents: 329388,
+			monthEndDate: "2026-09-30",
+		})
+		expect(text).toMatch(/Não é preciso resgatar/)
 	})
 })
 
