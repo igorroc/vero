@@ -98,8 +98,8 @@ export function ReviewTable({
 	const [tab, setTab] = useState<Tab>("all")
 	const [query, setQuery] = useState("")
 	const [kindFilter, setKindFilter] = useState<Set<string>>(new Set())
-	const [sortKey, setSortKey] = useState<SortKey>(null)
-	const [sortAsc, setSortAsc] = useState(true)
+	const [sortKey, setSortKey] = useState<SortKey>("date")
+	const [sortAsc, setSortAsc] = useState(false)
 	const [page, setPage] = useState(1)
 
 	const matchedCount = useMemo(
