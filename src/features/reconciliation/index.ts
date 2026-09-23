@@ -6,6 +6,7 @@ export {
 export {
 	getDivergences,
 	type GetDivergencesResult,
+	type MatchedEventInfo,
 	type StatementTxInput,
 } from "./get-divergences"
 export {

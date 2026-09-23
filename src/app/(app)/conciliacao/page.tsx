@@ -8,14 +8,14 @@ export const metadata: Metadata = {
 
 export default function ConciliacaoPage() {
 	return (
-		<div className="max-w-3xl mx-auto">
+		<div className="mx-auto max-w-6xl">
 			<div className="mb-4 sm:mb-6">
-				<h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
-					Conciliação
+				<h1 className="text-2xl font-bold text-slate-900 sm:text-3xl dark:text-white">
+					Conciliação de extrato
 				</h1>
-				<p className="text-sm text-slate-500 mt-1">
-					Anexe o extrato (CSV, OFX ou PDF) e valide divergências com os
-					lançamentos
+				<p className="mt-1 text-sm text-slate-500 sm:text-base">
+					Importe seu extrato bancário e conte com a IA da Vero para conciliar
+					seus lançamentos de forma rápida e segura.
 				</p>
 			</div>
 			<ReconciliationWorkspace />

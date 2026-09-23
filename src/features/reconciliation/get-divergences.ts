@@ -11,8 +11,20 @@ import {
 
 export type StatementTxInput = NormalizedTx
 
+export type MatchedEventInfo = {
+	id: string
+	date: string // YYYY-MM-DD
+	amountCents: number
+	description: string
+	status: "CONFIRMED" | "PLANNED"
+}
+
 export type GetDivergencesResult =
-	| { success: true; divergences: Divergence[] }
+	| {
+			success: true
+			divergences: Divergence[]
+			events: Record<string, MatchedEventInfo>
+	  }
 	| { success: false; error: string }
 
 /**
@@ -82,7 +94,18 @@ export async function getDivergences(input: {
 			holderNames: user.name ? [user.name] : [],
 		})
 
-		return { success: true, divergences }
+		const eventMap: Record<string, MatchedEventInfo> = {}
+		for (const event of reconcilable) {
+			eventMap[event.id] = {
+				id: event.id,
+				date: event.date,
+				amountCents: event.amountCents,
+				description: event.description,
+				status: event.status,
+			}
+		}
+
+		return { success: true, divergences, events: eventMap }
 	} catch (error) {
 		console.error("Failed to compute divergences:", error)
 		return { success: false, error: "Não foi possível comparar o extrato" }
