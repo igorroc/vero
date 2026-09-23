@@ -16,8 +16,10 @@ import { Upload } from "lucide-react"
 import { getAccounts } from "@/features/accounts"
 import { getCategories } from "@/features/categories"
 import { getDivergences, parseStatement } from "@/features/reconciliation"
-import type { Divergence } from "@/lib/engines/reconciliation"
+import type { PdfTx } from "@/features/reconciliation/parsers/pdf"
+import type { Divergence, NormalizedTx } from "@/lib/engines/reconciliation"
 import { DivergenceRow } from "./divergence-row"
+import { PdfReview } from "./pdf-review"
 
 type Filter = "all" | Divergence["kind"]
 
@@ -38,6 +40,8 @@ export function ReconciliationWorkspace() {
 	const [loading, setLoading] = useState(false)
 	const [compared, setCompared] = useState(false)
 	const [skipped, setSkipped] = useState(0)
+	const [reviewTxs, setReviewTxs] = useState<PdfTx[] | null>(null)
+	const [extractionModel, setExtractionModel] = useState("")
 	const [divergences, setDivergences] = useState<Divergence[]>([])
 	const [filter, setFilter] = useState<Filter>("all")
 
@@ -82,6 +86,34 @@ export function ReconciliationWorkspace() {
 		[divergences, filter],
 	)
 
+	async function runDivergences(
+		transactions: NormalizedTx[],
+		skippedCount: number,
+	) {
+		setLoading(true)
+		try {
+			const result = await getDivergences({
+				accountId,
+				transactions,
+				...(startDate ? { startDate } : {}),
+				...(endDate ? { endDate } : {}),
+			})
+			if (!result.success) {
+				toast.error(result.error)
+				return
+			}
+			setDivergences(result.divergences)
+			setCompared(true)
+			setFilter("all")
+			toast.success(
+				`${transactions.length} transações comparadas` +
+					(skippedCount > 0 ? ` (${skippedCount} ignoradas)` : ""),
+			)
+		} finally {
+			setLoading(false)
+		}
+	}
+
 	async function handleCompare() {
 		if (!accountId || !file) {
 			toast.error("Selecione a conta e o arquivo")
@@ -98,23 +130,29 @@ export function ReconciliationWorkspace() {
 				return
 			}
 			setSkipped(parsed.skipped)
-			const result = await getDivergences({
-				accountId,
-				transactions: parsed.transactions,
-				...(startDate ? { startDate } : {}),
-				...(endDate ? { endDate } : {}),
-			})
-			if (!result.success) {
-				toast.error(result.error)
+			setCompared(false)
+			setDivergences([])
+			// PDF via IA passa por revisão antes de comparar
+			if (parsed.source === "pdf") {
+				setReviewTxs(parsed.transactions as PdfTx[])
+				setExtractionModel(parsed.model ?? "")
+				const needsReview = (parsed.transactions as PdfTx[]).filter(
+					(tx) => tx.needsReview,
+				)
+				toast.success(
+					`${parsed.transactions.length} transações extraídas via IA` +
+						(needsReview.length > 0
+							? ` (${needsReview.length} para revisar)`
+							: ""),
+				)
+				if (needsReview.length === 0) {
+					setReviewTxs(null)
+					await runDivergences(parsed.transactions, parsed.skipped)
+				}
 				return
 			}
-			setDivergences(result.divergences)
-			setCompared(true)
-			setFilter("all")
-			toast.success(
-				`${parsed.transactions.length} transações comparadas` +
-					(parsed.skipped > 0 ? ` (${parsed.skipped} ignoradas)` : ""),
-			)
+			setReviewTxs(null)
+			await runDivergences(parsed.transactions, parsed.skipped)
 		} finally {
 			setLoading(false)
 		}
@@ -149,10 +187,10 @@ export function ReconciliationWorkspace() {
 						))}
 					</Select>
 					<label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-300">
-						Extrato (CSV ou OFX, até 10MB)
+						Extrato (CSV, OFX ou PDF textual, até 10MB)
 						<input
 							type="file"
-							accept=".csv,.ofx"
+							accept=".csv,.ofx,.pdf"
 							onChange={(event) => setFile(event.target.files?.[0] ?? null)}
 							className="text-sm text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium hover:file:bg-slate-200 dark:file:bg-slate-800"
 						/>
@@ -195,6 +233,25 @@ export function ReconciliationWorkspace() {
 					</div>
 				</CardBody>
 			</Card>
+
+			{reviewTxs && (
+				<PdfReview
+					transactions={reviewTxs}
+					model={extractionModel}
+					onChange={setReviewTxs}
+					onConfirm={() => {
+						const txs = reviewTxs
+						setReviewTxs(null)
+						void runDivergences(txs, skipped)
+					}}
+					onDiscard={() => {
+						setReviewTxs(null)
+						setCompared(false)
+						setDivergences([])
+					}}
+					loading={loading}
+				/>
+			)}
 
 			{compared && (
 				<>
