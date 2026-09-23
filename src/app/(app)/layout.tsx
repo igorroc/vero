@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { getUserBySession } from "@/lib/auth"
 import { AppLayout } from "@/components/layout"
+import { AssistantWidget } from "@/components/ai-chat"
 import { getAccountBalances } from "@/features/accounts"
 import { isCurrentUserSuperAdmin } from "@/features/admin"
 import { getSessionView } from "@/lib/session-view"
@@ -32,6 +33,7 @@ export default async function AppGroupLayout({
 			sessionView={sessionView}
 		>
 			{children}
+			<AssistantWidget />
 		</AppLayout>
 	)
 }
