@@ -33,6 +33,8 @@ const FILTERS: Array<{ key: Filter; label: string }> = [
 export function ReconciliationWorkspace() {
 	const [accountId, setAccountId] = useState("")
 	const [file, setFile] = useState<File | null>(null)
+	const [startDate, setStartDate] = useState("")
+	const [endDate, setEndDate] = useState("")
 	const [loading, setLoading] = useState(false)
 	const [compared, setCompared] = useState(false)
 	const [skipped, setSkipped] = useState(0)
@@ -99,6 +101,8 @@ export function ReconciliationWorkspace() {
 			const result = await getDivergences({
 				accountId,
 				transactions: parsed.transactions,
+				...(startDate ? { startDate } : {}),
+				...(endDate ? { endDate } : {}),
 			})
 			if (!result.success) {
 				toast.error(result.error)
@@ -153,6 +157,26 @@ export function ReconciliationWorkspace() {
 							className="text-sm text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium hover:file:bg-slate-200 dark:file:bg-slate-800"
 						/>
 					</label>
+					<div className="flex flex-col sm:flex-row gap-2">
+						<label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-300 flex-1">
+							Início (opcional)
+							<input
+								type="date"
+								value={startDate}
+								onChange={(event) => setStartDate(event.target.value)}
+								className="rounded-lg border border-slate-200 bg-transparent px-3 py-2 text-sm dark:border-slate-700"
+							/>
+						</label>
+						<label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-300 flex-1">
+							Fim (opcional)
+							<input
+								type="date"
+								value={endDate}
+								onChange={(event) => setEndDate(event.target.value)}
+								className="rounded-lg border border-slate-200 bg-transparent px-3 py-2 text-sm dark:border-slate-700"
+							/>
+						</label>
+					</div>
 					<p className="text-xs text-slate-500">
 						O arquivo é lido em memória e descartado — nada do extrato é
 						guardado.{" "}
