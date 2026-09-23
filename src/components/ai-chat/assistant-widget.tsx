@@ -53,7 +53,7 @@ export function AssistantWidget() {
 
 	return (
 		<>
-			<div className="fixed bottom-24 right-4 z-50 flex flex-col items-end gap-2 sm:right-6">
+			<div className="fixed bottom-24 sm:bottom-6 right-4 z-50 flex flex-col items-end gap-2 sm:right-6">
 				<AnimatePresence>
 					{chatOpen && (
 						<motion.div
