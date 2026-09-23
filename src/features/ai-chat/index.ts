@@ -25,6 +25,13 @@ export {
 	type SimpleResult,
 } from "./conversations"
 export {
+	detectPromptInjection,
+	normalizeForGuardrails,
+	REFUSAL_INJECTION,
+	refusalStreamResponse,
+	type InjectionCheck,
+} from "./guardrails"
+export {
 	filterPortugueseParagraphs,
 	sanitizeAssistantReply,
 	stripThinkingBlocks,

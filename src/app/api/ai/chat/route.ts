@@ -9,6 +9,11 @@ import {
 	getHistoryForModel,
 	saveChatMessage,
 } from "@/features/ai-chat/conversations"
+import {
+	detectPromptInjection,
+	REFUSAL_INJECTION,
+	refusalStreamResponse,
+} from "@/features/ai-chat/guardrails"
 import { AI_HISTORY_LIMIT, extractLastUserText } from "@/features/ai-chat/history"
 import { sanitizeAssistantReply } from "@/features/ai-chat/text"
 
@@ -20,6 +25,29 @@ export async function POST(req: Request) {
 		return Response.json({ error: "Não autenticado" }, { status: 401 })
 	}
 
+	const { messages, conversationId } = await req.json()
+	const incoming = Array.isArray(messages) ? messages : []
+	const userText = extractLastUserText(incoming)
+
+	// Persistência é best-effort: sem conversationId (modo sessão) ou com
+	// banco ainda não migrado, o chat segue normalmente sem histórico.
+	const persistId =
+		typeof conversationId === "string" && conversationId.trim()
+			? conversationId.trim()
+			: null
+
+	// Guardrail determinístico ANTES do modelo: injection explícita recebe
+	// recusa enlatada, sem custo de IA e sem chance de obediência. O turno
+	// é persistido para manter a coerência do histórico.
+	if (detectPromptInjection(userText).blocked) {
+		if (persistId) {
+			await saveChatMessage(user.id, persistId, "USER", userText)
+			await saveChatMessage(user.id, persistId, "ASSISTANT", REFUSAL_INJECTION)
+			await ensureConversationTitle(user.id, persistId)
+		}
+		return refusalStreamResponse(REFUSAL_INJECTION)
+	}
+
 	let model
 	try {
 		model = getStatementModel()
@@ -29,17 +57,6 @@ export async function POST(req: Request) {
 		}
 		throw error
 	}
-
-	const { messages, conversationId } = await req.json()
-	const incoming = Array.isArray(messages) ? messages : []
-	const userText = extractLastUserText(incoming)
-
-	// Persistência é best-effort: sem conversationId (widget flutuante) ou
-	// com banco ainda não migrado, o chat segue normalmente sem histórico.
-	const persistId =
-		typeof conversationId === "string" && conversationId.trim()
-			? conversationId.trim()
-			: null
 	let contextMessages
 	if (persistId) {
 		const history = await getHistoryForModel(user.id, persistId)

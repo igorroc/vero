@@ -3,6 +3,11 @@
 - Status: **Concluída** (implementada e validada: `ts-check`, testes e `build` passando)
 - Decisões: sem histórico (só sessão, sem migration), default `openrouter/free`
   (troca via env), widget global com 2 funções.
+- Guardrails (pós-fase 03.1): escopo fechado no prompt (só finanças do Vero,
+  recusa enlatada para off-topic, nunca emite código) + `detectPromptInjection`
+  determinístico na rota (PT/EN, sem chamar o modelo, turno persistido);
+  PDF ignora instruções no documento (saída validada por zod);
+  `explain_divergences` trata conteúdo da tela como dado.
 - Deploy isolado: **sim**. Sem chave, chat responde 503 amigável; resto intacto.
 
 ## Objetivo
