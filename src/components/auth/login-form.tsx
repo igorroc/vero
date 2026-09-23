@@ -3,29 +3,45 @@
 import { Input, Button, Checkbox } from "@nextui-org/react"
 import { toast } from "react-toastify"
 import { loginAction } from "@/features/auth/login"
-import { useState } from "react"
+import { isRedirectError } from "@/lib/is-redirect-error"
+import { useRef, useState, type FormEvent } from "react"
 import { Mail, Lock, LogIn } from "lucide-react"
 
 export function LoginForm() {
 	const [isLoading, setIsLoading] = useState(false)
 	const [rememberMe, setRememberMe] = useState(true)
+	const submittingRef = useRef(false)
 
-	async function loginClient(formData: FormData) {
+	async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+		event.preventDefault()
+		if (submittingRef.current) return
+		submittingRef.current = true
 		setIsLoading(true)
+
 		try {
-			const res = await loginAction(formData)
+			const res = await loginAction(new FormData(event.currentTarget))
 
 			if (res && "error" in res) {
 				toast.error(res.error)
 				setIsLoading(false)
+				submittingRef.current = false
 			}
-		} catch {
-			// O redirect() lança uma exceção que é capturada pelo Next.js
+			// Sucesso: a action redireciona; mantém o loading até a navegação.
+		} catch (error) {
+			// O redirect() precisa propagar para o Next.js navegar.
+			if (isRedirectError(error)) throw error
+			toast.error("Algo deu errado. Tente novamente.")
+			setIsLoading(false)
+			submittingRef.current = false
 		}
 	}
 
 	return (
-		<form action={loginClient} className="flex flex-col gap-4" aria-busy={isLoading}>
+		<form
+			onSubmit={handleSubmit}
+			className="flex flex-col gap-4"
+			aria-busy={isLoading}
+		>
 			<Input
 				type="email"
 				label="Email"

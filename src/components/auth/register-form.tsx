@@ -3,29 +3,45 @@
 import { Input, Button } from "@nextui-org/react"
 import { toast } from "react-toastify"
 import { registerAction } from "@/features/auth/register"
-import { useState } from "react"
+import { isRedirectError } from "@/lib/is-redirect-error"
+import { useRef, useState, type FormEvent } from "react"
 import { Mail, Lock, User, UserPlus } from "lucide-react"
 import Link from "next/link"
 
 export function RegisterForm() {
 	const [isLoading, setIsLoading] = useState(false)
+	const submittingRef = useRef(false)
 
-	async function registerClient(formData: FormData) {
+	async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+		event.preventDefault()
+		if (submittingRef.current) return
+		submittingRef.current = true
 		setIsLoading(true)
+
 		try {
-			const res = await registerAction(formData)
+			const res = await registerAction(new FormData(event.currentTarget))
 
 			if (res && "error" in res) {
 				toast.error(res.error)
 				setIsLoading(false)
+				submittingRef.current = false
 			}
+			// Sucesso: a action redireciona; mantém o loading até a navegação.
 		} catch (error) {
-			// O redirect() lança uma exceção que é capturada pelo Next.js
+			// O redirect() precisa propagar para o Next.js navegar.
+			if (isRedirectError(error)) throw error
+			toast.error("Algo deu errado. Tente novamente.")
+			setIsLoading(false)
+			submittingRef.current = false
 		}
 	}
 
 	return (
-		<form action={registerClient} className="flex flex-col gap-4">
+		<form
+			onSubmit={handleSubmit}
+			className="flex flex-col gap-4"
+			aria-busy={isLoading}
+		>
 			<Input
 				type="text"
 				label="Nome completo"
@@ -77,6 +93,7 @@ export function RegisterForm() {
 				size="lg"
 				className="mt-2 font-semibold bg-gradient-to-r from-purple-600 to-blue-600"
 				isLoading={isLoading}
+				isDisabled={isLoading}
 				startContent={!isLoading && <UserPlus className="w-5 h-5" />}
 			>
 				{isLoading ? "Criando conta..." : "Criar conta"}
