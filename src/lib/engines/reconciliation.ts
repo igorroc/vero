@@ -46,7 +46,7 @@ export type Divergence = {
 }
 
 export type ReconcileOptions = {
-	/** Nomes do titular para detectar auto-transferência (ex. ["Igor Lima Rocha"]). */
+	/** Nomes do titular para detectar auto-transferência (ex. ["Fulano de Tal"]). */
 	holderNames?: string[]
 	/** Tolerância de data em dias (padrão 3). */
 	dateToleranceDays?: number

@@ -8,7 +8,7 @@ import {
 	type ReconcilableEvent,
 } from "./reconciliation"
 
-const HOLDER = ["Igor Lima Rocha"]
+const HOLDER = ["Joao dos Santos"]
 
 function tx(
 	overrides: Partial<NormalizedTx> & { date: string; amountCents: number },
@@ -37,14 +37,14 @@ function event(
 
 describe("normalizeDescription", () => {
 	it("remove acentos, pontuação e caixa", () => {
-		expect(normalizeDescription("Pix recebido: Beatriz Pereira Aragão!")).toBe(
-			"pix recebido beatriz pereira aragao",
+		expect(normalizeDescription("Pix recebido: Mariána Silva Costà!")).toBe(
+			"pix recebido mariana silva costa",
 		)
 	})
 
 	it("equipara OFX sem acento ao CSV com acento", () => {
 		expect(
-			descriptionSimilarity("Beatriz Pereira Aragao", "Beatriz Pereira Aragão"),
+			descriptionSimilarity("Mariana Silva Costa", "Mariána Silva Costà"),
 		).toBe(1)
 	})
 })
@@ -80,7 +80,7 @@ describe("classifyTransferDirection", () => {
 				tx({
 					date: "2026-09-21",
 					amountCents: -5000,
-					description: "Pix enviado Cp Igor Lima Rocha",
+					description: "Pix enviado Cp Joao dos Santos",
 				}),
 				HOLDER,
 			),
@@ -93,7 +93,7 @@ describe("classifyTransferDirection", () => {
 				tx({
 					date: "2026-09-21",
 					amountCents: 80000,
-					description: "Pix recebido Beatriz Pereira Aragao",
+					description: "Pix recebido Mariana Silva Costa",
 				}),
 				HOLDER,
 			),
@@ -133,7 +133,7 @@ describe("reconcile", () => {
 				tx({
 					date: "2026-09-21",
 					amountCents: 5000,
-					description: "Pix recebido Beatriz",
+					description: "Pix recebido Cliente",
 				}),
 			],
 			[
@@ -141,7 +141,7 @@ describe("reconcile", () => {
 					id: "e1",
 					date: "2026-09-19",
 					amountCents: 5000,
-					description: "Pix Beatriz",
+					description: "Pix Cliente",
 				}),
 			],
 		)
@@ -154,7 +154,7 @@ describe("reconcile", () => {
 				tx({
 					date: "2026-09-21",
 					amountCents: 5000,
-					description: "Pix recebido Beatriz",
+					description: "Pix recebido Cliente",
 				}),
 			],
 			[
@@ -162,7 +162,7 @@ describe("reconcile", () => {
 					id: "e1",
 					date: "2026-09-10",
 					amountCents: 5000,
-					description: "Pix Beatriz",
+					description: "Pix Cliente",
 				}),
 			],
 		)
@@ -199,7 +199,7 @@ describe("reconcile", () => {
 				tx({
 					date: "2026-09-21",
 					amountCents: -5000,
-					description: "Pix enviado Igor Lima Rocha",
+					description: "Pix enviado Joao dos Santos",
 				}),
 			],
 			[
@@ -207,7 +207,7 @@ describe("reconcile", () => {
 					id: "e1",
 					date: "2026-09-21",
 					amountCents: -5000,
-					description: "Pix Igor Lima Rocha",
+					description: "Pix Joao dos Santos",
 				}),
 				event({
 					id: "e2",
@@ -265,7 +265,7 @@ describe("reconcile", () => {
 				tx({
 					date: "2026-09-21",
 					amountCents: 80000,
-					description: "Pix recebido Beatriz Pereira Aragao",
+					description: "Pix recebido Mariana Silva Costa",
 				}),
 			],
 			[],
@@ -326,7 +326,7 @@ describe("reconcile", () => {
 		const same = tx({
 			date: "2026-09-21",
 			amountCents: 5000,
-			description: "Pix recebido Beatriz",
+			description: "Pix recebido Cliente",
 			fitId: "202609210773",
 		})
 		const result = reconcile([same, { ...same }], [])
@@ -338,12 +338,12 @@ describe("reconcile", () => {
 			tx({
 				date: "2026-09-21",
 				amountCents: -5000,
-				description: "Pix enviado Igor Lima Rocha",
+				description: "Pix enviado Joao dos Santos",
 			}),
 			tx({
 				date: "2026-09-21",
 				amountCents: 80000,
-				description: "Pix recebido Beatriz",
+				description: "Pix recebido Cliente",
 			}),
 		]
 		const forward = reconcile(statement, [], { holderNames: HOLDER })
