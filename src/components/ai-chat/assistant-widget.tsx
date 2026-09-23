@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { usePathname } from "next/navigation"
 import { AnimatePresence, motion } from "framer-motion"
 import { Button } from "@nextui-org/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
@@ -19,6 +20,11 @@ export function AssistantWidget({ userName }: { userName: string }) {
 	const [menuOpen, setMenuOpen] = useState(false)
 	const [eventOpen, setEventOpen] = useState(false)
 	const [chatOpen, setChatOpen] = useState(false)
+	const pathname = usePathname()
+	// Na página do Assistente o chat já ocupa a tela: esconde a entrada
+	// "Perguntar à IA" (e o painel flutuante) para não duplicar.
+	const isAssistantPage = pathname?.startsWith("/assistente") ?? false
+	const showChatEntry = !isAssistantPage
 	const queryClient = useQueryClient()
 
 	const accountsQuery = useQuery({
@@ -55,7 +61,7 @@ export function AssistantWidget({ userName }: { userName: string }) {
 		<>
 			<div className="fixed bottom-24 sm:bottom-6 right-4 z-50 flex flex-col items-end gap-2 sm:right-6">
 				<AnimatePresence>
-					{chatOpen && (
+					{chatOpen && showChatEntry && (
 						<motion.div
 							key="chat"
 							initial={{ opacity: 0, y: 12, scale: 0.97 }}
@@ -97,19 +103,21 @@ export function AssistantWidget({ userName }: { userName: string }) {
 								</span>
 								Novo lançamento
 							</button>
-							<button
-								type="button"
-								onClick={() => {
-									setMenuOpen(false)
-									setChatOpen(true)
-								}}
-								className="flex items-center gap-2 rounded-full bg-white py-2 pl-3 pr-4 text-sm font-semibold text-slate-800 shadow-lg dark:bg-slate-800 dark:text-slate-100"
-							>
-								<span className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-700 text-white">
-									<Sparkles size={16} />
-								</span>
-								Perguntar à IA
-							</button>
+							{showChatEntry && (
+								<button
+									type="button"
+									onClick={() => {
+										setMenuOpen(false)
+										setChatOpen(true)
+									}}
+									className="flex items-center gap-2 rounded-full bg-white py-2 pl-3 pr-4 text-sm font-semibold text-slate-800 shadow-lg dark:bg-slate-800 dark:text-slate-100"
+								>
+									<span className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-700 text-white">
+										<Sparkles size={16} />
+									</span>
+									Perguntar à IA
+								</button>
+							)}
 						</motion.div>
 					)}
 				</AnimatePresence>

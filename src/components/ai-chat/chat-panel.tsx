@@ -16,6 +16,7 @@ import {
 	X,
 } from "lucide-react"
 import { sanitizeAssistantReply } from "@/features/ai-chat/text"
+import type { MockLeadMessage } from "./assistant-mocks"
 import { MarkdownText } from "./markdown-text"
 import {
 	deriveIntermediateSteps,
@@ -37,9 +38,18 @@ function sentTimeKey(id: string): string {
 export function ChatPanel({
 	userName,
 	onClose,
+	variant = "floating",
+	leadMessages = [],
 }: {
 	userName: string
-	onClose: () => void
+	onClose?: () => void
+	/** "page" remove os botões flutuantes e ocupa a altura disponível. */
+	variant?: "floating" | "page"
+	/**
+	 * Mensagens de exemplo (mock) exibidas no topo com divisão visual clara.
+	 * O chat real sempre começa do zero — use `key` no pai para remontar.
+	 */
+	leadMessages?: MockLeadMessage[]
 }) {
 	const { messages, sendMessage, status, error } = useChat({
 		transport: new DefaultChatTransport({ api: "/api/ai/chat" }),
@@ -85,8 +95,16 @@ export function ChatPanel({
 		messages.length > 0 &&
 		messages[messages.length - 1]?.role === "user"
 
+	const isPage = variant === "page"
+
 	return (
-		<Card className="flex max-h-[70vh] h-[560px] w-[calc(100vw-2rem)] max-w-md flex-col overflow-hidden shadow-2xl">
+		<Card
+			className={
+				isPage
+					? "flex h-full min-h-0 w-full flex-col overflow-hidden shadow-sm"
+					: "flex max-h-[70vh] h-[560px] w-[calc(100vw-2rem)] max-w-md flex-col overflow-hidden shadow-2xl"
+			}
+		>
 			<div className="flex items-center gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
 				<span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300">
 					<span className="text-lg font-black">V</span>
@@ -99,24 +117,28 @@ export function ChatPanel({
 					</div>
 					<p className="text-[11px] text-slate-400">Gerado pela IA</p>
 				</div>
-				<Button
-					size="sm"
-					variant="light"
-					isIconOnly
-					aria-label="Minimizar"
-					onPress={() => setCollapsed(!collapsed)}
-				>
-					<Minus size={16} />
-				</Button>
-				<Button
-					size="sm"
-					variant="light"
-					isIconOnly
-					aria-label="Fechar chat"
-					onPress={onClose}
-				>
-					<X size={16} />
-				</Button>
+				{!isPage && (
+					<Button
+						size="sm"
+						variant="light"
+						isIconOnly
+						aria-label="Minimizar"
+						onPress={() => setCollapsed(!collapsed)}
+					>
+						<Minus size={16} />
+					</Button>
+				)}
+				{onClose && (
+					<Button
+						size="sm"
+						variant="light"
+						isIconOnly
+						aria-label="Fechar chat"
+						onPress={onClose}
+					>
+						<X size={16} />
+					</Button>
+				)}
 			</div>
 
 			{!collapsed && (
@@ -147,6 +169,43 @@ export function ChatPanel({
 									</div>
 								</div>
 							</>
+						)}
+
+						{leadMessages.length > 0 && (
+							<div aria-label="Mensagens de exemplo">
+								<div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 p-3 dark:border-slate-600 dark:bg-slate-800/40">
+									<p className="mb-2 text-center text-[11px] font-bold uppercase tracking-wide text-slate-400">
+										Exemplo de conversa anterior (ilustrativo)
+									</p>
+									<div className="flex flex-col gap-2 opacity-80">
+										{leadMessages.map((lead, i) =>
+											lead.role === "user" ? (
+												<div key={i} className="flex justify-end">
+													<div className="max-w-[85%] rounded-2xl rounded-br-md bg-teal-700 px-3.5 py-2.5 text-sm text-white">
+														{lead.text}
+													</div>
+												</div>
+											) : (
+												<div key={i} className="flex gap-2">
+													<span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-black text-teal-700 dark:bg-teal-950 dark:text-teal-300">
+														V
+													</span>
+													<div className="min-w-0 flex-1 rounded-2xl rounded-tl-md border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+														<MarkdownText text={lead.text} />
+													</div>
+												</div>
+											),
+										)}
+									</div>
+								</div>
+								<div className="my-3 flex items-center gap-2">
+									<span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+									<p className="text-[11px] font-bold uppercase tracking-wide text-teal-700 dark:text-teal-300">
+										A partir daqui, conversa real
+									</p>
+									<span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+								</div>
+							</div>
 						)}
 
 						{messages.map((message) => {

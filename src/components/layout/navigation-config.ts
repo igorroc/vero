@@ -12,6 +12,7 @@ import {
 	UsersRound,
 	BadgeDollarSign,
 	ShieldCheck,
+	Sparkles,
 	UserRound,
 } from "lucide-react"
 import type { ElementType } from "react"
@@ -30,7 +31,10 @@ export interface NavigationGroup {
 export const sidebarNavigationGroups: NavigationGroup[] = [
 	{
 		label: "Visão geral",
-		items: [{ icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" }],
+		items: [
+			{ icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+			{ icon: Sparkles, label: "Assistente", href: "/assistente" },
+		],
 	},
 	{
 		label: "Gestão inicial",
@@ -100,6 +104,7 @@ export const bottomMainNavigationItems: NavigationItem[] = [
 ]
 
 export const bottomMoreNavigationItems: NavigationItem[] = [
+	{ icon: Sparkles, label: "Assistente", href: "/assistente" },
 	{ icon: PiggyBank, label: "Contas", href: "/accounts" },
 	{ icon: Tags, label: "Categorias", href: "/categories" },
 	{ icon: ArrowLeftRight, label: "Conciliação", href: "/conciliacao" },
