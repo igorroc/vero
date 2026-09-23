@@ -1,8 +1,8 @@
 # Fase 01 — Conciliação via CSV/OFX (sem IA)
 
-- Status: Proposto
+- Status: **Concluída** (implementada e validada: `ts-check`, testes e `build` passando)
 - Pré-requisito: nenhum (só código atual).
-- Deploy isolado: **sim**. Sobe sozinha; sem IA, sem banco novo, sem gate de plano.
+- Deploy isolado: **sim**. Subiu sozinha; sem IA, sem banco novo, sem gate de plano.
 
 ## Objetivo
 
@@ -25,10 +25,21 @@ parseado e descartado no fim da action.
 ```
 Upload (client) -> FormData -> parse-statement.ts (server, sem IA)
   -> NormalizedTx[] (memória) -> reconciliation.ts (engine puro)
-  x Event[] CONFIRMED do período (via getEvents com userId da sessão)
-  -> Divergence[] -> tabela + botões [Criar] [Confirmar] [Ignorar]
-  -> apply-suggestion.ts reusa create-event/update-event existentes
+  x Event[] CONFIRMED + PLANNED do período/conta (userId da sessão)
+  -> Divergence[] -> lista + botões [Criar] [Confirmar] [Transferir] [Dispensar]
+  -> apply-suggestion.ts reusa create-event / update-event / create-transfer
 ```
+
+Decisões tomadas durante a implementação (usuário):
+
+- 5 `kind`s (não 4): `transfer_candidate` adicional para Aplicação/Resgate CDB
+  (transferência comum ⇄ investimento) e Pix para o próprio titular.
+- Match também com `PLANNED` (sugere confirmação em 1 clique).
+- Categoria escolhida **por linha** (seletor tipo + categoria compatível).
+- Transferência com seletor de conta destino/origem por linha.
+- Período opcional na tela (vazio = derivado do extrato, ±3 dias de tolerância).
+- Extratos de referência em `docs/ai-conciliacao/` anonimizados (nomes, contas,
+  CNPJ e códigos substituídos; valores/datas/FITIDs preservados para os testes).
 
 ### Parsers (puros, sem IA, com testes)
 
@@ -45,12 +56,15 @@ Upload (client) -> FormData -> parse-statement.ts (server, sem IA)
 
 ### Motor (puro, testável)
 
-- `src/lib/engines/reconciliation.ts` + `reconciliation.test.ts`
-  - Entrada: `NormalizedTx[]` + `Event[]` (só `CONFIRMED`, sem `TRANSFER`/`SKIPPED`).
-  - Saída: `Divergence[]` conforme contrato do `README.md`.
+- `src/lib/engines/reconciliation.ts` + `reconciliation.test.ts` (19 testes)
+  - Entrada: `NormalizedTx[]` + `Event[]` (`CONFIRMED` e `PLANNED`, sem `TRANSFER` em
+    `missing_in_statement`, sem `SKIPPED`; zeros do extrato descartados).
+  - Saída: `Divergence[]` em 5 `kind`s (`matched`, `missing_in_vero`,
+    `missing_in_statement`, `value_mismatch`, `transfer_candidate`).
   - Normalização de descrição: minúsculas, remove acento/pontuação/espaço duplo.
   - Match: valor exato + data ±3 dias; desempate por similaridade (Jaccard de tokens).
-  - `value_mismatch`: mesma data (±3d) + descrição similar, valor diferente.
+  - `value_mismatch`: mesma data (±3d) + descrição similar (≥0,5), valor diferente.
+  - Dedupe por data+valor+descrição+`FITID`; resultado independente da ordem.
 
 ### Actions (só `async`, `userId` da sessão)
 
@@ -64,17 +78,21 @@ Upload (client) -> FormData -> parse-statement.ts (server, sem IA)
   - Alternativa simples: rodar o engine no cliente (engine é puro). Preferir servidor
     para não trafegar `Event` a mais que o necessário.
 - `src/features/reconciliation/apply-suggestion.ts`
-  - `createMissingEvent`, `confirmPlannedEvent`, `dismissSuggestion` (só estado de tela).
-  - Criação/confirmação delegam para `create-event.ts`/`update-event.ts` existentes,
-    herdando validações e convenção de sinal.
+  - `createEventFromStatement` (tipo + categoria da linha), `confirmEventFromDivergence`,
+    `createTransferFromStatement` (conta destino/origem da linha).
+  - Delegam para `create-event.ts` / `update-event.ts` / `create-transfer.ts` existentes,
+    herdando validações, convenção de sinal e cota mensal de lançamentos.
 - `src/features/reconciliation/index.ts` reexporta o domínio.
 
 ### UI
 
-- Rota `conciliacao/`: seletor de conta + período + dropzone (CSV/OFX) + tabela de
-  divergências com filtro por `kind` + botões de ação por linha.
-- Entrada no menu lateral. Sem widget global nesta fase.
-- Mensagens de erro claras: "linha 12: valor inválido `abc`" (nunca stack trace).
+- Rota `conciliacao/`: seletor de conta + período opcional + upload (CSV/OFX) + lista de
+  divergências com filtro por `kind` e contadores + ações por linha.
+- Componentes `src/components/reconciliation/` (`reconciliation-workspace.tsx`,
+  `divergence-row.tsx` — `"use client"` só aqui); reusa `EventCategorySelect`.
+- Entrada no menu lateral e no bottom nav mobile ("Conciliação", ícone `ArrowLeftRight`).
+- Sem widget global nesta fase.
+- Mensagens de erro claras: "linha 12: valor inválido" (nunca stack trace).
 
 ## Arquivos (criar/alterar)
 
@@ -108,9 +126,15 @@ Alterar:
 
 ## Critérios de aceite (deployável)
 
-- [ ] Upload CSV e OFX funciona de ponta a ponta sem IA e sem nova tabela.
-- [ ] Divergências classificadas corretamente nos 4 `kind`s.
-- [ ] 1 clique cria/confirma `Event` com sinal e status corretos; nada é criado sozinho.
-- [ ] Recarregar a página descarta o extrato (nada retido).
-- [ ] `bun run ts-check`, `bun test`, `bun run build` passam.
-- [ ] Rollback: remover a rota do menu desativa a feature sem afetar o resto.
+- [x] Upload CSV e OFX funciona de ponta a ponta sem IA e sem nova tabela.
+- [x] Divergências classificadas corretamente nos 5 `kind`s.
+- [x] 1 clique cria/confirma `Event`/`Transfer` com sinal e status corretos; nada é criado sozinho.
+- [x] Recarregar a página descarta o extrato (nada retido).
+- [x] `bun run ts-check`, testes e `bun run build` passam (27 testes novos; `build`
+      com rota `/conciliacao`. Suíte total: 128 passam; `polar-subscriptions.test.ts`
+      falha por falta de env no shell — pré-existente, verificado sem estas mudanças).
+- [x] Rollback: remover a rota do menu desativa a feature sem afetar o resto.
+
+> Testes de action com banco não foram automatizados (padrão do repo: só engines e
+> billing têm testes); isolamento por `userId` garantido por lookup de conta
+> escopado (`findFirst({ id, userId })`) em `parse-statement` e `get-divergences`.
