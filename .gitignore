@@ -42,3 +42,6 @@ null
 
 # WebStorm
 .idea
+
+# Local
+/docs/.private
