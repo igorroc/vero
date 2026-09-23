@@ -1,10 +1,9 @@
 # Fase 03 — Chat de IA para dúvidas + conciliação
 
-- Status: Proposto
-- Pré-requisito: fases 01 e 02 recomendadas, mas **não obrigatórias**:
-  sem elas, o chat nasce respondendo dúvidas; a aba de conciliação aparece
-  desabilitada com CTA para as fases anteriores.
-- Deploy isolado: **sim**. Widget isolado; remover o componente desativa sem resíduo.
+- Status: **Concluída** (implementada e validada: `ts-check`, testes e `build` passando)
+- Decisões: sem histórico (só sessão, sem migration), default `openrouter/free`
+  (troca via env), widget global com 2 funções.
+- Deploy isolado: **sim**. Sem chave, chat responde 503 amigável; resto intacto.
 
 ## Objetivo
 
@@ -23,16 +22,19 @@ qualquer ação continua via botões (fase 01/02).
 ## Design
 
 ```
-Widget global (client, "use client" só aqui) em (app)/layout.tsx
-  -> POST /api/ai/chat (streaming, AI SDK + gpt-4o-mini)
-    -> system prompt: PT-BR, cita valores em R$, nunca inventa número,
-       sem acesso fora das tools, sem pedir/expor senha
+Widget global (AssistantWidget) em (app)/layout.tsx
+  -> POST /api/ai/chat (streaming, AI SDK, provedor via env)
+    -> system prompt: PT-BR, cita valores em R$, nunca inventa número
     -> tools server-side read-only, com userId da sessão:
-       get-balances | get-events | get-cashflow-summary
-       get-spending-limit | get-categories | explain-divergences
-    -> contexto de conciliação: o cliente envia Divergence[] atual (memória)
-       para a IA explicar; o servidor nunca recebe o PDF original
+       get_financial_summary | get_events | get_categories | explain_divergences
+    -> sem histórico: só memória da sessão (sem banco, sem migration)
 ```
+
+As-built: 4 tools (resumo do dashboard cobre saldos + limite + fluxo + alertas em
+1 chamada) em vez de 6. `explain_divergences` recebe `Divergence[]` da tela —
+o PDF original nunca sobe. Widget tem 2 funções (modal de novo lançamento via
+`EventForm` existente + chat flutuante) e substituiu os FABs "bubble" de
+Lançamentos e Dashboard.
 
 ### Tools (whitelist fechada, `userId` sempre da sessão)
 
@@ -88,10 +90,14 @@ Alterar:
 
 ## Critérios de aceite (deployável)
 
-- [ ] Widget abre em qualquer página do `(app)` e responde com saldos, próximos eventos,
+- [x] Widget abre em qualquer página do `(app)` e responde com saldos, próximos eventos,
       limite diário e fluxo coerentes com os engines.
-- [ ] IA explica divergências da tela de conciliação sem recalcular matches.
-- [ ] IA nunca cria/altera `Event` diretamente; ações só via botões existentes.
-- [ ] Extrato continua descartável; chat nunca recebe o arquivo original.
-- [ ] `bun run ts-check`, `bun test`, `bun run build` passam.
-- [ ] Rollback: remover `<ChatWidget />` do layout desativa tudo sem quebrar rotas.
+- [x] IA explica divergências da tela de conciliação sem recalcular matches
+      (tool recebe a lista; formatação determinística testada).
+- [x] IA nunca cria/altera `Event` diretamente; ações só via botões existentes.
+- [x] Extrato continua descartável; chat nunca recebe o arquivo original.
+- [x] `bun run ts-check`, `bun test` (160/160), `bun run build` passam.
+- [x] Rollback: remover `<AssistantWidget />` do layout desativa tudo sem quebrar rotas.
+
+> Validação manual pendente: 3 perguntas no widget (saldo, limite diário, explicar
+> divergência) com a chave OpenRouter.

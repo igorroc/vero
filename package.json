@@ -29,6 +29,7 @@
 		"@ai-sdk/google": "^4.0.77",
 		"@ai-sdk/openai": "^4.0.72",
 		"@ai-sdk/openai-compatible": "^3.0.53",
+		"@ai-sdk/react": "^4.0.114",
 		"@nextui-org/react": "^2.6.11",
 		"@polar-sh/sdk": "^1.0.0-alpha.22",
 		"@prisma/client": "^5.22.0",
@@ -42,8 +43,10 @@
 		"next": "16.3.4",
 		"react": "^18",
 		"react-dom": "^18",
+		"react-markdown": "^10.1.0",
 		"react-toastify": "^10.0.5",
 		"recharts": "^3.10.1",
+		"remark-gfm": "^4.0.1",
 		"stripe": "^22.6.2",
 		"zod": "^4.6.5",
 		"zustand": "^5.0.15"

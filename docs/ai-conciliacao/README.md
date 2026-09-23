@@ -55,7 +55,7 @@ trazem fallback próprio. Detalhes em cada arquivo:
 
 - [Fase 01 — Conciliação via CSV/OFX (sem IA)](./fase-01-conciliacao-csv-ofx.md) ✅ Concluída
 - [Fase 02 — Conciliação via PDF com IA (sem chat)](./fase-02-conciliacao-pdf-ia.md) ✅ Concluída
-- [Fase 03 — Chat de IA para dúvidas + conciliação](./fase-03-chat-ia.md)
+- [Fase 03 — Chat de IA para dúvidas + conciliação](./fase-03-chat-ia.md) ✅ Concluída
 - [Fase 04 — Limites por plano (Plus)](./fase-04-limites-por-plano.md)
 
 Ordem de deploy sugerida: 01 → 02 → 03 → 04. É possível pular a 02 (só CSV/OFX)

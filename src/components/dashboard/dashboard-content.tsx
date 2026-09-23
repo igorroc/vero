@@ -3,8 +3,6 @@
 import { Spinner, Button } from "@nextui-org/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { getDashboardData } from "@/features/dashboard"
-import { getCategories } from "@/features/categories"
-import { NewEventLauncher } from "@/components/events"
 import { DashboardAlerts } from "./dashboard-alerts"
 import { DashboardBalanceCard } from "./dashboard-balance-card"
 import { DashboardMonthlyBudget } from "./dashboard-monthly-budget"
@@ -26,17 +24,7 @@ export function DashboardContent() {
 		},
 		staleTime: 5 * 60 * 1000,
 	})
-	const categoriesQuery = useQuery({
-		queryKey: ["categories"],
-		queryFn: async () => {
-			const result = await getCategories()
-			if (!result.success) throw new Error(result.error)
-			return result.categories
-		},
-		staleTime: 5 * 60 * 1000,
-	})
 	const data = dashboardQuery.data ?? null
-	const categories = categoriesQuery.data ?? []
 	const error = dashboardQuery.error
 	const invalidateDashboard = () => {
 		void queryClient.invalidateQueries({ queryKey: ["dashboard"] })
@@ -97,12 +85,6 @@ export function DashboardContent() {
 			<DashboardMonthlyComparison comparison={data.monthlyComparison} />
 
 			<DashboardUpcomingEvents events={data.upcomingEvents} />
-			<NewEventLauncher
-				mode="bubble"
-				accounts={data.accounts}
-				categories={categories}
-				onSuccess={invalidateDashboard}
-			/>
 		</div>
 	)
 }

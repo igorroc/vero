@@ -40,7 +40,7 @@ export function getStatementModelId(config: Partial<AiConfig> = {}): string {
 	const custom = config.model ?? env.AI_MODEL
 	if (custom?.trim()) return custom.trim()
 	const provider = getAiProvider(config)
-	if (provider === "google") return "gemini-2.5-flash-lite"
+	if (provider === "google") return "gemini-3.5-flash-lite"
 	if (provider === "openrouter") {
 		// Router gratuito: escolhe sozinho um modelo free com os recursos
 		// exigidos (PDF, JSON estruturado, tools). 50 req/dia sem cartão.

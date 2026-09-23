@@ -401,16 +401,6 @@ export function EventsList() {
 					))}
 				</div>
 			)}
-			<div className="sm:hidden">
-				<NewEventLauncher
-					mode="bubble"
-					accounts={accounts}
-					categories={categories}
-					onSuccess={handleEventCreated}
-					onOptimisticCreate={handleOptimisticCreate}
-					onOptimisticError={handleOptimisticError}
-				/>
-			</div>
 			<EventEditModal
 				isOpen={isEditOpen}
 				onClose={onEditClose}
