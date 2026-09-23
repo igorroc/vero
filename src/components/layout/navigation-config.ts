@@ -1,4 +1,5 @@
 import {
+	ArrowLeftRight,
 	ChartNoAxesCombined,
 	HandCoins,
 	LayoutDashboard,
@@ -43,6 +44,7 @@ export const sidebarNavigationGroups: NavigationGroup[] = [
 		label: "Acompanhamento",
 		items: [
 			{ icon: Wallet, label: "Lançamentos", href: "/events" },
+			{ icon: ArrowLeftRight, label: "Conciliação", href: "/conciliacao" },
 			{ icon: TrendingUp, label: "Investimentos", href: "/investments" },
 			{ icon: HandCoins, label: "Dívidas", href: "/debts" },
 		],
@@ -100,6 +102,7 @@ export const bottomMainNavigationItems: NavigationItem[] = [
 export const bottomMoreNavigationItems: NavigationItem[] = [
 	{ icon: PiggyBank, label: "Contas", href: "/accounts" },
 	{ icon: Tags, label: "Categorias", href: "/categories" },
+	{ icon: ArrowLeftRight, label: "Conciliação", href: "/conciliacao" },
 	{ icon: ReceiptText, label: "Orçamentos", href: "/budgets" },
 	{ icon: TrendingUp, label: "Investimentos", href: "/investments" },
 	{ icon: HandCoins, label: "Dívidas", href: "/debts" },
