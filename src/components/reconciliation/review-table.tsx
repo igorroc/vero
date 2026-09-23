@@ -46,46 +46,42 @@ function formatDayMonth(iso: string): string {
 	return `${day}/${month}`
 }
 
-function StatusPill({ status }: { status: ReviewStatus }) {
-	if (status === "matched") {
-		return (
-			<Chip
-				size="sm"
-				variant="flat"
-				color="success"
-				startContent={<CheckCircle2 size={14} />}
-			>
-				100% conciliado
-			</Chip>
-		)
-	}
-	if (status === "pending") {
-		return (
-			<Chip
-				size="sm"
-				variant="flat"
-				color="warning"
-				startContent={<Clock size={14} />}
-			>
-				Pendente
-			</Chip>
-		)
-	}
-	if (status === "unidentified") {
-		return (
-			<Chip
-				size="sm"
-				variant="flat"
-				color="default"
-				startContent={<CircleHelp size={14} />}
-			>
-				Não identificado
-			</Chip>
-		)
-	}
+const KIND_LABELS: Record<Divergence["kind"], string> = {
+	matched: "Conciliado",
+	missing_in_vero: "Só no extrato",
+	missing_in_statement: "Só no Vero",
+	value_mismatch: "Valor difere",
+	transfer_candidate: "Transferência?",
+}
+
+const KIND_COLORS: Record<
+	Divergence["kind"],
+	"success" | "warning" | "danger" | "primary" | "default"
+> = {
+	matched: "success",
+	missing_in_vero: "warning",
+	missing_in_statement: "primary",
+	value_mismatch: "danger",
+	transfer_candidate: "default",
+}
+
+function StatusPill({ kind }: { kind: Divergence["kind"] }) {
 	return (
-		<Chip size="sm" variant="flat" color="primary">
-			Só no Vero
+		<Chip
+			size="sm"
+			variant="flat"
+			color={KIND_COLORS[kind]}
+			startContent={
+				kind === "matched" ? (
+					<CheckCircle2 size={14} />
+				) : kind === "missing_in_vero" ? (
+					<Clock size={14} />
+				) : kind === "transfer_candidate" ? (
+					<CircleHelp size={14} />
+				) : undefined
+			}
+		>
+			{KIND_LABELS[kind]}
 		</Chip>
 	)
 }
@@ -311,7 +307,7 @@ export function ReviewTable({
 										{formatCurrency(row.amountCents)}
 									</td>
 									<td className="whitespace-nowrap px-2 py-2.5">
-										<StatusPill status={row.status} />
+										<StatusPill kind={row.divergence.kind} />
 									</td>
 									<td className="whitespace-nowrap px-3 py-2.5 text-right">
 										{row.status === "matched" ? (
