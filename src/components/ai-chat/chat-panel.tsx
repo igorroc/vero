@@ -14,10 +14,7 @@ import {
 	UtensilsCrossed,
 	X,
 } from "lucide-react"
-import {
-	filterPortugueseParagraphs,
-	stripThinkingBlocks,
-} from "@/features/ai-chat/text"
+import { sanitizeAssistantReply } from "@/features/ai-chat/text"
 import { MarkdownText } from "./markdown-text"
 import {
 	deriveIntermediateSteps,
@@ -194,11 +191,9 @@ export function ChatPanel({
 									textBuckets[textBuckets.length - 1].push(part.text)
 								}
 							})
-						const texts = (textBuckets[textBuckets.length - 1] ?? [])
-							.map((text) =>
-								filterPortugueseParagraphs(stripThinkingBlocks(text)),
-							)
-							.filter(Boolean)
+					const texts = (textBuckets[textBuckets.length - 1] ?? [])
+						.map((text) => sanitizeAssistantReply(text))
+						.filter(Boolean)
 							const isStreaming =
 								busy && messages[messages.length - 1]?.id === message.id
 

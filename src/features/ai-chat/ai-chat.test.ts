@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest"
 import { ASSISTANT_SYSTEM_PROMPT, buildSystemPrompt } from "./prompts"
-import { filterPortugueseParagraphs, stripThinkingBlocks } from "./text"
+import {
+	filterPortugueseParagraphs,
+	sanitizeAssistantReply,
+	stripThinkingBlocks,
+} from "./text"
 import { formatDivergencesForChat } from "./tools"
 
 describe("buildSystemPrompt", () => {
@@ -74,6 +78,82 @@ describe("filterPortugueseParagraphs", () => {
 		const filtered = filterPortugueseParagraphs(withChart)
 		expect(filtered).toMatch(/```chart/)
 		expect(filtered).toMatch(/R\$ 8\.832,77/)
+	})
+})
+
+describe("sanitizeAssistantReply", () => {
+	it("remove rascunho em inglês com centavos e mantém só a resposta em PT", () => {
+		const leaked = [
+			"Projection 30d: starting 249665 (R$ 2.496,65), ending 883277 (R$ 8.832,77), net change +633612 (R$ 6.336,12)",
+			"Safety buffer: R$ 100,00",
+			"Key observations:",
+			"",
+			"Current confirmed balance: R$ 702,77",
+			"Safety buffer: R$ 100,00",
+			"Saldo atual (confirmado): R$ 702,77",
+			"Próximo evento: Evolução de obra Caixa, R$ 1.300,00 em 25/09 (planejado, não confirmado)",
+			"Projeção 30 dias: R$ 8.832,77 (projeção incluindo planejados)",
+			"Limite diário: R$ 228,18",
+			"The answer: Sim, você tem saldo disponível, mas precisa monitorar a despesa planejada de R$ 1.300,00 em 25/09.",
+			"",
+			"Sim, você tem saldo disponível, mas com uma ressalva importante:",
+			"",
+			"Saldo atual (confirmado): R$ 702,77",
+			"",
+			"Limite diário: R$ 228,18",
+		].join("\n")
+		const clean = sanitizeAssistantReply(leaked)
+		expect(clean).not.toMatch(/Projection 30d/)
+		expect(clean).not.toMatch(/249665/)
+		expect(clean).not.toMatch(/883277/)
+		expect(clean).not.toMatch(/633612/)
+		expect(clean).not.toMatch(/Safety buffer/)
+		expect(clean).not.toMatch(/Key observations/)
+		expect(clean).not.toMatch(/Current confirmed balance/)
+		expect(clean).not.toMatch(/The answer:/)
+		expect(clean).not.toMatch(/[A-Za-z]+\s+[a-z]+\s+[a-z]+:\s*R\$/)
+		expect(clean).toMatch(/Sim, você tem saldo disponível/)
+		expect(clean).toMatch(/Saldo atual \(confirmado\): R\$ 702,77/)
+		expect(clean).toMatch(/Limite diário: R\$ 228,18/)
+	})
+
+	it("corta tudo antes do último marcador 'The answer:'", () => {
+		const clean = sanitizeAssistantReply(
+			"Some draft in english.\nThe answer: Resposta final em português.",
+		)
+		expect(clean).toBe("Resposta final em português.")
+	})
+
+	it("remove linha com valor bruto em centavos mesmo sem inglês", () => {
+		const clean = sanitizeAssistantReply(
+			"Saldo de 70277 precisa de atenção.\nSeu saldo está seguro.",
+		)
+		expect(clean).not.toMatch(/70277/)
+		expect(clean).toMatch(/Seu saldo está seguro/)
+	})
+
+	it("preserva tabela, lista e bloco chart", () => {
+		const input = [
+			"Aqui está o resumo:",
+			"",
+			"| Indicador | Valor |",
+			"| Saldo | R$ 702,77 |",
+			"",
+			"- item um",
+			"",
+			'```chart\n{"type": "bar", "data": [{"label": "May", "value": 1}]}\n```',
+		].join("\n")
+		const clean = sanitizeAssistantReply(input)
+		expect(clean).toMatch(/\| Indicador \| Valor \|/)
+		expect(clean).toMatch(/item um/)
+		expect(clean).toMatch(/```chart/)
+	})
+
+	it("remove duplicatas exatas e blocos think", () => {
+		const clean = sanitizeAssistantReply(
+			"<think>draft</think>Resposta.\n\nResposta.",
+		)
+		expect(clean).toBe("Resposta.")
 	})
 })
 
