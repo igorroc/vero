@@ -7,6 +7,7 @@ import { Button, Card, CardBody } from "@nextui-org/react"
 import {
 	BarChart3,
 	Check,
+	Loader2,
 	Minus,
 	PiggyBank,
 	Send,
@@ -76,6 +77,13 @@ export function ChatPanel({
 	}
 
 	const firstName = userName.trim().split(" ")[0] || "você"
+	// O Gemini pode demorar vários segundos até o primeiro chunk do stream
+	// (status "submitted" sem mensagem da assistente ainda). Mostra uma bolha
+	// provisória para o usuário ter feedback imediato após enviar.
+	const awaitingFirstChunk =
+		busy &&
+		messages.length > 0 &&
+		messages[messages.length - 1]?.role === "user"
 
 	return (
 		<Card className="flex max-h-[70vh] h-[560px] w-[calc(100vw-2rem)] max-w-md flex-col overflow-hidden shadow-2xl">
@@ -228,6 +236,23 @@ export function ChatPanel({
 							)
 						})}
 
+						{awaitingFirstChunk && (
+							<div className="flex gap-2" aria-live="polite">
+								<span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-black text-teal-700 dark:bg-teal-950 dark:text-teal-300">
+									V
+								</span>
+								<div className="flex min-w-0 flex-1 items-center gap-2 rounded-2xl rounded-tl-md border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+									<Loader2
+										size={15}
+										className="animate-spin text-teal-700 dark:text-teal-300"
+									/>
+									<p className="text-xs text-slate-500">
+										Vero está pensando…
+									</p>
+								</div>
+							</div>
+						)}
+
 						{error && (
 							<p className="text-xs text-red-500">
 								Não foi possível responder. Tente de novo.
@@ -250,12 +275,16 @@ export function ChatPanel({
 							/>
 							<button
 								type="button"
-								aria-label="Enviar"
+								aria-label={busy ? "Enviando" : "Enviar"}
 								disabled={!input.trim() || busy}
 								onClick={() => send(input)}
 								className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-teal-700 text-white transition-opacity disabled:opacity-40"
 							>
-								<Send size={16} />
+								{busy ? (
+									<Loader2 size={16} className="animate-spin" />
+								) : (
+									<Send size={16} />
+								)}
 							</button>
 						</div>
 						<p className="mt-1.5 flex items-center justify-center gap-1 text-center text-[11px] text-slate-400">
