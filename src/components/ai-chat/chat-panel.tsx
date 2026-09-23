@@ -45,7 +45,9 @@ export function ChatPanel({
 	})
 	const [input, setInput] = useState("")
 	const [collapsed, setCollapsed] = useState(false)
-	const [sentAt, setSentAt] = useState<Record<string, string>>({})
+	// Timestamps sem estado: a chegada de mensagens já re-renderiza, então um
+	// ref basta — e nenhum setState em effect pode entrar em loop.
+	const sentAtRef = useRef<Record<string, string>>({})
 	const bottomRef = useRef<HTMLDivElement>(null)
 	const busy = status === "streaming" || status === "submitted"
 
@@ -53,20 +55,18 @@ export function ChatPanel({
 		bottomRef.current?.scrollIntoView({ behavior: "smooth" })
 	}, [messages, busy])
 
-	useEffect(() => {
-		setSentAt((current) => {
-			const next = { ...current }
-			for (const message of messages) {
-				if (!next[sentTimeKey(message.id)]) {
-					next[sentTimeKey(message.id)] = new Date().toLocaleTimeString(
-						"pt-BR",
-						{ hour: "2-digit", minute: "2-digit" },
-					)
-				}
-			}
-			return next
-		})
-	}, [messages])
+	function sentTime(id: string): string {
+		const key = sentTimeKey(id)
+		let value = sentAtRef.current[key]
+		if (!value) {
+			value = new Date().toLocaleTimeString("pt-BR", {
+				hour: "2-digit",
+				minute: "2-digit",
+			})
+			sentAtRef.current[key] = value
+		}
+		return value
+	}
 
 	function send(text: string) {
 		const value = text.trim()
@@ -157,7 +157,7 @@ export function ChatPanel({
 												{text}
 											</div>
 											<p className="mt-0.5 flex items-center justify-end gap-1 text-[11px] text-slate-400">
-												{sentAt[sentTimeKey(message.id)] ?? ""}
+												{sentTime(message.id)}
 												<Check size={12} strokeWidth={3} />
 											</p>
 										</div>
@@ -215,7 +215,7 @@ export function ChatPanel({
 											</p>
 										)}
 										<p className="text-right text-[11px] text-slate-400">
-											{sentAt[sentTimeKey(message.id)] ?? ""}
+											{sentTime(message.id)}
 										</p>
 									</div>
 								</div>
