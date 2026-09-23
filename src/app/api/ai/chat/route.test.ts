@@ -6,6 +6,7 @@ vi.mock("next/headers", () => ({
 		get: () => undefined,
 		set: () => {},
 	}),
+	headers: async () => new Headers(),
 }))
 
 describe("POST /api/ai/chat", () => {

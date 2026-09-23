@@ -16,7 +16,10 @@ import {
 	X,
 } from "lucide-react"
 import { sanitizeAssistantReply } from "@/features/ai-chat/text"
-import type { MockLeadMessage } from "./assistant-mocks"
+import {
+	createConversation,
+	type PersistedChatMessage,
+} from "@/features/ai-chat/conversations"
 import { MarkdownText } from "./markdown-text"
 import {
 	deriveIntermediateSteps,
@@ -39,23 +42,36 @@ export function ChatPanel({
 	userName,
 	onClose,
 	variant = "floating",
-	leadMessages = [],
+	conversationId,
+	initialMessages = [],
+	onConversationCreated,
+	onThreadActivity,
 }: {
 	userName: string
 	onClose?: () => void
 	/** "page" remove os botões flutuantes e ocupa a altura disponível. */
 	variant?: "floating" | "page"
 	/**
-	 * Mensagens de exemplo (mock) exibidas no topo com divisão visual clara.
-	 * O chat real sempre começa do zero — use `key` no pai para remontar.
+	 * Persistência (fase 03.1). `undefined` = modo sessão legado (widget
+	 * flutuante, sem banco). `null` = nova conversa (criada no 1º envio).
+	 * string = conversa existente.
 	 */
-	leadMessages?: MockLeadMessage[]
+	conversationId?: string | null
+	/** Histórico real já persistido (render estático acima das vivas). */
+	initialMessages?: PersistedChatMessage[]
+	/** Chamado com o id recém-criado (para o pai atualizar a lista). */
+	onConversationCreated?: (id: string) => void
+	/** Chamado quando uma troca termina (pai recarrega lista/título). */
+	onThreadActivity?: () => void
 }) {
 	const { messages, sendMessage, status, error } = useChat({
 		transport: new DefaultChatTransport({ api: "/api/ai/chat" }),
 	})
 	const [input, setInput] = useState("")
 	const [collapsed, setCollapsed] = useState(false)
+	const [createdId, setCreatedId] = useState<string | null>(null)
+	const persistent = conversationId !== undefined
+	const effectiveId = conversationId ?? createdId
 	// Timestamps sem estado: a chegada de mensagens já re-renderiza, então um
 	// ref basta — e nenhum setState em effect pode entrar em loop.
 	const sentAtRef = useRef<Record<string, string>>({})
@@ -65,6 +81,16 @@ export function ChatPanel({
 	useEffect(() => {
 		bottomRef.current?.scrollIntoView({ behavior: "smooth" })
 	}, [messages, busy])
+
+	// Avisa o pai quando uma troca termina (lista recarrega título/horário).
+	// Só dispara na transição ocupado -> livre, nunca na montagem.
+	const wasBusyRef = useRef(false)
+	useEffect(() => {
+		if (wasBusyRef.current && !busy) {
+			onThreadActivity?.()
+		}
+		wasBusyRef.current = busy
+	}, [busy, onThreadActivity])
 
 	function sentTime(id: string): string {
 		const key = sentTimeKey(id)
@@ -79,10 +105,24 @@ export function ChatPanel({
 		return value
 	}
 
-	function send(text: string) {
+	async function send(text: string) {
 		const value = text.trim()
 		if (!value || busy) return
-		void sendMessage({ text: value })
+		let threadId = effectiveId
+		if (persistent && !threadId) {
+			// Nova conversa: cria antes do 1º envio; se o banco ainda não
+			// foi migrado, segue em modo sessão (sem persistir).
+			const created = await createConversation()
+			if (created.success) {
+				threadId = created.id
+				setCreatedId(created.id)
+				onConversationCreated?.(created.id)
+			}
+		}
+		void sendMessage(
+			{ text: value },
+			threadId ? { body: { conversationId: threadId } } : undefined,
+		)
 		setInput("")
 	}
 
@@ -144,7 +184,7 @@ export function ChatPanel({
 			{!collapsed && (
 				<>
 					<CardBody className="flex flex-1 flex-col gap-3 overflow-y-auto px-3 sm:px-4">
-						{messages.length === 0 && (
+						{messages.length === 0 && initialMessages.length === 0 && (
 							<>
 								<div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/60">
 									<p className="text-[15px] font-semibold leading-snug text-slate-800 dark:text-slate-100">
@@ -171,41 +211,25 @@ export function ChatPanel({
 							</>
 						)}
 
-						{leadMessages.length > 0 && (
-							<div aria-label="Mensagens de exemplo">
-								<div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 p-3 dark:border-slate-600 dark:bg-slate-800/40">
-									<p className="mb-2 text-center text-[11px] font-bold uppercase tracking-wide text-slate-400">
-										Exemplo de conversa anterior (ilustrativo)
-									</p>
-									<div className="flex flex-col gap-2 opacity-80">
-										{leadMessages.map((lead, i) =>
-											lead.role === "user" ? (
-												<div key={i} className="flex justify-end">
-													<div className="max-w-[85%] rounded-2xl rounded-br-md bg-teal-700 px-3.5 py-2.5 text-sm text-white">
-														{lead.text}
-													</div>
-												</div>
-											) : (
-												<div key={i} className="flex gap-2">
-													<span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-black text-teal-700 dark:bg-teal-950 dark:text-teal-300">
-														V
-													</span>
-													<div className="min-w-0 flex-1 rounded-2xl rounded-tl-md border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
-														<MarkdownText text={lead.text} />
-													</div>
-												</div>
-											),
-										)}
+						{/* Histórico real já persistido (leitura; o contexto da IA
+						    vem do servidor pela conversa). */}
+						{initialMessages.map((history, i) =>
+							history.role === "user" ? (
+								<div key={`history-${i}`} className="flex justify-end">
+									<div className="max-w-[85%] rounded-2xl rounded-br-md bg-teal-700 px-3.5 py-2.5 text-sm text-white">
+										{history.text}
 									</div>
 								</div>
-								<div className="my-3 flex items-center gap-2">
-									<span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-									<p className="text-[11px] font-bold uppercase tracking-wide text-teal-700 dark:text-teal-300">
-										A partir daqui, conversa real
-									</p>
-									<span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+							) : (
+								<div key={`history-${i}`} className="flex gap-2">
+									<span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-black text-teal-700 dark:bg-teal-950 dark:text-teal-300">
+										V
+									</span>
+									<div className="min-w-0 flex-1 rounded-2xl rounded-tl-md border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+										<MarkdownText text={history.text} />
+									</div>
 								</div>
-							</div>
+							),
 						)}
 
 						{messages.map((message) => {
