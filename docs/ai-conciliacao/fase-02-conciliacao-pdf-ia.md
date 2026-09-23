@@ -29,16 +29,19 @@ Upload PDF -> extract-pdf-statement.ts (server)
 ### Extração (único ponto com IA)
 
 - Provedor trocável via **Vercel AI SDK** (`ai` + `@ai-sdk/openai` + `@ai-sdk/google`
-  + `@ai-sdk/openai-compatible`).
-  `src/lib/ai/client.ts` lê `AI_PROVIDER` (`openai`|`google`|`openrouter`) + `AI_MODEL`
-  do env — trocar de modelo é só mudar env, sem reescrever código.
+  - `@ai-sdk/openai-compatible`).
+    `src/lib/ai/client.ts` lê `AI_PROVIDER` (`openai`|`google`|`openrouter`) + `AI_MODEL`
+    do env — trocar de modelo é só mudar env, sem reescrever código.
 - Opções: `openai` + `gpt-4o-mini` (pago, <US$ 0,01 por extrato, sem treino com os
   dados) ou `openrouter` + `openrouter/free` (gratuito, 50 req/dia sem cartão; router
   escolhe sozinho um modelo free com PDF + JSON + tools). No OpenRouter, desligar o
   treino com seus dados e ativar ZDR em Privacy settings.
 - Prompt pede array JSON `{date, amountCents, description, confidence}`.
-  Validação rígida com `zod` + pós-validação determinística (`toNormalizedTx`):
-  data real, `amountCents` inteiro, descrição não vazia.
+  Validação rígida com `zod` + pós-validação determinística (`toNormalizedTx`).
+- **Fallback sem `structured-outputs`**: modelos gratuitos do router podem rejeitar
+  `response_format` (400). Nesse caso `extractPdfStatement` tenta de novo via
+  `generateText` (`extractViaText`) e valida o JSON com o mesmo schema.
+- Prompt entende sufixos `D`/`C` da Caixa (`228,51 D` → -22851) e datas com hora.
 - Linhas com `confidence < 0.7` entram em revisão manual na tela (`PdfReview`:
   edita data/valor, remove linha) antes de comparar.
 - Limite: PDF até 10MB; sem contagem de páginas (sem dep nova) — erro orienta a fatiar.
@@ -87,3 +90,9 @@ Não alterar: schema Prisma (nada novo), engine (mesmo), apply (mesmo).
 > Inter extraiu **35/35 transações** (igual ao CSV/OFX), 0 ignoradas, ~84s.
 > Ressalva: o router free nem sempre suporta `response_format` nativo — a validação
 > `zod` + `needs_review` é a rede de segurança nesses casos.
+>
+> Descoberta com o PDF da Caixa: o OpenRouter **parseia até scan** (o texto veio no
+> `file_annotations`), mas o modelo free servido rejeitou `structured-outputs`
+> (400). Correções aplicadas: fallback `extractViaText`, prompt com sufixos `D`/`C`
+> e datas com hora, e logs de erro sanitizados (o erro cru carrega o extrato no
+> `responseBody` — nunca logar o objeto inteiro).
