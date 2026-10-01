@@ -1,7 +1,7 @@
 "use client"
 
-import { useMemo } from "react"
-import ReactMarkdown from "react-markdown"
+import { memo, useMemo } from "react"
+import ReactMarkdown, { type Components } from "react-markdown"
 import remarkGfm from "remark-gfm"
 import {
 	Bar,
@@ -48,7 +48,7 @@ function formatValue(value: number, unit?: string | null): string {
 	return unit ? `${unit} ${formatted}` : formatted
 }
 
-function ChartBlock({ raw }: { raw: string }) {
+const ChartBlock = memo(function ChartBlock({ raw }: { raw: string }) {
 	const chart = useMemo(() => parseChartData(raw), [raw])
 	if (!chart) {
 		return (
@@ -96,63 +96,62 @@ function ChartBlock({ raw }: { raw: string }) {
 			</div>
 		</div>
 	)
+})
+
+const markdownComponents: Components = {
+	p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+	strong: ({ children }) => (
+		<strong className="font-bold text-slate-900 dark:text-white">
+			{children}
+		</strong>
+	),
+	ul: ({ children }) => (
+		<ul className="mb-2 list-disc space-y-1 pl-5 last:mb-0">{children}</ul>
+	),
+	ol: ({ children }) => (
+		<ol className="mb-2 list-decimal space-y-1 pl-5 last:mb-0">{children}</ol>
+	),
+	table: ({ children }) => (
+		<div className="mb-2 overflow-x-auto">
+			<table className="w-full border-collapse text-[13px]">{children}</table>
+		</div>
+	),
+	th: ({ children }) => (
+		<th className="border-b border-slate-300 px-2 py-1 text-left font-bold dark:border-slate-600">
+			{children}
+		</th>
+	),
+	td: ({ children }) => (
+		<td className="border-b border-slate-100 px-2 py-1 dark:border-slate-800">
+			{children}
+		</td>
+	),
+	code: ({ className, children }) => {
+		const raw = String(children ?? "")
+		if (className?.includes("language-chart")) {
+			return <ChartBlock raw={raw} />
+		}
+		return (
+			<code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[13px] dark:bg-slate-800">
+				{children}
+			</code>
+		)
+	},
+	pre: ({ children }) => <>{children}</>,
 }
 
-export function MarkdownText({ text }: { text: string }) {
+const remarkPlugins = [remarkGfm]
+
+export const MarkdownText = memo(function MarkdownText({
+	text,
+}: {
+	text: string
+}) {
 	return (
 		<div className="markdown-body text-sm leading-relaxed text-slate-800 dark:text-slate-100">
-			<ReactMarkdown
-				remarkPlugins={[remarkGfm]}
-				components={{
-					p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-					strong: ({ children }) => (
-						<strong className="font-bold text-slate-900 dark:text-white">
-							{children}
-						</strong>
-					),
-					ul: ({ children }) => (
-						<ul className="mb-2 list-disc space-y-1 pl-5 last:mb-0">
-							{children}
-						</ul>
-					),
-					ol: ({ children }) => (
-						<ol className="mb-2 list-decimal space-y-1 pl-5 last:mb-0">
-							{children}
-						</ol>
-					),
-					table: ({ children }) => (
-						<div className="mb-2 overflow-x-auto">
-							<table className="w-full border-collapse text-[13px]">
-								{children}
-							</table>
-						</div>
-					),
-					th: ({ children }) => (
-						<th className="border-b border-slate-300 px-2 py-1 text-left font-bold dark:border-slate-600">
-							{children}
-						</th>
-					),
-					td: ({ children }) => (
-						<td className="border-b border-slate-100 px-2 py-1 dark:border-slate-800">
-							{children}
-						</td>
-					),
-					code: ({ className, children }) => {
-						const raw = String(children ?? "")
-						if (className?.includes("language-chart")) {
-							return <ChartBlock raw={raw} />
-						}
-						return (
-							<code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[13px] dark:bg-slate-800">
-								{children}
-							</code>
-						)
-					},
-					pre: ({ children }) => <>{children}</>,
-				}}
-			>
+			<ReactMarkdown remarkPlugins={remarkPlugins} components={markdownComponents}>
 				{text}
 			</ReactMarkdown>
 		</div>
 	)
-}
+})
