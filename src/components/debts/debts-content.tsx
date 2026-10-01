@@ -166,7 +166,7 @@ export function DebtsContent({ debtId }: { debtId?: string }) {
 			installmentId: selectedInstallment.id,
 			accountId: paymentForm.accountId,
 			amount: Number(paymentForm.amount.replace(",", ".")),
-			date: paymentForm.date,
+			date: dateFromInput(paymentForm.date),
 		})
 		if (result.success) {
 			toast.success("Pagamento registrado")

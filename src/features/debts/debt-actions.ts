@@ -3,7 +3,7 @@
 import { Prisma } from "@prisma/client"
 import prisma from "@/lib/db"
 import { getUserBySession } from "@/lib/auth"
-import { dateFromInputUTC, dollarsToCents, startOfDay } from "@/types/finance"
+import { dollarsToCents, startOfDay } from "@/types/finance"
 import {
 	buildDebtInstallmentPlan,
 	canRegisterDebtPayment,
@@ -28,7 +28,7 @@ export interface RegisterDebtPaymentInput {
 	installmentId: string
 	accountId: string
 	amount: number
-	date: string
+	date: Date
 }
 
 const debtInclude = {
@@ -262,7 +262,7 @@ export async function registerDebtPayment(input: RegisterDebtPaymentInput) {
 				success: false,
 				error: "Informe um valor maior que zero",
 			} as const
-		const paymentDate = dateFromInputUTC(input.date)
+		const paymentDate = input.date
 		if (Number.isNaN(paymentDate.getTime()))
 			return {
 				success: false,
