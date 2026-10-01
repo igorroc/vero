@@ -50,7 +50,9 @@ export function AppLayout({
 				/>
 
 				{/* Page content - extra bottom padding on mobile for bottom nav */}
-				<main className="p-4 pb-24 sm:p-6 md:pb-6">{children}</main>
+				<main className="p-4 pb-24 sm:p-6 md:pb-6">
+					<div className="mx-auto w-full max-w-5xl">{children}</div>
+				</main>
 			</div>
 
 			{/* Bottom navigation - only visible on mobile */}

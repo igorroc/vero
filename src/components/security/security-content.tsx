@@ -34,7 +34,7 @@ export function SecurityContent() {
 	}
 
 	return (
-		<div className="max-w-2xl">
+		<div>
 			<section className="modern-card p-5 sm:p-7">
 				<div className="flex items-start gap-4">
 					<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-brand text-primary">

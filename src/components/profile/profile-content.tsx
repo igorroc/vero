@@ -112,7 +112,7 @@ export function ProfileContent({ user, billingState }: ProfileContentProps) {
 	}
 
 	return (
-		<div className="max-w-5xl space-y-6">
+		<div className="space-y-6">
 			<section className="modern-card overflow-hidden">
 				<div className="bg-surface-brand px-5 py-7 sm:px-8">
 					<div className="flex flex-col items-center gap-5 sm:flex-row">

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function EventsPage() {
 	return (
-		<div className="max-w-3xl mx-auto">
+		<div>
 			{/* Mobile-friendly header */}
 			<div className="mb-4 sm:mb-6">
 				<h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">

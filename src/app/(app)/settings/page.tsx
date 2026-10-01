@@ -36,7 +36,7 @@ export default async function SettingsPage() {
 				title="Configurações"
 				subtitle="Personalize seu copiloto financeiro"
 			/>
-			<div className="max-w-2xl">
+			<div>
 				<SettingsForm
 					initialSettings={{
 						safetyBuffer: settings.safetyBuffer,

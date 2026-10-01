@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function ConciliacaoPage() {
 	return (
-		<div className="mx-auto max-w-6xl">
+		<div>
 			<div className="mb-4 sm:mb-6">
 				<h1 className="text-2xl font-bold text-slate-900 sm:text-3xl dark:text-white">
 					Conciliação de extrato

@@ -76,7 +76,7 @@ export function CashflowTimeline() {
 	}
 
 	return (
-		<div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+		<div className="space-y-4 sm:space-y-6">
 			{/* Header Card with Net Change */}
 			<div className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-purple-900 rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-white relative overflow-hidden">
 				{/* Decorative elements */}

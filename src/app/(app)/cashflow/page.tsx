@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 export default function CashflowPage() {
 	return (
-		<div className="max-w-4xl mx-auto">
+		<div>
 			{/* Mobile Header */}
 			<div className="mb-4 sm:mb-6 md:hidden">
 				<h1 className="text-xl font-bold text-slate-900 dark:text-white">
