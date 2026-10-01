@@ -1,7 +1,11 @@
 import { convertToModelMessages, stepCountIs, streamText } from "ai"
 
 import { getUserBySession } from "@/lib/auth"
-import { AiNotConfiguredError, getStatementModel } from "@/lib/ai/client"
+import {
+	AiNotConfiguredError,
+	getReasoningProviderOptions,
+	getStatementModel,
+} from "@/lib/ai/client"
 import { buildSystemPrompt } from "@/features/ai-chat/prompts"
 import { chatTools } from "@/features/ai-chat/tools"
 import {
@@ -77,6 +81,7 @@ export async function POST(req: Request) {
 		system: buildSystemPrompt(),
 		messages: contextMessages,
 		tools: chatTools,
+		providerOptions: getReasoningProviderOptions(),
 		// Default do SDK é 1 passo: a tool seria chamada e o resultado nunca
 		// viraria resposta. Permite consultar e depois responder.
 		stopWhen: stepCountIs(5),

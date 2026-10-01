@@ -2,6 +2,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { createOpenAI } from "@ai-sdk/openai"
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
 import type { LanguageModel } from "ai"
+import type { ProviderOptions } from "@ai-sdk/provider-utils"
 
 import { env } from "@/lib/env"
 
@@ -23,9 +24,12 @@ export class AiNotConfiguredError extends Error {
 
 export type AiProvider = "openai" | "google" | "openrouter"
 
+export type AiThinkingLevel = "minimal" | "low" | "medium" | "high"
+
 export type AiConfig = {
 	provider: AiProvider
 	model?: string
+	thinkingLevel?: AiThinkingLevel
 	openaiKey?: string
 	googleKey?: string
 	openrouterKey?: string
@@ -76,4 +80,43 @@ export function getStatementModel(
 	const apiKey = config.openaiKey ?? env.OPENAI_API_KEY
 	if (!apiKey?.trim()) throw new AiNotConfiguredError("OPENAI_API_KEY")
 	return createOpenAI({ apiKey: apiKey.trim() })(modelId)
+}
+
+/** Modelos que aceitam parâmetros de raciocínio sem devolver 400. */
+function supportsReasoning(provider: AiProvider, modelId: string): boolean {
+	if (provider === "google") {
+		return modelId.startsWith("gemini-2.5") || modelId.startsWith("gemini-3")
+	}
+	if (provider === "openai") {
+		return /^(gpt-5|gpt-6|o[1-4])/.test(modelId)
+	}
+	// OpenRouter recebe `reasoning` no corpo e roteia conforme o modelo.
+	return true
+}
+
+/**
+ * Opções de raciocínio por provedor para o CHAT. Habilita os summaries de
+ * thinking e devolve os passos como `reasoning parts` (renderizados pelo
+ * componente `Reasoning`). Não é usado na conciliação nem no título, onde a
+ * latência extra do thinking não compensa. Modelos sem suporte ficam sem
+ * opções para não quebrar a chamada.
+ */
+export function getReasoningProviderOptions(
+	config: Partial<AiConfig> = {},
+): ProviderOptions | undefined {
+	const provider = getAiProvider(config)
+	const modelId = getStatementModelId({ ...config, provider })
+	if (!supportsReasoning(provider, modelId)) return undefined
+	const level = config.thinkingLevel ?? env.AI_THINKING_LEVEL
+	if (provider === "google") {
+		return {
+			google: {
+				thinkingConfig: { thinkingLevel: level, includeThoughts: true },
+			},
+		}
+	}
+	if (provider === "openai") {
+		return { openai: { reasoningEffort: level, reasoningSummary: "auto" } }
+	}
+	return { openrouter: { reasoning: { effort: level } } }
 }

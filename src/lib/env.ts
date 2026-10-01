@@ -23,6 +23,12 @@ const envSchema = z.object({
 	// recursos de IA desabilitam com mensagem e o resto do app funciona.
 	AI_PROVIDER: z.enum(["openai", "google", "openrouter"]).default("openai"),
 	AI_MODEL: z.string().min(1).optional(),
+	// Nível de raciocínio do chat. Só afeta o assistente (não a conciliação
+	// de PDF nem a geração de título). "minimal" desliga o thinking quando o
+	// provedor permitir.
+	AI_THINKING_LEVEL: z
+		.enum(["minimal", "low", "medium", "high"])
+		.default("low"),
 	OPENAI_API_KEY: z.string().min(1).optional(),
 	GOOGLE_GENERATIVE_AI_API_KEY: z.string().min(1).optional(),
 	OPENROUTER_API_KEY: z.string().min(1).optional(),
