@@ -21,9 +21,11 @@ import {
 	type PersistedChatMessage,
 } from "@/features/ai-chat/conversations"
 import { MarkdownText } from "./markdown-text"
+import { Reasoning } from "./reasoning"
 import {
 	deriveIntermediateSteps,
 	deriveThoughtSteps,
+	reasoningTextOf,
 	splitMessageSteps,
 	ThoughtBlock,
 } from "./thought-steps"
@@ -72,6 +74,7 @@ export function ChatPanel({
 	const [input, setInput] = useState("")
 	const [collapsed, setCollapsed] = useState(false)
 	const [createdId, setCreatedId] = useState<string | null>(null)
+	const [turnDuration, setTurnDuration] = useState<number | undefined>(undefined)
 	const persistent = conversationId !== undefined
 	const effectiveId = conversationId ?? createdId
 	// Timestamps sem estado: a chegada de mensagens já re-renderiza, então um
@@ -92,12 +95,23 @@ export function ChatPanel({
 		el.style.height = `${Math.min(el.scrollHeight, MAX_INPUT_HEIGHT)}px`
 	}, [input])
 
-	// Avisa o pai quando uma troca termina (lista recarrega título/horário).
-	// Só dispara na transição ocupado -> livre, nunca na montagem.
+	// Avisa o pai quando uma troca termina (lista recarrega título/horário) e
+	// mede a duração do turno para o rótulo "Pensou por Ns". Só dispara na
+	// transição ocupado -> livre, nunca na montagem.
 	const wasBusyRef = useRef(false)
+	const turnStartRef = useRef<number | null>(null)
 	useEffect(() => {
-		if (wasBusyRef.current && !busy) {
+		if (busy) {
+			if (turnStartRef.current === null) turnStartRef.current = Date.now()
+			setTurnDuration(undefined)
+		} else if (wasBusyRef.current) {
 			onThreadActivity?.()
+			if (turnStartRef.current !== null) {
+				setTurnDuration(
+					Math.round((Date.now() - turnStartRef.current) / 1000),
+				)
+				turnStartRef.current = null
+			}
 		}
 		wasBusyRef.current = busy
 	}, [busy, onThreadActivity])
@@ -273,15 +287,21 @@ export function ChatPanel({
 									"toolName" in part && typeof part.toolName === "string"
 										? part.toolName
 										: undefined,
+								text:
+									"text" in part && typeof part.text === "string"
+										? part.text
+										: undefined,
 							}))
 							const split = splitMessageSteps(looseParts)
 							const finalStep = split[split.length - 1] ?? []
-							// Títulos: steps intermediários + tools do step final.
-							// Texto: SOMENTE do step final (pensamento não renderiza).
+							// Etapas: tools dos steps intermediários e do step final.
+							// O texto final aparece abaixo; raciocínio nativo, à parte.
 							const steps = [
 								...deriveIntermediateSteps(split),
 								...deriveThoughtSteps(finalStep),
 							]
+							const reasoningText = reasoningTextOf(looseParts)
+							const lastPartType = looseParts[looseParts.length - 1]?.type
 							const textBuckets: string[][] = [[]]
 							message.parts.forEach((part) => {
 								if (part.type === "step-start") {
@@ -295,8 +315,9 @@ export function ChatPanel({
 					const texts = (textBuckets[textBuckets.length - 1] ?? [])
 						.map((text) => sanitizeAssistantReply(text))
 						.filter(Boolean)
-							const isStreaming =
-								busy && messages[messages.length - 1]?.id === message.id
+							const isLastMessage =
+								messages[messages.length - 1]?.id === message.id
+							const isStreaming = busy && isLastMessage
 
 							return (
 								<div key={message.id} className="flex gap-2">
@@ -304,8 +325,22 @@ export function ChatPanel({
 										V
 									</span>
 									<div className="flex min-w-0 flex-1 flex-col gap-2 rounded-2xl rounded-tl-md border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+										{reasoningText.trim().length > 0 && (
+											<Reasoning
+												text={reasoningText}
+												isStreaming={isStreaming && lastPartType === "reasoning"}
+												duration={isLastMessage ? turnDuration : undefined}
+											/>
+										)}
 										{steps.length > 0 && (
-											<ThoughtBlock steps={steps} streaming={isStreaming} />
+											<ThoughtBlock
+												steps={steps}
+												duration={
+													isLastMessage && reasoningText.trim().length === 0
+														? turnDuration
+														: undefined
+												}
+											/>
 										)}
 									{texts.map((text, i) => (
 										<MarkdownText key={i} text={text} />

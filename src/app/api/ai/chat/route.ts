@@ -88,5 +88,5 @@ export async function POST(req: Request) {
 			await ensureConversationTitle(user.id, persistId)
 		},
 	})
-	return result.toUIMessageStreamResponse()
+	return result.toUIMessageStreamResponse({ sendReasoning: true })
 }

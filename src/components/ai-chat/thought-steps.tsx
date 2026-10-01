@@ -1,54 +1,92 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import {
 	ArrowLeftRight,
 	BarChart3,
+	Check,
 	ChevronDown,
+	CircleAlert,
 	Database,
 	Loader2,
 	Sparkles,
-	Check,
 	Tags,
 	Wallet,
 } from "lucide-react"
+import {
+	getToolName,
+	isReasoningUIPart,
+	isTextUIPart,
+	isToolUIPart,
+	type UIDataTypes,
+	type UIMessagePart,
+	type UITools,
+} from "ai"
+import { formatThinkingDuration } from "./reasoning"
+
+export type ThoughtStepIcon =
+	| "summary"
+	| "events"
+	| "categories"
+	| "divergences"
+	| "thinking"
+	| "insights"
+
+export type ThoughtStepStatus = "active" | "complete" | "error"
 
 export type ThoughtStep = {
 	title: string
-	done: boolean
-	icon:
-		| "summary"
-		| "events"
-		| "categories"
-		| "divergences"
-		| "thinking"
-		| "insights"
+	status: ThoughtStepStatus
+	icon: ThoughtStepIcon
 }
 
-type LoosePart = {
+/**
+ * Parte de mensagem em formato tolerante: aceita as `UIMessagePart` do SDK e
+ * os fixtures estruturais dos testes sem exigir o shape completo.
+ */
+export type LoosePart = {
 	type: string
 	state?: string
 	toolName?: string
+	text?: string
 }
 
-const TOOL_META: Record<string, { title: string; icon: ThoughtStep["icon"] }> =
-	{
-		get_financial_summary: {
-			title: "Consultando resumo financeiro",
-			icon: "summary",
-		},
-		get_events: { title: "Consultando lançamentos", icon: "events" },
-		get_categories: { title: "Consultando categorias", icon: "categories" },
-		explain_divergences: {
-			title: "Analisando divergências",
-			icon: "divergences",
-		},
-	}
+const TOOL_META: Record<string, { title: string; icon: ThoughtStepIcon }> = {
+	get_financial_summary: {
+		title: "Consultando resumo financeiro",
+		icon: "summary",
+	},
+	get_events: { title: "Consultando lançamentos", icon: "events" },
+	get_categories: { title: "Consultando categorias", icon: "categories" },
+	explain_divergences: {
+		title: "Analisando divergências",
+		icon: "divergences",
+	},
+}
+
+const DEFAULT_TOOL_META: { title: string; icon: ThoughtStepIcon } = {
+	title: "Consultando dados",
+	icon: "insights",
+}
+
+function asUiPart(part: LoosePart): UIMessagePart<UIDataTypes, UITools> {
+	return part as unknown as UIMessagePart<UIDataTypes, UITools>
+}
 
 function toolNameOf(part: LoosePart): string | null {
-	if (part.type === "dynamic-tool") return part.toolName ?? null
-	if (part.type.startsWith("tool-")) return part.type.slice("tool-".length)
+	const ui = asUiPart(part)
+	if (isToolUIPart(ui)) return getToolName(ui)
 	return null
+}
+
+function metaOf(name: string): { title: string; icon: ThoughtStepIcon } {
+	return TOOL_META[name] ?? DEFAULT_TOOL_META
+}
+
+function toolStatus(state?: string): ThoughtStepStatus {
+	if (state === "output-available") return "complete"
+	if (state === "output-error" || state === "output-denied") return "error"
+	return "active"
 }
 
 /**
@@ -68,7 +106,10 @@ export function splitMessageSteps(parts: LoosePart[]): LoosePart[][] {
 }
 
 function hasThinking(step: LoosePart[]): boolean {
-	return step.some((part) => part.type === "reasoning" || part.type === "text")
+	return step.some((part) => {
+		const ui = asUiPart(part)
+		return isReasoningUIPart(ui) || isTextUIPart(ui)
+	})
 }
 
 /**
@@ -80,16 +121,12 @@ export function deriveIntermediateSteps(steps: LoosePart[][]): ThoughtStep[] {
 	const intermediates = steps.length > 1 ? steps.slice(0, -1) : []
 	for (const step of intermediates) {
 		if (hasThinking(step)) {
-			out.push({ title: "Pensando…", done: true, icon: "thinking" })
+			out.push({ title: "Pensando…", status: "complete", icon: "thinking" })
 		}
 		for (const part of step) {
 			const name = toolNameOf(part)
 			if (name) {
-				const meta = TOOL_META[name] ?? {
-					title: "Consultando dados",
-					icon: "insights" as const,
-				}
-				out.push({ title: meta.title, done: true, icon: meta.icon })
+				out.push({ title: metaOf(name).title, status: "complete", icon: metaOf(name).icon })
 			}
 		}
 	}
@@ -97,38 +134,33 @@ export function deriveIntermediateSteps(steps: LoosePart[][]): ThoughtStep[] {
 }
 
 /**
- * Deriva etapas legíveis (título + estado) das parts da mensagem.
- * Texto bruto de raciocínio nunca é exibido — só títulos.
+ * Deriva as etapas de tools do step final. O raciocínio nativo do modelo é
+ * tratado à parte (componente `Reasoning`), nunca como etapa.
  */
 export function deriveThoughtSteps(parts: LoosePart[]): ThoughtStep[] {
 	const steps: ThoughtStep[] = []
 	for (const part of parts) {
-		if (part.type === "reasoning") {
-			steps.push({
-				title: "Pensando…",
-				done: part.state === "done",
-				icon: "thinking",
-			})
-			continue
-		}
 		const name = toolNameOf(part)
-		if (name) {
-			const meta = TOOL_META[name] ?? {
-				title: "Consultando dados",
-				icon: "insights" as const,
-			}
-			steps.push({
-				title: meta.title,
-				done:
-					part.state === "output-available" || part.state === "output-error",
-				icon: meta.icon,
-			})
-		}
+		if (!name) continue
+		steps.push({
+			title: metaOf(name).title,
+			status: toolStatus(part.state),
+			icon: metaOf(name).icon,
+		})
 	}
 	return steps
 }
 
-function StepIcon({ icon }: { icon: ThoughtStep["icon"] }) {
+/** Concatena o texto de todas as reasoning parts da mensagem. */
+export function reasoningTextOf(parts: LoosePart[]): string {
+	return parts
+		.filter((part) => isReasoningUIPart(asUiPart(part)))
+		.map((part) => part.text ?? "")
+		.filter((text) => text.trim().length > 0)
+		.join("\n\n")
+}
+
+function StepIcon({ icon }: { icon: ThoughtStepIcon }) {
 	const props = {
 		size: 15,
 		className: "shrink-0 text-teal-700 dark:text-teal-300",
@@ -149,66 +181,91 @@ function StepIcon({ icon }: { icon: ThoughtStep["icon"] }) {
 	}
 }
 
+function StepStatus({ status }: { status: ThoughtStepStatus }) {
+	if (status === "complete")
+		return <Check size={13} strokeWidth={3} className="text-teal-600" />
+	if (status === "error")
+		return <CircleAlert size={13} className="text-red-500" />
+	return <Loader2 size={13} className="animate-spin text-teal-600" />
+}
+
 export function ThoughtBlock({
 	steps,
-	streaming,
+	duration,
 }: {
 	steps: ThoughtStep[]
-	streaming: boolean
+	duration?: number
 }) {
 	const [open, setOpen] = useState(true)
-	const allDone = steps.every((step) => step.done)
-	const finished = !streaming && allDone
+	const userInteracted = useRef(false)
+	const contentId = useId()
+	const active = steps.some((step) => step.status === "active")
+	const hasError = steps.some((step) => step.status === "error")
 
-	// Fecha sozinho quando a conversa finaliza
 	useEffect(() => {
-		if (finished) setOpen(false)
-	}, [finished])
+		if (userInteracted.current) return
+		setOpen(active)
+	}, [active])
 
 	if (steps.length === 0) return null
+
+	const label = active
+		? "Pensando…"
+		: duration != null
+			? `Pensou por ${formatThinkingDuration(duration)}`
+			: "Análise concluída"
 
 	return (
 		<div className="rounded-xl border border-slate-200 dark:border-slate-700">
 			<button
 				type="button"
-				onClick={() => setOpen(!open)}
+				aria-expanded={open}
+				aria-controls={contentId}
+				onClick={() => {
+					userInteracted.current = true
+					setOpen((value) => !value)
+				}}
 				className="flex w-full items-center gap-2 px-3 py-2 text-left"
 			>
-				{streaming || !allDone ? (
+				{active ? (
 					<Loader2
 						size={15}
 						className="animate-spin text-teal-700 dark:text-teal-300"
 					/>
+				) : hasError ? (
+					<CircleAlert size={15} className="text-red-500" />
 				) : (
 					<span className="flex h-4 w-4 items-center justify-center rounded-full bg-teal-600 text-white">
 						<Check size={11} strokeWidth={3} />
 					</span>
 				)}
 				<span className="flex-1 text-sm font-bold text-slate-800 dark:text-slate-100">
-					{streaming || !allDone ? "Pensando…" : "Análise concluída"}
+					{label}
 				</span>
 				<ChevronDown
 					size={14}
 					className={`text-slate-400 transition-transform ${open ? "" : "-rotate-90"}`}
 				/>
 			</button>
-			{open && (
-				<ul className="flex flex-col gap-1 px-3 pb-2.5">
-					{steps.map((step, i) => (
-						<li key={i} className="flex items-center gap-2 text-[13px]">
-							<StepIcon icon={step.icon} />
-							<span className="flex-1 text-slate-600 dark:text-slate-300">
-								{step.title}
-							</span>
-							{step.done ? (
-								<Check size={13} strokeWidth={3} className="text-teal-600" />
-							) : (
-								<Loader2 size={13} className="animate-spin text-slate-400" />
-							)}
-						</li>
-					))}
-				</ul>
-			)}
+			<div
+				className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+					open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+				}`}
+			>
+				<div id={contentId} className="overflow-hidden">
+					<ul className="flex flex-col gap-1 px-3 pb-2.5">
+						{steps.map((step, i) => (
+							<li key={i} className="flex items-center gap-2 text-[13px]">
+								<StepIcon icon={step.icon} />
+								<span className="flex-1 text-slate-600 dark:text-slate-300">
+									{step.title}
+								</span>
+								<StepStatus status={step.status} />
+							</li>
+						))}
+					</ul>
+				</div>
+			</div>
 		</div>
 	)
 }

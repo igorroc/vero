@@ -2,26 +2,38 @@ import { describe, it, expect } from "vitest"
 import {
 	deriveIntermediateSteps,
 	deriveThoughtSteps,
+	reasoningTextOf,
 	splitMessageSteps,
 } from "./thought-steps"
 import { parseChartData } from "./markdown-text"
 
 describe("deriveThoughtSteps", () => {
-	it("converte tool calls em títulos com estado", () => {
+	it("converte tool calls em títulos com status (raciocínio à parte)", () => {
 		const steps = deriveThoughtSteps([
 			{ type: "reasoning", state: "done" },
 			{ type: "tool-get_events", state: "output-available" },
 			{ type: "tool-get_financial_summary", state: "input-streaming" },
 		])
-		expect(steps).toHaveLength(3)
-		expect(steps[0]).toMatchObject({ title: "Pensando…", done: true })
-		expect(steps[1]).toMatchObject({
+		expect(steps).toHaveLength(2)
+		expect(steps[0]).toMatchObject({
 			title: "Consultando lançamentos",
-			done: true,
+			status: "complete",
 		})
-		expect(steps[2]).toMatchObject({
+		expect(steps[1]).toMatchObject({
 			title: "Consultando resumo financeiro",
-			done: false,
+			status: "active",
+		})
+	})
+
+	it("marca erro de tool e nome de dynamic-tool", () => {
+		const steps = deriveThoughtSteps([
+			{ type: "tool-get_events", state: "output-error" },
+			{ type: "dynamic-tool", toolName: "get_categories" },
+		])
+		expect(steps[0]).toMatchObject({ status: "error" })
+		expect(steps[1]).toMatchObject({
+			title: "Consultando categorias",
+			status: "active",
 		})
 	})
 
@@ -29,6 +41,22 @@ describe("deriveThoughtSteps", () => {
 		expect(
 			deriveThoughtSteps([{ type: "text" }, { type: "data-x" }]),
 		).toHaveLength(0)
+	})
+})
+
+describe("reasoningTextOf", () => {
+	it("concatena só as reasoning parts, ignorando texto", () => {
+		expect(
+			reasoningTextOf([
+				{ type: "reasoning", text: "passo 1" },
+				{ type: "text", text: "resposta" },
+				{ type: "reasoning", text: "passo 2" },
+			]),
+		).toBe("passo 1\n\npasso 2")
+	})
+
+	it("devolve string vazia sem reasoning", () => {
+		expect(reasoningTextOf([{ type: "text", text: "oi" }])).toBe("")
 	})
 })
 
@@ -57,7 +85,7 @@ describe("splitMessageSteps + deriveIntermediateSteps", () => {
 			"Pensando…",
 			"Consultando resumo financeiro",
 		])
-		expect(titles.every((t) => t.done)).toBe(true)
+		expect(titles.every((t) => t.status === "complete")).toBe(true)
 	})
 
 	it("mensagem sem steps: nada intermediário", () => {
