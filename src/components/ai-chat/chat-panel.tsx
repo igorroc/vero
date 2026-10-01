@@ -34,6 +34,8 @@ const SUGGESTIONS = [
 	{ label: "Últimos lançamentos", icon: BarChart3 },
 ]
 
+const MAX_INPUT_HEIGHT = 80
+
 function sentTimeKey(id: string): string {
 	return `sent-${id}`
 }
@@ -76,11 +78,19 @@ export function ChatPanel({
 	// ref basta — e nenhum setState em effect pode entrar em loop.
 	const sentAtRef = useRef<Record<string, string>>({})
 	const bottomRef = useRef<HTMLDivElement>(null)
+	const textareaRef = useRef<HTMLTextAreaElement>(null)
 	const busy = status === "streaming" || status === "submitted"
 
 	useEffect(() => {
 		bottomRef.current?.scrollIntoView({ behavior: "smooth" })
 	}, [messages, busy])
+
+	useEffect(() => {
+		const el = textareaRef.current
+		if (!el) return
+		el.style.height = "auto"
+		el.style.height = `${Math.min(el.scrollHeight, MAX_INPUT_HEIGHT)}px`
+	}, [input])
 
 	// Avisa o pai quando uma troca termina (lista recarrega título/horário).
 	// Só dispara na transição ocupado -> livre, nunca na montagem.
@@ -345,16 +355,26 @@ export function ChatPanel({
 					</CardBody>
 
 					<div className="border-t border-slate-200 px-3 pb-2 pt-2.5 dark:border-slate-700 sm:px-4">
-						<div className="flex items-center gap-2 rounded-full border border-slate-200 py-1.5 pl-4 pr-1.5 dark:border-slate-700">
-							<input
+						<div className="flex items-center gap-2 rounded-full border border-slate-200 py-1.5 pl-4 pr-1.5 transition-colors focus-within:border-teal-600 dark:border-slate-700 dark:focus-within:border-teal-500">
+							<textarea
+								ref={textareaRef}
+								rows={1}
 								aria-label="Mensagem"
 								placeholder="Pergunte sobre seus gastos, orçamento ou planos…"
 								value={input}
 								onChange={(event) => setInput(event.target.value)}
 								onKeyDown={(event) => {
-									if (event.key === "Enter") send(input)
+									if (
+										event.key === "Enter" &&
+										!event.shiftKey &&
+										!event.ctrlKey &&
+										!event.metaKey
+									) {
+										event.preventDefault()
+										void send(input)
+									}
 								}}
-								className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
+								className="min-w-0 flex-1 resize-none overflow-y-auto bg-transparent py-0 text-sm leading-5 outline-none placeholder:text-slate-400 focus-visible:outline-none"
 							/>
 							<button
 								type="button"
