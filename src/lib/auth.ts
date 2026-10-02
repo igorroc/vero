@@ -10,6 +10,7 @@ import {
 	resolveSessionDuration,
 } from "./auth-session"
 import { SESSION_VIEW_COOKIE } from "./session-view-types"
+import { getRequestUser } from "./request-context"
 
 const secretKey = env.AUTHENTICATION_SECRET_KEY
 const key = new TextEncoder().encode(secretKey)
@@ -72,6 +73,9 @@ export async function getSession() {
 }
 
 export async function getUserBySession() {
+	// Transportes autenticados por token (MCP) injetam o usuário no contexto.
+	const requestUser = getRequestUser()
+	if (requestUser) return requestUser
 	const session = await getSession()
 	if (!session || !session.user) return null
 	return session.user as User

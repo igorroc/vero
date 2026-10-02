@@ -18,6 +18,7 @@ model User {
   budgets          Budget[]
   debts            Debt[]
   aiConversations  AiConversation[]
+  mcpTokens        McpToken[]
   subscriptions    Subscription[]
   entitlements     Entitlement[]
   billingCustomers BillingCustomer[]

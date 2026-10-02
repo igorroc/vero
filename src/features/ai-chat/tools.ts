@@ -780,3 +780,25 @@ export const chatTools = {
 		}),
 	}),
 }
+
+export type ChatToolDefinition = {
+	name: string
+	description: string
+	inputSchema: z.ZodType
+	execute: (input: never) => Promise<unknown>
+}
+
+/**
+ * Visão neutra de transporte das tools de leitura. O chat web consome
+ * `chatTools` (AI SDK); o servidor MCP reusa exatamente as mesmas descrições,
+ * schemas e handlers a partir daqui — sem duplicação de lógica.
+ */
+export const chatToolDefinitions: ChatToolDefinition[] = Object.entries(
+	chatTools,
+).map(([name, chatTool]) => ({
+	name,
+	description:
+		typeof chatTool.description === "string" ? chatTool.description : "",
+	inputSchema: chatTool.inputSchema as unknown as z.ZodType,
+	execute: chatTool.execute as unknown as (input: never) => Promise<unknown>,
+}))

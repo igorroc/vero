@@ -1,7 +1,8 @@
 import type { Metadata } from "next"
 import { getUserBySession } from "@/lib/auth"
-import { SettingsForm } from "@/components/settings"
+import { McpTokens, SettingsForm } from "@/components/settings"
 import { PageHeader } from "@/components/ui"
+import { listMcpTokens } from "@/features/mcp"
 import prisma from "@/lib/db"
 
 export const metadata: Metadata = {
@@ -14,6 +15,9 @@ export default async function SettingsPage() {
 	if (!user) {
 		return null
 	}
+
+	const tokensResult = await listMcpTokens()
+	const mcpTokens = tokensResult.success ? tokensResult.tokens : []
 
 	// Get or create user settings
 	let settings = await prisma.userSettings.findUnique({
@@ -36,13 +40,14 @@ export default async function SettingsPage() {
 				title="Configurações"
 				subtitle="Personalize seu copiloto financeiro"
 			/>
-			<div>
+			<div className="space-y-6">
 				<SettingsForm
 					initialSettings={{
 						safetyBuffer: settings.safetyBuffer,
 						horizonMode: settings.horizonMode,
 					}}
 				/>
+				<McpTokens initialTokens={mcpTokens} />
 			</div>
 		</>
 	)

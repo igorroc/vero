@@ -1,4 +1,5 @@
 export { ASSISTANT_SYSTEM_PROMPT, buildSystemPrompt } from "./prompts"
+export { answerAsUser } from "./answer"
 export {
 	AI_HISTORY_LIMIT,
 	AI_TITLE_MAX_LENGTH,
@@ -43,12 +44,14 @@ export {
 	buildMissingExpensesForChat,
 	buildSpendingByCategoryForChat,
 	buildTopExpensesForChat,
+	chatToolDefinitions,
 	chatTools,
 	formatDivergencesForChat,
 	formatMonthEndForChat,
 	formatPeriodLabel,
 	resolvePeriod,
 	type BudgetReportForChat,
+	type ChatToolDefinition,
 	type CompareMonthsForChat,
 	type DebtOverviewForChat,
 	type DebtsOverviewForChat,
