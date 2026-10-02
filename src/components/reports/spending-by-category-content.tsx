@@ -42,6 +42,7 @@ import {
 	type SpendingComparisonGroup,
 } from "@/lib/engines/spending-comparison"
 import { formatCurrency } from "@/types/finance"
+import { useReportPeriod } from "./use-report-period"
 
 const eventIcons: Record<EventIconKey, LucideIcon> = {
 	property: Building2,
@@ -123,9 +124,7 @@ function ChangeBadge({ changePercent }: { changePercent: number | null }) {
 }
 
 export function SpendingByCategoryContent() {
-	const now = new Date()
-	const [year, setYear] = useState(now.getFullYear())
-	const [month, setMonth] = useState(now.getMonth() + 1)
+	const { year, month, periodParam, setPeriod } = useReportPeriod()
 	const [comparison, setComparison] = useState<SpendingComparisonGroup[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
@@ -196,16 +195,19 @@ export function SpendingByCategoryContent() {
 					<Input
 						type="month"
 						label="Mês do relatório"
-						value={`${year}-${String(month).padStart(2, "0")}`}
+						value={periodParam}
 						onValueChange={(value) => {
 							const [nextYear, nextMonth] = value.split("-").map(Number)
 							if (!nextYear || !nextMonth) return
-							setYear(nextYear)
-							setMonth(nextMonth)
+							setPeriod(nextYear, nextMonth)
 						}}
 						className="max-w-xs"
 					/>
-					<Button as={Link} href="/reports/budget" variant="bordered">
+					<Button
+						as={Link}
+						href={`/reports/budget?mes=${periodParam}`}
+						variant="bordered"
+					>
 						Ver orçamento mensal
 					</Button>
 				</div>

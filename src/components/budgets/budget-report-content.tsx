@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { cn, Input, Spinner } from "@nextui-org/react"
 import { ArrowDownRight, ArrowUpRight, ChevronDown, Minus } from "lucide-react"
 import { getBudgetReport } from "@/features/budgets"
+import { useReportPeriod } from "@/components/reports/use-report-period"
 import type { BudgetGroupType, BudgetReport } from "@/lib/engines/budget-report"
 import { formatCurrency } from "@/types/finance"
 import { toast } from "react-toastify"
@@ -13,9 +14,7 @@ import { BudgetReportTypeCard } from "./budget-report-type-card"
 const reportTypes = ["INCOME", "ESSENTIAL", "LIFESTYLE", "INVESTMENT"] as const
 
 export function BudgetReportContent() {
-	const now = new Date()
-	const [year, setYear] = useState(now.getFullYear())
-	const [month, setMonth] = useState(now.getMonth() + 1)
+	const { year, month, periodParam, setPeriod } = useReportPeriod()
 	const [report, setReport] = useState<BudgetReport | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [expandedTypes, setExpandedTypes] = useState<Set<BudgetGroupType>>(
@@ -53,11 +52,11 @@ export function BudgetReportContent() {
 				<Input
 					type="month"
 					label="Mês do relatório"
-					value={`${year}-${String(month).padStart(2, "0")}`}
+					value={periodParam}
 					onValueChange={(value) => {
 						const [nextYear, nextMonth] = value.split("-").map(Number)
-						setYear(nextYear)
-						setMonth(nextMonth)
+						if (!nextYear || !nextMonth) return
+						setPeriod(nextYear, nextMonth)
 					}}
 					className="max-w-xs"
 				/>
