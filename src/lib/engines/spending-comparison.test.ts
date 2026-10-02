@@ -27,27 +27,31 @@ describe("buildSpendingComparison", () => {
 		{
 			iconKey: "food",
 			total: 30000,
-			categories: [{ name: "Mercado", amount: 30000 }],
+			count: 1,
+			categories: [{ name: "Mercado", amount: 30000, count: 1 }],
 		},
 		{
 			iconKey: "housing",
 			total: 50000,
-			categories: [{ name: "Aluguel", amount: 50000 }],
+			count: 1,
+			categories: [{ name: "Aluguel", amount: 50000, count: 1 }],
 		},
 	]
 	const previous: SpendingIconGroup[] = [
 		{
 			iconKey: "food",
 			total: 30000,
+			count: 2,
 			categories: [
-				{ name: "Mercado", amount: 20000 },
-				{ name: "Restaurante", amount: 10000 },
+				{ name: "Mercado", amount: 20000, count: 1 },
+				{ name: "Restaurante", amount: 10000, count: 1 },
 			],
 		},
 		{
 			iconKey: "transport",
 			total: 8000,
-			categories: [{ name: "Uber", amount: 8000 }],
+			count: 1,
+			categories: [{ name: "Uber", amount: 8000, count: 1 }],
 		},
 	]
 

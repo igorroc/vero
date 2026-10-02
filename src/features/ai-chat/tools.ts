@@ -134,64 +134,96 @@ export function formatPeriodLabel(year: number, month: number): string {
 
 export type SpendingGroupForChat = {
 	group: string
-	totalCents: number
-	categories: Array<{ name: string; amountCents: number }>
+	total: string
+	count: number
+	averageTicket: string
+	categories: Array<{
+		name: string
+		amount: string
+		count: number
+		averageTicket: string
+	}>
 }
 
-/** Converte os grupos por ícone em rótulos legíveis para a IA. Puro. */
+/**
+ * Converte os grupos por ícone em rótulos legíveis e valores JÁ formatados em
+ * R$. A formatação é determinística de propósito: o modelo só copia os textos,
+ * nunca converte centavos por conta própria (evita "R$ 66,523").
+ */
 export function buildSpendingByCategoryForChat(
 	groups: SpendingIconGroup[],
 ): SpendingGroupForChat[] {
 	return groups.map((group) => ({
 		group: eventIconDefinitions[group.iconKey].label,
-		totalCents: group.total,
+		total: formatBRL(group.total),
+		count: group.count,
+		averageTicket: formatBRL(
+			group.count > 0 ? Math.round(group.total / group.count) : 0,
+		),
 		categories: group.categories.map((category) => ({
 			name: category.name,
-			amountCents: category.amount,
+			amount: formatBRL(category.amount),
+			count: category.count,
+			averageTicket: formatBRL(
+				category.count > 0 ? Math.round(category.amount / category.count) : 0,
+			),
 		})),
 	}))
 }
 
 export type BudgetReportForChat = {
-	income: { budgetedCents: number; actualCents: number }
-	outgoing: { budgetedCents: number; actualCents: number }
+	income: { budgeted: string; actual: string }
+	outgoing: { budgeted: string; actual: string }
 	planAdjustment: {
-		shortfallCents: number
-		reductions: Record<string, number>
+		shortfall: string
+		reductions: Record<string, string>
 	} | null
 	allocation: BudgetReport["allocation"]
 	insight: { tone: string; message: string }
 	groups: Array<{
 		name: string
 		type: string
-		budgetedCents: number
-		actualCents: number
+		budgeted: string
+		actual: string
+		difference: string
+		executionPercent: number
+		overBudget: boolean
 		categories: Array<{
 			name: string
-			budgetedCents: number
-			actualCents: number
+			budgeted: string
+			actual: string
+			difference: string
 			executionPercent: number
+			overBudget: boolean
 		}>
 	}>
 }
 
-/** Compacta o relatório de orçamento para a IA. Puro e testável. */
+/**
+ * Compacta o relatório de orçamento com valores JÁ formatados em R$ e flags
+ * determinísticas (`overBudget`, `executionPercent`), para o modelo não fazer
+ * conversão nem comparação aritmética de dinheiro.
+ */
 export function buildBudgetReportForChat(
 	report: BudgetReport,
 ): BudgetReportForChat {
 	return {
 		income: {
-			budgetedCents: report.income.budgeted,
-			actualCents: report.income.actual,
+			budgeted: formatBRL(report.income.budgeted),
+			actual: formatBRL(report.income.actual),
 		},
 		outgoing: {
-			budgetedCents: report.outgoing.budgeted,
-			actualCents: report.outgoing.actual,
+			budgeted: formatBRL(report.outgoing.budgeted),
+			actual: formatBRL(report.outgoing.actual),
 		},
 		planAdjustment: report.planAdjustment
 			? {
-					shortfallCents: report.planAdjustment.shortfall,
-					reductions: report.planAdjustment.reductions,
+					shortfall: formatBRL(report.planAdjustment.shortfall),
+					reductions: Object.fromEntries(
+						Object.entries(report.planAdjustment.reductions).map(
+							([type, value]) => [type, formatBRL(value)],
+						),
+					),
 				}
 			: null,
 		allocation: report.allocation,
@@ -199,13 +231,21 @@ export function buildBudgetReportForChat(
 		groups: report.groups.map((group) => ({
 			name: group.name,
 			type: group.type,
-			budgetedCents: group.budgeted,
-			actualCents: group.actual,
+			budgeted: formatBRL(group.budgeted),
+			actual: formatBRL(group.actual),
+			difference: formatBRL(group.budgeted - group.actual),
+			executionPercent:
+				group.budgeted > 0
+					? Math.round((group.actual / group.budgeted) * 100)
+					: 0,
+			overBudget: group.actual > group.budgeted,
 			categories: group.items.map((item) => ({
 				name: item.categoryName,
-				budgetedCents: item.budgeted,
-				actualCents: item.actual,
+				budgeted: formatBRL(item.budgeted),
+				actual: formatBRL(item.actual),
+				difference: formatBRL(item.difference),
 				executionPercent: Math.round(item.executionPercent),
+				overBudget: item.actual > item.budgeted,
 			})),
 		})),
 	}
@@ -275,7 +315,7 @@ export const chatTools = {
 
 	get_events: tool({
 		description:
-			"Lista lançamentos em um período (máximo 90 dias). Sem recorrências projetadas.",
+			"Lista lançamentos em um período (máximo 90 dias). Valores já vêm formatados em R$. Use apenas para LISTAR; nunca some os valores nem calcule totais a partir daqui (para totais/por categoria use get_spending_by_category ou get_budget_report).",
 		inputSchema: z.object({
 			startDate: z.string().describe("Início YYYY-MM-DD"),
 			endDate: z.string().describe("Fim YYYY-MM-DD"),
@@ -297,7 +337,7 @@ export const chatTools = {
 			return {
 				events: result.events.slice(0, 50).map((event) => ({
 					description: event.description,
-					amountCents: event.amount,
+					amount: formatBRL(event.amount),
 					date: event.date.toISOString().split("T")[0],
 					type: event.type,
 					status: event.status,
@@ -324,7 +364,7 @@ export const chatTools = {
 
 	get_budget_report: tool({
 		description:
-			"Relatório de orçamento mensal (tela /reports/budget): orçado x realizado por tipo, grupo e categoria, sobra/falta do plano, alocação (essencial/estilo de vida/investimentos) e uma leitura geral. Aceita year e month; sem eles usa o mês atual. Use para 'estou dentro do orçamento?', 'quanto planejei x gastei' e 'qual categoria estourou'.",
+			"Relatório de orçamento mensal (tela /reports/budget): orçado x realizado por tipo, grupo e categoria, sobra/falta do plano, alocação (essencial/estilo de vida/investimentos) e uma leitura geral. Todos os valores já vêm formatados em R$, e cada item traz executionPercent (quanto do orçado foi usado) e overBudget (true se o realizado passou do orçado). Aceita year e month; sem eles usa o mês atual. Use para 'estou dentro do orçamento?', 'quanto planejei x gastei' e 'onde passei do orçamento'.",
 		inputSchema: z.object(periodSchema),
 		execute: async ({ year, month }) => {
 			const resolved = resolvePeriod(year, month)
@@ -345,7 +385,7 @@ export const chatTools = {
 
 	get_spending_by_category: tool({
 		description:
-			"Gastos confirmados por categoria no mês (tela /reports/spending), agrupados por tipo (Alimentação, Moradia, Transporte...). Aceita year e month; sem eles usa o mês atual. Use para 'quanto gastei', 'onde gastei mais', 'gastos por categoria' e comparações entre categorias.",
+			"Gastos confirmados por categoria no mês (tela /reports/spending), agrupados por tipo (Alimentação, Moradia, Transporte...). Valores já vêm formatados em R$. Cada categoria/grupo traz count (número de lançamentos) e averageTicket (valor médio), útil para achar gastos pequenos e frequentes. Aceita year e month; sem eles usa o mês atual. Use para 'quanto gastei', 'onde gastei mais', 'gastos por categoria' e 'pequenos gastos que somaram'.",
 		inputSchema: z.object(periodSchema),
 		execute: async ({ year, month }) => {
 			const resolved = resolvePeriod(year, month)
@@ -355,12 +395,17 @@ export const chatTools = {
 				(total, group) => total + group.total,
 				0,
 			)
+			const totalCount = result.groups.reduce(
+				(total, group) => total + group.count,
+				0,
+			)
 			return {
 				period: {
 					...resolved,
 					label: formatPeriodLabel(resolved.year, resolved.month),
 				},
-				totalCents,
+				total: formatBRL(totalCents),
+				totalCount,
 				groups: buildSpendingByCategoryForChat(result.groups),
 			}
 		},

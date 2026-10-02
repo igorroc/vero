@@ -273,31 +273,40 @@ describe("formatPeriodLabel", () => {
 })
 
 describe("buildSpendingByCategoryForChat", () => {
-	it("converte iconKey em rótulo legível e preserva valores", () => {
+	it("converte iconKey em rótulo legível e valores formatados em R$", () => {
 		const groups: SpendingIconGroup[] = [
 			{
 				iconKey: "food",
 				total: 30000,
-				categories: [{ name: "Mercado", amount: 30000 }],
+				count: 2,
+				categories: [
+					{ name: "Mercado", amount: 30000, count: 2 },
+				],
 			},
 			{
 				iconKey: "other",
 				total: 10000,
-				categories: [{ name: "Sem categoria", amount: 10000 }],
+				count: 1,
+				categories: [{ name: "Sem categoria", amount: 10000, count: 1 }],
 			},
 		]
 		const result = buildSpendingByCategoryForChat(groups)
-		expect(result[0]).toEqual({
-			group: "Alimentação",
-			totalCents: 30000,
-			categories: [{ name: "Mercado", amountCents: 30000 }],
+		expect(result[0].group).toBe("Alimentação")
+		expect(result[0].total).toMatch(/R\$\s?300,00/)
+		expect(result[0].count).toBe(2)
+		expect(result[0].averageTicket).toMatch(/R\$\s?150,00/)
+		expect(result[0].categories[0]).toEqual({
+			name: "Mercado",
+			amount: expect.stringMatching(/R\$\s?300,00/),
+			count: 2,
+			averageTicket: expect.stringMatching(/R\$\s?150,00/),
 		})
 		expect(result[1].group).toBe("Outros gastos")
 	})
 })
 
 describe("buildBudgetReportForChat", () => {
-	it("compacta orçado x realizado, insight e execução por categoria", () => {
+	it("formata valores em R$ e expõe execução/estouro por categoria", () => {
 		const report: BudgetReport = {
 			groups: [
 				{
@@ -333,15 +342,15 @@ describe("buildBudgetReportForChat", () => {
 		}
 		const result = buildBudgetReportForChat(report)
 		expect(result.outgoing).toEqual({
-			budgetedCents: 50000,
-			actualCents: 60000,
+			budgeted: expect.stringMatching(/R\$\s?500,00/),
+			actual: expect.stringMatching(/R\$\s?600,00/),
 		})
-		expect(result.groups[0].categories[0]).toEqual({
-			name: "Mercado",
-			budgetedCents: 50000,
-			actualCents: 60000,
-			executionPercent: 120,
-		})
+		const category = result.groups[0].categories[0]
+		expect(category.name).toBe("Mercado")
+		expect(category.actual).toMatch(/R\$\s?600,00/)
+		expect(category.executionPercent).toBe(120)
+		expect(category.overBudget).toBe(true)
+		expect(result.groups[0].overBudget).toBe(true)
 		expect(result.insight.tone).toBe("warning")
 		expect(result.planAdjustment).toBeNull()
 	})
