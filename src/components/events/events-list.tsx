@@ -7,6 +7,9 @@ import {
 	DropdownItem,
 	DropdownMenu,
 	DropdownTrigger,
+	Select,
+	SelectItem,
+	SelectSection,
 	Spinner,
 	useDisclosure,
 } from "@nextui-org/react"
@@ -43,18 +46,16 @@ import { NewEventLauncher } from "./new-event-launcher"
 export function EventsList() {
 	const statusFilter = useEventsFilterStore((state) => state.statusFilter)
 	const setStatusFilter = useEventsFilterStore((state) => state.setStatusFilter)
+	const categoryFilter = useEventsFilterStore((state) => state.categoryFilter)
+	const setCategoryFilter = useEventsFilterStore(
+		(state) => state.setCategoryFilter,
+	)
 	const queryClient = useQueryClient()
-	const eventQueryKey = ["events", statusFilter] as const
+	const eventQueryKey = ["events"] as const
 	const eventsQuery = useQuery({
 		queryKey: eventQueryKey,
 		queryFn: async () => {
-			const result = await getEvents(
-				statusFilter === "pending"
-					? { status: "PLANNED" }
-					: statusFilter === "confirmed"
-						? { status: "CONFIRMED" }
-						: {},
-			)
+			const result = await getEvents({})
 			if (!result.success) throw new Error(result.error)
 			return sortEvents(result.events)
 		},
@@ -242,8 +243,30 @@ export function EventsList() {
 				<Spinner size="lg" label="Carregando eventos..." />
 			</div>
 		)
-	const budgetSummary = calculateBudgetSummary(events)
-	const currentMonth = new Date().toLocaleDateString("pt-BR", { month: "long" })
+	const filteredEvents = events.filter((event) => {
+		if (statusFilter === "pending" && event.status !== "PLANNED") return false
+		if (statusFilter === "confirmed" && event.status !== "CONFIRMED")
+			return false
+		return !(categoryFilter !== "all" && event.categoryId !== categoryFilter)
+	})
+	const now = new Date()
+	const currentMonthEvents = events.filter((event) => {
+		const date = new Date(event.date)
+		return (
+			date.getFullYear() === now.getFullYear() &&
+			date.getMonth() === now.getMonth()
+		)
+	})
+	const budgetSummary = calculateBudgetSummary(currentMonthEvents)
+	const currentMonth = now.toLocaleDateString("pt-BR", { month: "long" })
+	const categoryGroups = Array.from(
+		new Map(
+			categories.map((category) => [
+				category.categoryGroup.id,
+				category.categoryGroup,
+			]),
+		).values(),
+	).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
 
 	return (
 		<div className="space-y-4 sm:space-y-6">
@@ -288,50 +311,80 @@ export function EventsList() {
 				</div>
 			)}
 			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-				<div className="w-full sm:hidden">
-					<Dropdown>
-						<DropdownTrigger>
-							<Button
-								variant="flat"
-								className="w-full justify-between"
-								endContent={<ChevronDown className="w-4 h-4" />}
+				<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+					<div className="w-full sm:hidden">
+						<Dropdown>
+							<DropdownTrigger>
+								<Button
+									variant="flat"
+									className="w-full justify-between"
+									endContent={<ChevronDown className="w-4 h-4" />}
+								>
+									{statusFilter === "all" && "Todos os lançamentos"}
+									{statusFilter === "pending" && "Lançamentos pendentes"}
+									{statusFilter === "confirmed" && "Lançamentos confirmados"}
+								</Button>
+							</DropdownTrigger>
+							<DropdownMenu
+								aria-label="Filtro de tempo"
+								selectionMode="single"
+								selectedKeys={[statusFilter]}
+								onSelectionChange={(keys) =>
+									setStatusFilter(Array.from(keys)[0] as typeof statusFilter)
+								}
 							>
-								{statusFilter === "all" && "Todos os lançamentos"}
-								{statusFilter === "pending" && "Lançamentos pendentes"}
-								{statusFilter === "confirmed" && "Lançamentos confirmados"}
+								<DropdownItem key="all">Todos os lançamentos</DropdownItem>
+								<DropdownItem key="pending">Pendentes</DropdownItem>
+								<DropdownItem key="confirmed">Confirmados</DropdownItem>
+							</DropdownMenu>
+						</Dropdown>
+					</div>
+					<div className="hidden sm:flex gap-2 flex-wrap">
+						{[
+							{ key: "all", label: "Todos" },
+							{ key: "pending", label: "Pendentes" },
+							{ key: "confirmed", label: "Confirmados" },
+						].map((filter) => (
+							<Button
+								key={filter.key}
+								size="sm"
+								radius="full"
+								color={statusFilter === filter.key ? "primary" : "default"}
+								variant={statusFilter === filter.key ? "solid" : "flat"}
+								onPress={() =>
+									setStatusFilter(filter.key as typeof statusFilter)
+								}
+							>
+								{filter.label}
 							</Button>
-						</DropdownTrigger>
-						<DropdownMenu
-							aria-label="Filtro de tempo"
-							selectionMode="single"
-							selectedKeys={[statusFilter]}
-							onSelectionChange={(keys) =>
-								setStatusFilter(Array.from(keys)[0] as typeof statusFilter)
-							}
-						>
-							<DropdownItem key="all">Todos os lançamentos</DropdownItem>
-							<DropdownItem key="pending">Pendentes</DropdownItem>
-							<DropdownItem key="confirmed">Confirmados</DropdownItem>
-						</DropdownMenu>
-					</Dropdown>
-				</div>
-				<div className="hidden sm:flex gap-2 flex-wrap">
-					{[
-						{ key: "all", label: "Todos" },
-						{ key: "pending", label: "Pendentes" },
-						{ key: "confirmed", label: "Confirmados" },
-					].map((filter) => (
-						<Button
-							key={filter.key}
-							size="sm"
-							radius="full"
-							color={statusFilter === filter.key ? "primary" : "default"}
-							variant={statusFilter === filter.key ? "solid" : "flat"}
-							onPress={() => setStatusFilter(filter.key as typeof statusFilter)}
-						>
-							{filter.label}
-						</Button>
-					))}
+						))}
+					</div>
+					<Select
+						size="sm"
+						radius="full"
+						aria-label="Filtrar por categoria"
+						placeholder="Todas as categorias"
+						selectedKeys={[categoryFilter]}
+						onSelectionChange={(keys) =>
+							setCategoryFilter(String(Array.from(keys)[0] ?? "all"))
+						}
+						className="w-full sm:w-56"
+					>
+						{[
+							<SelectSection key="all-section" title="Todas">
+								<SelectItem key="all">Todas as categorias</SelectItem>
+							</SelectSection>,
+							...categoryGroups.map((group) => (
+								<SelectSection key={group.id} title={group.name}>
+									{categories
+										.filter((category) => category.categoryGroupId === group.id)
+										.map((category) => (
+											<SelectItem key={category.id}>{category.name}</SelectItem>
+										))}
+								</SelectSection>
+							)),
+						]}
+					</Select>
 				</div>
 				<div className="hidden sm:block">
 					<NewEventLauncher
@@ -349,7 +402,8 @@ export function EventsList() {
 					Seus Lançamentos
 				</h2>
 				<span className="text-xs sm:text-sm text-slate-500">
-					{events.length} {events.length === 1 ? "evento" : "eventos"}
+					{filteredEvents.length}{" "}
+					{filteredEvents.length === 1 ? "evento" : "eventos"}
 				</span>
 			</div>
 			{error && (
@@ -377,13 +431,25 @@ export function EventsList() {
 					<p className="text-slate-500 mb-4">Nenhum lançamento encontrado.</p>
 				</div>
 			)}
-			{!error && events.length > 0 && (
+			{!error && events.length > 0 && filteredEvents.length === 0 && (
+				<div className="modern-card p-8 sm:p-12 text-center">
+					<div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+						<Calendar className="w-8 h-8 sm:w-10 sm:h-10 text-slate-400" />
+					</div>
+					<p className="text-slate-500 mb-4">
+						Nenhum lançamento para os filtros selecionados.
+					</p>
+				</div>
+			)}
+			{!error && filteredEvents.length > 0 && (
 				<div className="space-y-3">
-					{events.map((event, index) => (
+					{filteredEvents.map((event, index) => (
 						<Fragment key={event.id}>
 							{(index === 0 ||
 								formatDateInput(new Date(event.date)) !==
-									formatDateInput(new Date(events[index - 1].date))) && (
+									formatDateInput(
+										new Date(filteredEvents[index - 1].date),
+									)) && (
 								<h3 className="pt-3 text-sm font-semibold text-slate-600 dark:text-slate-300 first:pt-0">
 									{formatDate(event.date)}
 								</h3>
