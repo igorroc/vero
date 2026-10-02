@@ -4,12 +4,20 @@ import { z } from "zod"
 import { getBudgetReport } from "@/features/budgets"
 import { getCategories } from "@/features/categories"
 import { getDashboardData } from "@/features/dashboard"
-import { getEvents } from "@/features/events"
+import { getDebts } from "@/features/debts"
+import { getEvents, getMissingExpenses, getTopExpenses } from "@/features/events"
 import { getSpendingByCategory } from "@/features/reports"
 import {
 	buildBudgetInsight,
 	type BudgetReport,
 } from "@/lib/engines/budget-report"
+import type { MissingExpenseItem } from "@/lib/engines/missing-expenses"
+import {
+	buildSpendingComparison,
+	calculateChangePercent,
+	getPreviousMonth,
+	type SpendingComparisonGroup,
+} from "@/lib/engines/spending-comparison"
 import type { SpendingGroupSummary } from "@/lib/engines/spending-by-category"
 import { endOfMonth } from "@/types/finance"
 
@@ -252,6 +260,236 @@ export function buildBudgetReportForChat(
 	}
 }
 
+const MONTH_NAMES = [
+	"janeiro",
+	"fevereiro",
+	"março",
+	"abril",
+	"maio",
+	"junho",
+	"julho",
+	"agosto",
+	"setembro",
+	"outubro",
+	"novembro",
+	"dezembro",
+]
+
+function monthRefLabel(monthKey: string): string {
+	const [year, month] = monthKey.split("-").map(Number)
+	if (!year || !month || month < 1 || month > 12) return monthKey
+	return `${MONTH_NAMES[month - 1]}/${year}`
+}
+
+function shortDate(value: string): string {
+	const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+	return match ? `${match[3]}/${match[2]}/${match[1]}` : value
+}
+
+export type MissingExpenseForChat = {
+	category: string
+	expectedAmount: string
+	expectedDay: number | null
+	overdue: boolean
+	lastSeen: string | null
+	monthsPresent: number
+	source: "recorrente" | "orcamento"
+}
+
+/** Formata o resultado de gastos não lançados para a IA. Puro e testável. */
+export function buildMissingExpensesForChat(
+	items: MissingExpenseItem[],
+): MissingExpenseForChat[] {
+	return items.map((item) => ({
+		category: item.categoryName,
+		expectedAmount: formatBRL(item.expectedAmountCents),
+		expectedDay: item.expectedDay,
+		overdue: item.overdue,
+		lastSeen: item.lastMonth ? monthRefLabel(item.lastMonth) : null,
+		monthsPresent: item.monthsPresent,
+		source: item.source,
+	}))
+}
+
+export type TopExpenseInput = {
+	description: string
+	categoryName: string | null
+	amountCents: number
+	date: string
+	status: string
+}
+
+export type TopExpenseForChat = {
+	description: string
+	category: string | null
+	amount: string
+	date: string
+	status: string
+}
+
+/** Ordena e formata os maiores gastos do período. Puro e testável. */
+export function buildTopExpensesForChat(
+	events: TopExpenseInput[],
+	limit = 10,
+): TopExpenseForChat[] {
+	return [...events]
+		.sort((a, b) => b.amountCents - a.amountCents)
+		.slice(0, limit)
+		.map((event) => ({
+			description: event.description,
+			category: event.categoryName,
+			amount: formatBRL(event.amountCents),
+			date: shortDate(event.date),
+			status: event.status,
+		}))
+}
+
+export type DebtOverviewInput = {
+	creditor: string
+	description: string
+	categoryName: string
+	totalCents: number
+	outstandingCents: number
+	installmentCount: number
+	paidInstallments: number
+	nextInstallment: { number: number; amountCents: number; dueDate: string } | null
+	overdueInstallments: Array<{
+		number: number
+		amountCents: number
+		dueDate: string
+	}>
+}
+
+export type DebtOverviewForChat = {
+	creditor: string
+	description: string
+	category: string
+	total: string
+	outstanding: string
+	installmentsPaid: number
+	installmentCount: number
+	nextInstallment: { number: number; amount: string; dueDate: string } | null
+	overdueInstallments: Array<{
+		number: number
+		amount: string
+		dueDate: string
+	}>
+}
+
+export type DebtsOverviewForChat = {
+	totalOutstanding: string
+	debts: DebtOverviewForChat[]
+}
+
+/** Formata o panorama de dívidas para a IA. Puro e testável. */
+export function buildDebtsOverviewForChat(
+	debts: DebtOverviewInput[],
+): DebtsOverviewForChat {
+	const totalOutstandingCents = debts.reduce(
+		(total, debt) => total + debt.outstandingCents,
+		0,
+	)
+	return {
+		totalOutstanding: formatBRL(totalOutstandingCents),
+		debts: debts.map((debt) => ({
+			creditor: debt.creditor,
+			description: debt.description,
+			category: debt.categoryName,
+			total: formatBRL(debt.totalCents),
+			outstanding: formatBRL(debt.outstandingCents),
+			installmentsPaid: debt.paidInstallments,
+			installmentCount: debt.installmentCount,
+			nextInstallment: debt.nextInstallment
+				? {
+						number: debt.nextInstallment.number,
+						amount: formatBRL(debt.nextInstallment.amountCents),
+						dueDate: shortDate(debt.nextInstallment.dueDate),
+					}
+				: null,
+			overdueInstallments: debt.overdueInstallments.map((installment) => ({
+				number: installment.number,
+				amount: formatBRL(installment.amountCents),
+				dueDate: shortDate(installment.dueDate),
+			})),
+		})),
+	}
+}
+
+export type CompareMonthChange = {
+	group: string
+	category: string
+	current: string
+	previous: string
+	difference: string
+	changePercent: number | null
+}
+
+export type CompareMonthsForChat = {
+	currentTotal: string
+	previousTotal: string
+	difference: string
+	changePercent: number | null
+	increases: CompareMonthChange[]
+	decreases: CompareMonthChange[]
+}
+
+/** Compara dois meses por categoria e destaca aumentos/reduções. Puro. */
+export function buildCompareMonthsForChat(
+	comparison: SpendingComparisonGroup[],
+	limit = 5,
+): CompareMonthsForChat {
+	const currentTotalCents = comparison.reduce(
+		(total, group) => total + group.currentTotal,
+		0,
+	)
+	const previousTotalCents = comparison.reduce(
+		(total, group) => total + group.previousTotal,
+		0,
+	)
+	const changes = comparison.flatMap((group) =>
+		group.categories.map((category) => ({
+			group: group.name,
+			category: category.name,
+			currentCents: category.currentCents,
+			previousCents: category.previousCents,
+			differenceCents: category.differenceCents,
+			changePercent: category.changePercent,
+		})),
+	)
+	const toChange = (change: (typeof changes)[number]): CompareMonthChange => ({
+		group: change.group,
+		category: change.category,
+		current: formatBRL(change.currentCents),
+		previous: formatBRL(change.previousCents),
+		difference: formatBRL(change.differenceCents),
+		changePercent:
+			change.changePercent == null ? null : Math.round(change.changePercent),
+	})
+	const increases = changes
+		.filter((change) => change.differenceCents > 0)
+		.sort((a, b) => b.differenceCents - a.differenceCents)
+		.slice(0, limit)
+		.map(toChange)
+	const decreases = changes
+		.filter((change) => change.differenceCents < 0)
+		.sort((a, b) => a.differenceCents - b.differenceCents)
+		.slice(0, limit)
+		.map(toChange)
+
+	const overallChange = calculateChangePercent(
+		currentTotalCents,
+		previousTotalCents,
+	)
+	return {
+		currentTotal: formatBRL(currentTotalCents),
+		previousTotal: formatBRL(previousTotalCents),
+		difference: formatBRL(currentTotalCents - previousTotalCents),
+		changePercent: overallChange == null ? null : Math.round(overallChange),
+		increases,
+		decreases,
+	}
+}
+
 export const chatTools = {
 	get_financial_summary: tool({
 		description:
@@ -408,6 +646,125 @@ export const chatTools = {
 				total: formatBRL(totalCents),
 				totalCount,
 				groups: buildSpendingByCategoryForChat(result.groups),
+			}
+		},
+	}),
+
+	find_missing_expenses: tool({
+		description:
+			"Lista gastos recorrentes/orçados que deveriam existir no mês mas ainda NÃO foram lançados (nem confirmados nem planejados). Combina histórico dos últimos 3 meses, custos marcados como recorrentes e itens do orçamento. Aceita year/month; sem eles usa o mês atual. Cada item traz valor esperado formatado em R$, dia esperado, overdue (true se o dia já passou) e origem (recorrente/orcamento). Use para 'faltou registrar', 'esqueci de lançar', 'o que ainda não caiu'.",
+		inputSchema: z.object(periodSchema),
+		execute: async ({ year, month }) => {
+			const resolved = resolvePeriod(year, month)
+			const result = await getMissingExpenses(resolved)
+			if (!result.success) return { error: result.error }
+			return {
+				period: {
+					...resolved,
+					label: formatPeriodLabel(resolved.year, resolved.month),
+				},
+				count: result.items.length,
+				missing: buildMissingExpensesForChat(result.items),
+			}
+		},
+	}),
+
+	get_top_expenses: tool({
+		description:
+			"Ranking dos maiores gastos do mês, com categoria e data. Valores formatados em R$. Aceita year/month (padrão: mês atual) e limit (padrão 10). Considera despesas confirmadas e planejadas. Use para 'quais meus maiores gastos', 'onde escapou mais dinheiro', 'top gastos do mês'.",
+		inputSchema: z.object({
+			...periodSchema,
+			limit: z
+				.number()
+				.int()
+				.min(1)
+				.max(50)
+				.optional()
+				.describe("Quantidade máxima de itens (padrão 10)."),
+		}),
+		execute: async ({ year, month, limit }) => {
+			const resolved = resolvePeriod(year, month)
+			const result = await getTopExpenses(resolved)
+			if (!result.success) return { error: result.error }
+			return {
+				period: {
+					...resolved,
+					label: formatPeriodLabel(resolved.year, resolved.month),
+				},
+				top: buildTopExpensesForChat(result.expenses, limit ?? 10),
+			}
+		},
+	}),
+
+	get_debts_overview: tool({
+		description:
+			"Panorama das dívidas ativas: credor, total, saldo devedor, parcelas pagas/total, próxima parcela e parcelas vencidas. Valores formatados em R$. Use para 'como estão minhas dívidas', 'quanto falta pagar', 'próximas parcelas'.",
+		inputSchema: z.object({}),
+		execute: async () => {
+			const result = await getDebts()
+			if (!result.success) return { error: result.error }
+			const todayIso = new Date().toISOString().slice(0, 10)
+			const overview = result.debts.map((debt) => {
+				const installments = debt.installments.map((installment) => ({
+					number: installment.number,
+					amountCents: installment.plannedAmount,
+					dueDate: installment.dueDate.toISOString().slice(0, 10),
+					paid: installment.payments.length > 0,
+				}))
+				const unpaid = installments.filter((item) => !item.paid)
+				const next = unpaid.find((item) => item.dueDate >= todayIso) ?? null
+				return {
+					creditor: debt.creditor,
+					description: debt.description,
+					categoryName: debt.category.name,
+					totalCents: debt.totalAmount,
+					outstandingCents: debt.outstandingAmount,
+					installmentCount: installments.length,
+					paidInstallments: installments.filter((item) => item.paid).length,
+					nextInstallment: next
+						? {
+								number: next.number,
+								amountCents: next.amountCents,
+								dueDate: next.dueDate,
+							}
+						: null,
+					overdueInstallments: unpaid
+						.filter((item) => item.dueDate < todayIso)
+						.map((item) => ({
+							number: item.number,
+							amountCents: item.amountCents,
+							dueDate: item.dueDate,
+						})),
+				}
+			})
+			return buildDebtsOverviewForChat(overview)
+		},
+	}),
+
+	compare_months: tool({
+		description:
+			"Compara os gastos de um mês (year/month) com o mês imediatamente anterior, por grupo/categoria, destacando os maiores aumentos e reduções. Valores formatados em R$ e changePercent numérico (null quando não havia gasto antes). Use para 'gastei mais que mês passado?', 'o que aumentou/reduziu'.",
+		inputSchema: z.object(periodSchema),
+		execute: async ({ year, month }) => {
+			const resolved = resolvePeriod(year, month)
+			const previous = getPreviousMonth(resolved.year, resolved.month)
+			const [current, before] = await Promise.all([
+				getSpendingByCategory(resolved.year, resolved.month),
+				getSpendingByCategory(previous.year, previous.month),
+			])
+			if (!current.success) return { error: current.error }
+			if (!before.success) return { error: before.error }
+			const comparison = buildSpendingComparison(current.groups, before.groups)
+			return {
+				currentPeriod: {
+					...resolved,
+					label: formatPeriodLabel(resolved.year, resolved.month),
+				},
+				previousPeriod: {
+					...previous,
+					label: formatPeriodLabel(previous.year, previous.month),
+				},
+				...buildCompareMonthsForChat(comparison),
 			}
 		},
 	}),

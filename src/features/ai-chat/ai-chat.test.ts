@@ -7,13 +7,20 @@ import {
 } from "./text"
 import {
 	buildBudgetReportForChat,
+	buildCompareMonthsForChat,
+	buildDebtsOverviewForChat,
+	buildMissingExpensesForChat,
 	buildSpendingByCategoryForChat,
+	buildTopExpensesForChat,
 	formatDivergencesForChat,
 	formatMonthEndForChat,
 	formatPeriodLabel,
 	resolvePeriod,
 } from "./tools"
-import type { BudgetReport } from "@/lib/engines/budget-report"
+import type {
+	BudgetReport,
+} from "@/lib/engines/budget-report"
+import type { SpendingComparisonGroup } from "@/lib/engines/spending-comparison"
 import type { SpendingGroupSummary } from "@/lib/engines/spending-by-category"
 
 describe("buildSystemPrompt", () => {
@@ -360,5 +367,154 @@ describe("buildBudgetReportForChat", () => {
 		expect(result.groups[0].overBudget).toBe(true)
 		expect(result.insight.tone).toBe("warning")
 		expect(result.planAdjustment).toBeNull()
+	})
+})
+
+describe("buildMissingExpensesForChat", () => {
+	it("formata valor esperado, vencimento e origem", () => {
+		const result = buildMissingExpensesForChat([
+			{
+				key: "c-rent",
+				categoryName: "Aluguel",
+				description: "Aluguel",
+				expectedAmountCents: 150000,
+				expectedDay: 5,
+				monthsPresent: 3,
+				lastMonth: "2026-09",
+				source: "recorrente",
+				overdue: false,
+			},
+			{
+				key: "c-accounting",
+				categoryName: "Contabilidade",
+				description: "Contabilidade",
+				expectedAmountCents: 30000,
+				expectedDay: null,
+				monthsPresent: 0,
+				lastMonth: null,
+				source: "orcamento",
+				overdue: false,
+			},
+		])
+		expect(result[0]).toMatchObject({
+			category: "Aluguel",
+			expectedAmount: expect.stringMatching(/R\$\s?1\.500,00/),
+			expectedDay: 5,
+			lastSeen: "setembro/2026",
+			source: "recorrente",
+		})
+		expect(result[1]).toMatchObject({
+			category: "Contabilidade",
+			lastSeen: null,
+			source: "orcamento",
+		})
+	})
+})
+
+describe("buildTopExpensesForChat", () => {
+	it("ordena por valor e formata", () => {
+		const result = buildTopExpensesForChat(
+			[
+				{
+					description: "Mercado",
+					categoryName: "Alimentação",
+					amountCents: 10000,
+					date: "2026-10-03",
+					status: "CONFIRMED",
+				},
+				{
+					description: "Fatura cartão",
+					categoryName: "Cartões",
+					amountCents: 330000,
+					date: "2026-10-05",
+					status: "PLANNED",
+				},
+			],
+			10,
+		)
+		expect(result[0]).toMatchObject({
+			description: "Fatura cartão",
+			amount: expect.stringMatching(/R\$\s?3\.300,00/),
+			date: "05/10/2026",
+		})
+		expect(result[1].description).toBe("Mercado")
+	})
+})
+
+describe("buildDebtsOverviewForChat", () => {
+	it("soma o saldo devedor e formata parcelas", () => {
+		const result = buildDebtsOverviewForChat([
+			{
+				creditor: "Banco X",
+				description: "Empréstimo",
+				categoryName: "Empréstimos",
+				totalCents: 500000,
+				outstandingCents: 300000,
+				installmentCount: 5,
+				paidInstallments: 2,
+				nextInstallment: {
+					number: 3,
+					amountCents: 100000,
+					dueDate: "2026-11-10",
+				},
+				overdueInstallments: [
+					{ number: 3, amountCents: 100000, dueDate: "2026-10-10" },
+				],
+			},
+		])
+		expect(result.totalOutstanding).toMatch(/R\$\s?3\.000,00/)
+		expect(result.debts[0]).toMatchObject({
+			outstanding: expect.stringMatching(/R\$\s?3\.000,00/),
+			installmentsPaid: 2,
+			installmentCount: 5,
+		})
+		expect(result.debts[0].nextInstallment?.dueDate).toBe("10/11/2026")
+		expect(result.debts[0].overdueInstallments).toHaveLength(1)
+	})
+})
+
+describe("buildCompareMonthsForChat", () => {
+	it("destaca aumentos e reduções por categoria", () => {
+		const comparison: SpendingComparisonGroup[] = [
+			{
+				key: "g-food",
+				name: "Alimentação",
+				iconKey: "food",
+				currentTotal: 30000,
+				previousTotal: 25000,
+				differenceCents: 5000,
+				changePercent: 20,
+				categories: [
+					{
+						key: "m",
+						name: "Mercado",
+						currentCents: 30000,
+						previousCents: 20000,
+						differenceCents: 10000,
+						changePercent: 50,
+					},
+					{
+						key: "r",
+						name: "Restaurante",
+						currentCents: 0,
+						previousCents: 5000,
+						differenceCents: -5000,
+						changePercent: -100,
+					},
+				],
+			},
+		]
+		const result = buildCompareMonthsForChat(comparison)
+		expect(result.currentTotal).toMatch(/R\$\s?300,00/)
+		expect(result.previousTotal).toMatch(/R\$\s?250,00/)
+		expect(result.increases[0]).toMatchObject({
+			category: "Mercado",
+			difference: expect.stringMatching(/R\$\s?100,00/),
+			changePercent: 50,
+		})
+		expect(result.decreases[0]).toMatchObject({
+			category: "Restaurante",
+			changePercent: -100,
+		})
 	})
 })

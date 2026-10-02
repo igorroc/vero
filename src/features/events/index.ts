@@ -7,6 +7,17 @@ export {
 } from "./get-events"
 
 export {
+	getMissingExpenses,
+	type GetMissingExpensesResult,
+} from "./get-missing-expenses"
+
+export {
+	getTopExpenses,
+	type GetTopExpensesResult,
+	type TopExpense,
+} from "./get-top-expenses"
+
+export {
 	createEvent,
 	createRecurrenceInstance,
 	type CreateEventInput,

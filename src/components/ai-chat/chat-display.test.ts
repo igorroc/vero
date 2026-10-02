@@ -91,6 +91,35 @@ describe("deriveThoughtSteps", () => {
 		expect(steps[0].title).toBe("Consultando orçamento mensal")
 		expect(steps[0].status).toBe("active")
 	})
+
+	it("descreve as tools específicas (faltantes, top, comparação, dívidas)", () => {
+		const steps = deriveThoughtSteps([
+			{
+				type: "tool-find_missing_expenses",
+				state: "output-available",
+				input: { year: 2026, month: 10 },
+			},
+			{
+				type: "tool-get_top_expenses",
+				state: "output-available",
+				input: { year: 2026, month: 9 },
+			},
+			{
+				type: "tool-compare_months",
+				state: "output-available",
+				input: { year: 2026, month: 10 },
+			},
+			{ type: "tool-get_debts_overview", state: "output-available" },
+		])
+		expect(steps[0].title).toBe(
+			"Verificando gastos não lançados de outubro de 2026",
+		)
+		expect(steps[1].title).toBe(
+			"Consultando maiores gastos de setembro de 2026",
+		)
+		expect(steps[2].title).toBe("Comparando outubro de 2026 com o mês anterior")
+		expect(steps[3].title).toBe("Consultando dívidas")
+	})
 })
 
 describe("reasoningTextOf", () => {

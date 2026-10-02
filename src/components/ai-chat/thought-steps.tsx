@@ -64,6 +64,16 @@ const TOOL_META: Record<string, { title: string; icon: ThoughtStepIcon }> = {
 		title: "Consultando gastos por categoria",
 		icon: "insights",
 	},
+	find_missing_expenses: {
+		title: "Verificando gastos não lançados",
+		icon: "insights",
+	},
+	get_top_expenses: { title: "Consultando maiores gastos", icon: "insights" },
+	get_debts_overview: { title: "Consultando dívidas", icon: "summary" },
+	compare_months: {
+		title: "Comparando com o mês anterior",
+		icon: "insights",
+	},
 	explain_divergences: {
 		title: "Analisando divergências",
 		icon: "divergences",
@@ -172,6 +182,33 @@ function describeTool(
 					count != null
 						? `Analisando ${count} divergência${count === 1 ? "" : "s"}`
 						: "Analisando divergências",
+				icon,
+			}
+		}
+		case "find_missing_expenses": {
+			const period = periodLabel(record)
+			return {
+				title: period
+					? `Verificando gastos não lançados de ${period}`
+					: "Verificando gastos não lançados",
+				icon,
+			}
+		}
+		case "get_top_expenses": {
+			const period = periodLabel(record)
+			return {
+				title: period
+					? `Consultando maiores gastos de ${period}`
+					: "Consultando maiores gastos",
+				icon,
+			}
+		}
+		case "compare_months": {
+			const period = periodLabel(record)
+			return {
+				title: period
+					? `Comparando ${period} com o mês anterior`
+					: "Comparando com o mês anterior",
 				icon,
 			}
 		}
