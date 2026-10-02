@@ -10,8 +10,7 @@ import {
 	buildBudgetInsight,
 	type BudgetReport,
 } from "@/lib/engines/budget-report"
-import type { SpendingIconGroup } from "@/lib/engines/spending-by-category"
-import { eventIconDefinitions } from "@/lib/event-icon-rules"
+import type { SpendingGroupSummary } from "@/lib/engines/spending-by-category"
 import { endOfMonth } from "@/types/finance"
 
 const KIND_LABELS: Record<string, string> = {
@@ -134,6 +133,7 @@ export function formatPeriodLabel(year: number, month: number): string {
 
 export type SpendingGroupForChat = {
 	group: string
+	type: string | null
 	total: string
 	count: number
 	averageTicket: string
@@ -146,15 +146,16 @@ export type SpendingGroupForChat = {
 }
 
 /**
- * Converte os grupos por ícone em rótulos legíveis e valores JÁ formatados em
- * R$. A formatação é determinística de propósito: o modelo só copia os textos,
- * nunca converte centavos por conta própria (evita "R$ 66,523").
+ * Converte os grupos de categoria em rótulos legíveis e valores JÁ formatados
+ * em R$. A formatação é determinística de propósito: o modelo só copia os
+ * textos, nunca converte centavos por conta própria (evita "R$ 66,523").
  */
 export function buildSpendingByCategoryForChat(
-	groups: SpendingIconGroup[],
+	groups: SpendingGroupSummary[],
 ): SpendingGroupForChat[] {
 	return groups.map((group) => ({
-		group: eventIconDefinitions[group.iconKey].label,
+		group: group.name,
+		type: group.type,
 		total: formatBRL(group.total),
 		count: group.count,
 		averageTicket: formatBRL(
@@ -385,7 +386,7 @@ export const chatTools = {
 
 	get_spending_by_category: tool({
 		description:
-			"Gastos confirmados por categoria no mês (tela /reports/spending), agrupados por tipo (Alimentação, Moradia, Transporte...). Valores já vêm formatados em R$. Cada categoria/grupo traz count (número de lançamentos) e averageTicket (valor médio), útil para achar gastos pequenos e frequentes. Aceita year e month; sem eles usa o mês atual. Use para 'quanto gastei', 'onde gastei mais', 'gastos por categoria' e 'pequenos gastos que somaram'.",
+			"Gastos confirmados no mês (tela /reports/spending), agrupados pelo GRUPO DE CATEGORIA definido pela pessoa usuária (ex. Alimentação, Moradia, Serviços) — mesmo agrupamento do orçamento — com as categorias dentro de cada grupo. Valores já vêm formatados em R$. Cada categoria/grupo traz count (número de lançamentos) e averageTicket (valor médio), útil para achar gastos pequenos e frequentes. Aceita year e month; sem eles usa o mês atual. Use para 'quanto gastei', 'onde gastei mais', 'gastos por categoria' e 'pequenos gastos que somaram'.",
 		inputSchema: z.object(periodSchema),
 		execute: async ({ year, month }) => {
 			const resolved = resolvePeriod(year, month)

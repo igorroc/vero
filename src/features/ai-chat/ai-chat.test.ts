@@ -14,7 +14,7 @@ import {
 	resolvePeriod,
 } from "./tools"
 import type { BudgetReport } from "@/lib/engines/budget-report"
-import type { SpendingIconGroup } from "@/lib/engines/spending-by-category"
+import type { SpendingGroupSummary } from "@/lib/engines/spending-by-category"
 
 describe("buildSystemPrompt", () => {
 	it("injeta a data atual (Brasília) como âncora", () => {
@@ -273,25 +273,32 @@ describe("formatPeriodLabel", () => {
 })
 
 describe("buildSpendingByCategoryForChat", () => {
-	it("converte iconKey em rótulo legível e valores formatados em R$", () => {
-		const groups: SpendingIconGroup[] = [
+	it("usa o nome do grupo de categoria e valores formatados em R$", () => {
+		const groups: SpendingGroupSummary[] = [
 			{
+				key: "g-food",
+				name: "Alimentação",
+				type: "LIFESTYLE",
 				iconKey: "food",
 				total: 30000,
 				count: 2,
-				categories: [
-					{ name: "Mercado", amount: 30000, count: 2 },
-				],
+				categories: [{ categoryId: "c1", name: "Mercado", amount: 30000, count: 2 }],
 			},
 			{
+				key: "g-other",
+				name: "Outros",
+				type: "LIFESTYLE",
 				iconKey: "other",
 				total: 10000,
 				count: 1,
-				categories: [{ name: "Sem categoria", amount: 10000, count: 1 }],
+				categories: [
+					{ categoryId: "c2", name: "Sem categoria", amount: 10000, count: 1 },
+				],
 			},
 		]
 		const result = buildSpendingByCategoryForChat(groups)
 		expect(result[0].group).toBe("Alimentação")
+		expect(result[0].type).toBe("LIFESTYLE")
 		expect(result[0].total).toMatch(/R\$\s?300,00/)
 		expect(result[0].count).toBe(2)
 		expect(result[0].averageTicket).toMatch(/R\$\s?150,00/)
@@ -301,7 +308,7 @@ describe("buildSpendingByCategoryForChat", () => {
 			count: 2,
 			averageTicket: expect.stringMatching(/R\$\s?150,00/),
 		})
-		expect(result[1].group).toBe("Outros gastos")
+		expect(result[1].group).toBe("Outros")
 	})
 })
 

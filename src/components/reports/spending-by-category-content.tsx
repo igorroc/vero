@@ -177,7 +177,7 @@ export function SpendingByCategoryContent() {
 	const chartData: SpendingChartSlice[] = comparison
 		.filter((group) => group.currentTotal > 0)
 		.map((group) => ({
-			name: eventIconDefinitions[group.iconKey].label,
+			name: group.name,
 			value: group.currentTotal,
 			color: eventIconDefinitions[group.iconKey].color,
 		}))
@@ -289,7 +289,7 @@ export function SpendingByCategoryContent() {
 									</p>
 								)}
 								<p className="mt-2 text-sm text-slate-500">
-									Cada fatia agrupa lançamentos pelas palavras-chave dos ícones.
+									Cada fatia representa um grupo de categorias que você definiu.
 								</p>
 							</div>
 						</div>
@@ -334,7 +334,7 @@ export function SpendingByCategoryContent() {
 												</div>
 												<div>
 													<h3 className="font-semibold text-slate-900 dark:text-white">
-														{definition.label}
+														{group.name}
 													</h3>
 													<p className="text-xs text-slate-500">
 														{percentage.toFixed(1)}% dos gastos

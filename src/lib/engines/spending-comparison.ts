@@ -1,8 +1,9 @@
 import type { EventIconKey } from "@/lib/event-icon-rules"
 import type { Cents } from "@/types/finance"
-import type { SpendingIconGroup } from "./spending-by-category"
+import type { SpendingGroupSummary } from "./spending-by-category"
 
 export interface SpendingComparisonItem {
+	key: string
 	name: string
 	currentCents: Cents
 	previousCents: Cents
@@ -12,6 +13,8 @@ export interface SpendingComparisonItem {
 }
 
 export interface SpendingComparisonGroup {
+	key: string
+	name: string
 	iconKey: EventIconKey
 	currentTotal: Cents
 	previousTotal: Cents
@@ -33,34 +36,42 @@ export function calculateChangePercent(
 }
 
 function categoryTotals(
-	group: SpendingIconGroup | undefined,
-): Map<string, Cents> {
-	const totals = new Map<string, Cents>()
+	group: SpendingGroupSummary | undefined,
+): Map<string, { name: string; amount: Cents }> {
+	const totals = new Map<string, { name: string; amount: Cents }>()
 	for (const category of group?.categories ?? []) {
-		totals.set(category.name, (totals.get(category.name) ?? 0) + category.amount)
+		const key = category.categoryId ?? category.name
+		const existing = totals.get(key)
+		totals.set(key, {
+			name: category.name,
+			amount: (existing?.amount ?? 0) + category.amount,
+		})
 	}
 	return totals
 }
 
 function compareGroup(
-	iconKey: EventIconKey,
-	currentGroup: SpendingIconGroup | undefined,
-	previousGroup: SpendingIconGroup | undefined,
+	currentGroup: SpendingGroupSummary | undefined,
+	previousGroup: SpendingGroupSummary | undefined,
 ): SpendingComparisonGroup {
 	const currentByCategory = categoryTotals(currentGroup)
 	const previousByCategory = categoryTotals(previousGroup)
-	const names = [
+	const keys = [
 		...currentByCategory.keys(),
 		...Array.from(previousByCategory.keys()).filter(
-			(name) => !currentByCategory.has(name),
+			(key) => !currentByCategory.has(key),
 		),
 	]
-	const categories = names
-		.map((name) => {
-			const currentCents = currentByCategory.get(name) ?? 0
-			const previousCents = previousByCategory.get(name) ?? 0
+	const categories = keys
+		.map((key) => {
+			const currentCents = currentByCategory.get(key)?.amount ?? 0
+			const previousCents = previousByCategory.get(key)?.amount ?? 0
 			return {
-				name,
+				key,
+				name:
+					currentByCategory.get(key)?.name ??
+					previousByCategory.get(key)?.name ??
+					key,
 				currentCents,
 				previousCents,
 				differenceCents: currentCents - previousCents,
@@ -72,10 +83,13 @@ function compareGroup(
 				b.currentCents - a.currentCents || b.previousCents - a.previousCents,
 		)
 
+	const reference = currentGroup ?? previousGroup
 	const currentTotal = currentGroup?.total ?? 0
 	const previousTotal = previousGroup?.total ?? 0
 	return {
-		iconKey,
+		key: reference?.key ?? "",
+		name: reference?.name ?? "",
+		iconKey: reference?.iconKey ?? "other",
 		currentTotal,
 		previousTotal,
 		differenceCents: currentTotal - previousTotal,
@@ -85,28 +99,26 @@ function compareGroup(
 }
 
 /**
- * Compara os gastos por categoria entre o mês atual e o anterior (módulo puro).
- * Grupos/categorias que existem em apenas um dos meses também aparecem.
+ * Compara os gastos por grupo/categoria entre o mês atual e o anterior (módulo
+ * puro). Grupos/categorias que existem em apenas um dos meses também aparecem.
  */
 export function buildSpendingComparison(
-	current: SpendingIconGroup[],
-	previous: SpendingIconGroup[],
+	current: SpendingGroupSummary[],
+	previous: SpendingGroupSummary[],
 ): SpendingComparisonGroup[] {
-	const previousByIcon = new Map(previous.map((group) => [group.iconKey, group]))
-	const seen = new Set<EventIconKey>()
+	const previousByKey = new Map(previous.map((group) => [group.key, group]))
+	const seen = new Set<string>()
 	const result: SpendingComparisonGroup[] = []
 
 	for (const group of current) {
-		if (seen.has(group.iconKey)) continue
-		seen.add(group.iconKey)
-		result.push(
-			compareGroup(group.iconKey, group, previousByIcon.get(group.iconKey)),
-		)
+		if (seen.has(group.key)) continue
+		seen.add(group.key)
+		result.push(compareGroup(group, previousByKey.get(group.key)))
 	}
 	for (const group of previous) {
-		if (seen.has(group.iconKey)) continue
-		seen.add(group.iconKey)
-		result.push(compareGroup(group.iconKey, undefined, group))
+		if (seen.has(group.key)) continue
+		seen.add(group.key)
+		result.push(compareGroup(undefined, group))
 	}
 
 	return result

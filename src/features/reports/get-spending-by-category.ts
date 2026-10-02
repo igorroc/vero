@@ -5,11 +5,11 @@ import { getUserBySession } from "@/lib/auth"
 import { canUse } from "@/features/billing"
 import {
 	buildSpendingByCategoryReport,
-	type SpendingIconGroup,
+	type SpendingGroupSummary,
 } from "@/lib/engines/spending-by-category"
 
 export type GetSpendingByCategoryResult =
-	| { success: true; groups: SpendingIconGroup[] }
+	| { success: true; groups: SpendingGroupSummary[] }
 	| { success: false; error: string }
 
 export type GetCurrentSpendingByCategoryResult = GetSpendingByCategoryResult
@@ -56,9 +56,15 @@ export async function getSpendingByCategory(
 				date: { gte: startDate, lt: endDate },
 			},
 			select: {
-				description: true,
 				amount: true,
-				category: { select: { name: true, categoryGroupId: true } },
+				category: {
+					select: {
+						id: true,
+						name: true,
+						categoryGroupId: true,
+						categoryGroup: { select: { name: true, type: true } },
+					},
+				},
 			},
 		})
 
@@ -66,10 +72,12 @@ export async function getSpendingByCategory(
 			success: true,
 			groups: buildSpendingByCategoryReport(
 				events.map((event) => ({
-					description: event.description,
-					amount: event.amount,
+					categoryId: event.category?.id ?? null,
 					categoryName: event.category?.name ?? null,
 					categoryGroupId: event.category?.categoryGroupId ?? null,
+					categoryGroupName: event.category?.categoryGroup?.name ?? null,
+					categoryGroupType: event.category?.categoryGroup?.type ?? null,
+					amount: event.amount,
 				})),
 			),
 		}
