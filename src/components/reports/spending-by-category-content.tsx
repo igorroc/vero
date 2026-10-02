@@ -318,7 +318,7 @@ export function SpendingByCategoryContent() {
 
 								return (
 									<article
-										key={group.iconKey}
+										key={group.key}
 										className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
 									>
 										<div className="flex items-center justify-between gap-3 p-4">
@@ -351,7 +351,7 @@ export function SpendingByCategoryContent() {
 										<div className="divide-y divide-slate-100 border-t border-slate-100 dark:divide-slate-800 dark:border-slate-800">
 											{group.categories.map((category) => (
 												<div
-													key={category.name}
+													key={category.key}
 													className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm"
 												>
 													<div className="min-w-0 flex-1">
