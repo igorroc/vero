@@ -49,6 +49,7 @@ export type LoosePart = {
 	state?: string
 	toolName?: string
 	text?: string
+	input?: unknown
 }
 
 const TOOL_META: Record<string, { title: string; icon: ThoughtStepIcon }> = {
@@ -58,6 +59,11 @@ const TOOL_META: Record<string, { title: string; icon: ThoughtStepIcon }> = {
 	},
 	get_events: { title: "Consultando lançamentos", icon: "events" },
 	get_categories: { title: "Consultando categorias", icon: "categories" },
+	get_budget_report: { title: "Consultando orçamento mensal", icon: "summary" },
+	get_spending_by_category: {
+		title: "Consultando gastos por categoria",
+		icon: "insights",
+	},
 	explain_divergences: {
 		title: "Analisando divergências",
 		icon: "divergences",
@@ -67,6 +73,111 @@ const TOOL_META: Record<string, { title: string; icon: ThoughtStepIcon }> = {
 const DEFAULT_TOOL_META: { title: string; icon: ThoughtStepIcon } = {
 	title: "Consultando dados",
 	icon: "insights",
+}
+
+const MONTH_NAMES = [
+	"janeiro",
+	"fevereiro",
+	"março",
+	"abril",
+	"maio",
+	"junho",
+	"julho",
+	"agosto",
+	"setembro",
+	"outubro",
+	"novembro",
+	"dezembro",
+]
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+	return value && typeof value === "object"
+		? (value as Record<string, unknown>)
+		: null
+}
+
+function periodLabel(input: Record<string, unknown> | null): string | null {
+	if (!input) return null
+	const year = input.year
+	const month = input.month
+	if (
+		typeof year === "number" &&
+		typeof month === "number" &&
+		month >= 1 &&
+		month <= 12
+	) {
+		return `${MONTH_NAMES[month - 1]} de ${year}`
+	}
+	return null
+}
+
+function shortDate(value: unknown): string | null {
+	if (typeof value !== "string") return null
+	const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+	return match ? `${match[3]}/${match[2]}` : null
+}
+
+/**
+ * Descreve a etapa de uma tool com o que está sendo consultado (mês, período,
+ * quantidade etc.), para o "thinking" ficar claro.
+ */
+function describeTool(
+	name: string,
+	input: unknown,
+): { title: string; icon: ThoughtStepIcon } {
+	const base = TOOL_META[name]
+	const record = asRecord(input)
+	const icon = base?.icon ?? DEFAULT_TOOL_META.icon
+
+	switch (name) {
+		case "get_budget_report": {
+			const period = periodLabel(record)
+			return {
+				title: period
+					? `Consultando orçamento de ${period}`
+					: "Consultando orçamento mensal",
+				icon,
+			}
+		}
+		case "get_spending_by_category": {
+			const period = periodLabel(record)
+			return {
+				title: period
+					? `Consultando gastos de ${period}`
+					: "Consultando gastos por categoria",
+				icon,
+			}
+		}
+		case "get_events": {
+			const start = shortDate(record?.startDate)
+			const end = shortDate(record?.endDate)
+			const range = start && end ? ` (${start} a ${end})` : ""
+			const status = typeof record?.status === "string" ? record.status : null
+			const statusLabel =
+				status === "PLANNED"
+					? " · pendentes"
+					: status === "CONFIRMED"
+						? " · confirmados"
+						: ""
+			return {
+				title: `${base?.title ?? DEFAULT_TOOL_META.title}${range}${statusLabel}`,
+				icon,
+			}
+		}
+		case "explain_divergences": {
+			const divergences = record?.divergences
+			const count = Array.isArray(divergences) ? divergences.length : null
+			return {
+				title:
+					count != null
+						? `Analisando ${count} divergência${count === 1 ? "" : "s"}`
+						: "Analisando divergências",
+				icon,
+			}
+		}
+		default:
+			return base ?? DEFAULT_TOOL_META
+	}
 }
 
 function asUiPart(part: LoosePart): UIMessagePart<UIDataTypes, UITools> {
@@ -79,8 +190,10 @@ function toolNameOf(part: LoosePart): string | null {
 	return null
 }
 
-function metaOf(name: string): { title: string; icon: ThoughtStepIcon } {
-	return TOOL_META[name] ?? DEFAULT_TOOL_META
+function stepFor(part: LoosePart): ThoughtStep | null {
+	const name = toolNameOf(part)
+	if (!name) return null
+	return { ...describeTool(name, part.input), status: toolStatus(part.state) }
 }
 
 function toolStatus(state?: string): ThoughtStepStatus {
@@ -124,10 +237,8 @@ export function deriveIntermediateSteps(steps: LoosePart[][]): ThoughtStep[] {
 			out.push({ title: "Pensando…", status: "complete", icon: "thinking" })
 		}
 		for (const part of step) {
-			const name = toolNameOf(part)
-			if (name) {
-				out.push({ title: metaOf(name).title, status: "complete", icon: metaOf(name).icon })
-			}
+			const described = stepFor(part)
+			if (described) out.push({ ...described, status: "complete" })
 		}
 	}
 	return out
@@ -140,13 +251,8 @@ export function deriveIntermediateSteps(steps: LoosePart[][]): ThoughtStep[] {
 export function deriveThoughtSteps(parts: LoosePart[]): ThoughtStep[] {
 	const steps: ThoughtStep[] = []
 	for (const part of parts) {
-		const name = toolNameOf(part)
-		if (!name) continue
-		steps.push({
-			title: metaOf(name).title,
-			status: toolStatus(part.state),
-			icon: metaOf(name).icon,
-		})
+		const described = stepFor(part)
+		if (described) steps.push(described)
 	}
 	return steps
 }

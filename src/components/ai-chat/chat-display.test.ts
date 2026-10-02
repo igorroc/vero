@@ -42,6 +42,55 @@ describe("deriveThoughtSteps", () => {
 			deriveThoughtSteps([{ type: "text" }, { type: "data-x" }]),
 		).toHaveLength(0)
 	})
+
+	it("mostra os dados consultados na tool de orçamento e de gastos", () => {
+		const steps = deriveThoughtSteps([
+			{
+				type: "tool-get_budget_report",
+				state: "output-available",
+				input: { year: 2026, month: 9 },
+			},
+			{
+				type: "dynamic-tool",
+				toolName: "get_spending_by_category",
+				state: "input-available",
+				input: { year: 2025, month: 12 },
+			},
+		])
+		expect(steps[0].title).toBe("Consultando orçamento de setembro de 2026")
+		expect(steps[1].title).toBe("Consultando gastos de dezembro de 2025")
+	})
+
+	it("mostra período/status de get_events e nº de divergências", () => {
+		const steps = deriveThoughtSteps([
+			{
+				type: "tool-get_events",
+				state: "output-available",
+				input: {
+					startDate: "2026-09-01",
+					endDate: "2026-09-30",
+					status: "CONFIRMED",
+				},
+			},
+			{
+				type: "tool-explain_divergences",
+				state: "input-available",
+				input: { divergences: [{}, {}, {}] },
+			},
+		])
+		expect(steps[0].title).toBe(
+			"Consultando lançamentos (01/09 a 30/09) · confirmados",
+		)
+		expect(steps[1].title).toBe("Analisando 3 divergências")
+	})
+
+	it("cai no título padrão da tool sem dados de período", () => {
+		const steps = deriveThoughtSteps([
+			{ type: "tool-get_budget_report", state: "input-streaming" },
+		])
+		expect(steps[0].title).toBe("Consultando orçamento mensal")
+		expect(steps[0].status).toBe("active")
+	})
 })
 
 describe("reasoningTextOf", () => {

@@ -287,6 +287,7 @@ export function ChatPanel({
 									"toolName" in part && typeof part.toolName === "string"
 										? part.toolName
 										: undefined,
+								input: "input" in part ? part.input : undefined,
 								text:
 									"text" in part && typeof part.text === "string"
 										? part.text
