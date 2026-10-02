@@ -12,6 +12,8 @@ import {
 	type PieSectorShapeProps,
 } from "recharts"
 import {
+	ArrowDownRight,
+	ArrowUpRight,
 	BadgePercent,
 	Banknote,
 	Building2,
@@ -21,6 +23,7 @@ import {
 	HandCoins,
 	Home,
 	Landmark,
+	Minus,
 	Music,
 	Phone,
 	ReceiptText,
@@ -32,7 +35,12 @@ import {
 } from "lucide-react"
 import { getSpendingByCategory } from "@/features/reports"
 import { eventIconDefinitions, type EventIconKey } from "@/lib/event-icon-rules"
-import type { SpendingIconGroup } from "@/lib/engines/spending-by-category"
+import {
+	buildSpendingComparison,
+	calculateChangePercent,
+	getPreviousMonth,
+	type SpendingComparisonGroup,
+} from "@/lib/engines/spending-comparison"
 import { formatCurrency } from "@/types/finance"
 
 const eventIcons: Record<EventIconKey, LucideIcon> = {
@@ -61,6 +69,14 @@ interface SpendingChartSlice {
 	color: string
 }
 
+function formatMonthLabel(year: number, month: number): string {
+	return new Intl.DateTimeFormat("pt-BR", {
+		month: "long",
+		year: "numeric",
+		timeZone: "UTC",
+	}).format(new Date(Date.UTC(year, month - 1, 1)))
+}
+
 function SpendingPieSlice(props: PieSectorShapeProps) {
 	const slice = props as PieSectorShapeProps & { color?: unknown }
 	const fill = typeof slice.color === "string" ? slice.color : props.fill
@@ -68,11 +84,49 @@ function SpendingPieSlice(props: PieSectorShapeProps) {
 	return <Sector {...props} fill={fill} />
 }
 
+/**
+ * Variação de gasto vs. mês anterior. Aumento é ruim (vermelho) e redução é
+ * boa (verde); `null` significa categoria nova (não havia gasto antes).
+ */
+function ChangeBadge({ changePercent }: { changePercent: number | null }) {
+	if (changePercent === null) {
+		return (
+			<span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
+				<ArrowUpRight size={12} />
+				novo
+			</span>
+		)
+	}
+	const rounded = Math.round(changePercent)
+	if (rounded === 0) {
+		return (
+			<span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-slate-400">
+				<Minus size={12} />
+				0%
+			</span>
+		)
+	}
+	const increasing = rounded > 0
+	const Icon = increasing ? ArrowUpRight : ArrowDownRight
+	const tone = increasing
+		? "bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400"
+		: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400"
+	return (
+		<span
+			className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${tone}`}
+		>
+			<Icon size={12} />
+			{increasing ? "+" : "-"}
+			{Math.abs(rounded)}%
+		</span>
+	)
+}
+
 export function SpendingByCategoryContent() {
 	const now = new Date()
 	const [year, setYear] = useState(now.getFullYear())
 	const [month, setMonth] = useState(now.getMonth() + 1)
-	const [groups, setGroups] = useState<SpendingIconGroup[]>([])
+	const [comparison, setComparison] = useState<SpendingComparisonGroup[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
@@ -80,10 +134,19 @@ export function SpendingByCategoryContent() {
 		let active = true
 		setLoading(true)
 		setError(null)
-		getSpendingByCategory(year, month).then((result) => {
+		const previous = getPreviousMonth(year, month)
+		Promise.all([
+			getSpendingByCategory(year, month),
+			getSpendingByCategory(previous.year, previous.month),
+		]).then(([current, before]) => {
 			if (!active) return
-			if (result.success) setGroups(result.groups)
-			else setError(result.error)
+			if (!current.success) {
+				setError(current.error)
+				setLoading(false)
+				return
+			}
+			const previousGroups = before.success ? before.groups : []
+			setComparison(buildSpendingComparison(current.groups, previousGroups))
 			setLoading(false)
 		})
 		return () => {
@@ -99,17 +162,25 @@ export function SpendingByCategoryContent() {
 		)
 	}
 
-	const total = groups.reduce((sum, group) => sum + group.total, 0)
-	const monthLabel = new Intl.DateTimeFormat("pt-BR", {
-		month: "long",
-		year: "numeric",
-		timeZone: "UTC",
-	}).format(new Date(Date.UTC(year, month - 1, 1)))
-	const chartData: SpendingChartSlice[] = groups.map((group) => ({
-		name: eventIconDefinitions[group.iconKey].label,
-		value: group.total,
-		color: eventIconDefinitions[group.iconKey].color,
-	}))
+	const total = comparison.reduce((sum, group) => sum + group.currentTotal, 0)
+	const previousTotal = comparison.reduce(
+		(sum, group) => sum + group.previousTotal,
+		0,
+	)
+	const overallChangePercent = calculateChangePercent(total, previousTotal)
+	const monthLabel = formatMonthLabel(year, month)
+	const previousPeriod = getPreviousMonth(year, month)
+	const previousMonthLabel = formatMonthLabel(
+		previousPeriod.year,
+		previousPeriod.month,
+	)
+	const chartData: SpendingChartSlice[] = comparison
+		.filter((group) => group.currentTotal > 0)
+		.map((group) => ({
+			name: eventIconDefinitions[group.iconKey].label,
+			value: group.currentTotal,
+			color: eventIconDefinitions[group.iconKey].color,
+		}))
 
 	return (
 		<div className="space-y-6">
@@ -184,7 +255,8 @@ export function SpendingByCategoryContent() {
 											content={({ active, payload }) => {
 												if (!active || !payload?.length) return null
 												const slice = payload[0]?.payload as
-													SpendingChartSlice | undefined
+													| SpendingChartSlice
+													| undefined
 												if (!slice) return null
 												return (
 													<div className="rounded-xl border border-border bg-surface px-3 py-2 text-sm shadow-surface">
@@ -210,6 +282,12 @@ export function SpendingByCategoryContent() {
 								>
 									{formatCurrency(total)}
 								</h2>
+								{previousTotal > 0 && (
+									<p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+										vs. <span className="capitalize">{previousMonthLabel}</span>
+										<ChangeBadge changePercent={overallChangePercent} />
+									</p>
+								)}
 								<p className="mt-2 text-sm text-slate-500">
 									Cada fatia agrupa lançamentos pelas palavras-chave dos ícones.
 								</p>
@@ -226,14 +304,17 @@ export function SpendingByCategoryContent() {
 								Detalhes por categoria
 							</h2>
 							<p className="text-sm text-slate-500">
-								Categorias registradas em cada grupo do gráfico.
+								Gastos do mês comparados a{" "}
+								<span className="capitalize">{previousMonthLabel}</span>: a seta
+								indica aumento (vermelho) ou redução (verde).
 							</p>
 						</div>
 						<div className="grid gap-3 lg:grid-cols-2">
-							{groups.map((group) => {
+							{comparison.map((group) => {
 								const definition = eventIconDefinitions[group.iconKey]
 								const Icon = eventIcons[group.iconKey]
-								const percentage = (group.total / total) * 100
+								const percentage =
+									total > 0 ? (group.currentTotal / total) * 100 : 0
 
 								return (
 									<article
@@ -260,9 +341,12 @@ export function SpendingByCategoryContent() {
 													</p>
 												</div>
 											</div>
-											<p className="font-semibold text-slate-900 dark:text-white">
-												{formatCurrency(group.total)}
-											</p>
+											<div className="flex flex-col items-end gap-1">
+												<p className="font-semibold text-slate-900 dark:text-white">
+													{formatCurrency(group.currentTotal)}
+												</p>
+												<ChangeBadge changePercent={group.changePercent} />
+											</div>
 										</div>
 										<div className="divide-y divide-slate-100 border-t border-slate-100 dark:divide-slate-800 dark:border-slate-800">
 											{group.categories.map((category) => (
@@ -270,12 +354,25 @@ export function SpendingByCategoryContent() {
 													key={category.name}
 													className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm"
 												>
-													<span className="text-slate-600 dark:text-slate-300">
-														{category.name}
-													</span>
-													<span className="font-medium text-slate-900 dark:text-white">
-														{formatCurrency(category.amount)}
-													</span>
+													<div className="min-w-0 flex-1">
+														<p className="truncate text-slate-600 dark:text-slate-300">
+															{category.name}
+														</p>
+														{category.previousCents > 0 && (
+															<p className="text-[11px] text-slate-400">
+																antes:{" "}
+																{formatCurrency(category.previousCents)}
+															</p>
+														)}
+													</div>
+													<div className="flex shrink-0 items-center gap-2">
+														<span className="font-medium text-slate-900 dark:text-white">
+															{formatCurrency(category.currentCents)}
+														</span>
+														<ChangeBadge
+															changePercent={category.changePercent}
+														/>
+													</div>
 												</div>
 											))}
 										</div>
