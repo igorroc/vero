@@ -37,9 +37,16 @@ export {
 	stripThinkingBlocks,
 } from "./text"
 export {
+	buildBudgetReportForChat,
+	buildSpendingByCategoryForChat,
 	chatTools,
 	formatDivergencesForChat,
 	formatMonthEndForChat,
+	formatPeriodLabel,
+	resolvePeriod,
+	type BudgetReportForChat,
 	type DivergenceSummaryInput,
 	type MonthEndForChatInput,
+	type ResolvedPeriod,
+	type SpendingGroupForChat,
 } from "./tools"

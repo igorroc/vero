@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { Button, Spinner } from "@nextui-org/react"
+import { Button, Input, Spinner } from "@nextui-org/react"
 import {
 	Pie,
 	PieChart,
@@ -30,7 +30,7 @@ import {
 	Zap,
 	type LucideIcon,
 } from "lucide-react"
-import { getCurrentSpendingByCategory } from "@/features/reports"
+import { getSpendingByCategory } from "@/features/reports"
 import { eventIconDefinitions, type EventIconKey } from "@/lib/event-icon-rules"
 import type { SpendingIconGroup } from "@/lib/engines/spending-by-category"
 import { formatCurrency } from "@/types/finance"
@@ -69,17 +69,27 @@ function SpendingPieSlice(props: PieSectorShapeProps) {
 }
 
 export function SpendingByCategoryContent() {
+	const now = new Date()
+	const [year, setYear] = useState(now.getFullYear())
+	const [month, setMonth] = useState(now.getMonth() + 1)
 	const [groups, setGroups] = useState<SpendingIconGroup[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
 	useEffect(() => {
-		getCurrentSpendingByCategory().then((result) => {
+		let active = true
+		setLoading(true)
+		setError(null)
+		getSpendingByCategory(year, month).then((result) => {
+			if (!active) return
 			if (result.success) setGroups(result.groups)
 			else setError(result.error)
 			setLoading(false)
 		})
-	}, [])
+		return () => {
+			active = false
+		}
+	}, [year, month])
 
 	if (loading) {
 		return (
@@ -93,7 +103,8 @@ export function SpendingByCategoryContent() {
 	const monthLabel = new Intl.DateTimeFormat("pt-BR", {
 		month: "long",
 		year: "numeric",
-	}).format(new Date())
+		timeZone: "UTC",
+	}).format(new Date(Date.UTC(year, month - 1, 1)))
 	const chartData: SpendingChartSlice[] = groups.map((group) => ({
 		name: eventIconDefinitions[group.iconKey].label,
 		value: group.total,
@@ -110,9 +121,23 @@ export function SpendingByCategoryContent() {
 					</h1>
 					<p className="text-sm capitalize text-slate-500">{monthLabel}</p>
 				</div>
-				<Button as={Link} href="/reports/budget" variant="bordered">
-					Ver orçamento mensal
-				</Button>
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+					<Input
+						type="month"
+						label="Mês do relatório"
+						value={`${year}-${String(month).padStart(2, "0")}`}
+						onValueChange={(value) => {
+							const [nextYear, nextMonth] = value.split("-").map(Number)
+							if (!nextYear || !nextMonth) return
+							setYear(nextYear)
+							setMonth(nextMonth)
+						}}
+						className="max-w-xs"
+					/>
+					<Button as={Link} href="/reports/budget" variant="bordered">
+						Ver orçamento mensal
+					</Button>
+				</div>
 			</div>
 
 			{error ? (

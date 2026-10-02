@@ -84,7 +84,7 @@ export async function POST(req: Request) {
 		providerOptions: getReasoningProviderOptions(),
 		// Default do SDK é 1 passo: a tool seria chamada e o resultado nunca
 		// viraria resposta. Permite consultar e depois responder.
-		stopWhen: stepCountIs(5),
+		stopWhen: stepCountIs(6),
 		onFinish: async ({ text }) => {
 			if (!persistId) return
 			const clean = sanitizeAssistantReply(text ?? "")

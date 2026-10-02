@@ -1,9 +1,17 @@
 import { tool } from "ai"
 import { z } from "zod"
 
+import { getBudgetReport } from "@/features/budgets"
 import { getCategories } from "@/features/categories"
 import { getDashboardData } from "@/features/dashboard"
 import { getEvents } from "@/features/events"
+import { getSpendingByCategory } from "@/features/reports"
+import {
+	buildBudgetInsight,
+	type BudgetReport,
+} from "@/lib/engines/budget-report"
+import type { SpendingIconGroup } from "@/lib/engines/spending-by-category"
+import { eventIconDefinitions } from "@/lib/event-icon-rules"
 import { endOfMonth } from "@/types/finance"
 
 const KIND_LABELS: Record<string, string> = {
@@ -82,6 +90,125 @@ export function formatMonthEndForChat(input: MonthEndForChatInput): string {
 		return `${header} Para cobrir os lançamentos do mês, recomende resgatar ${formatBRL(rescueNeeded)}. Restarão ${formatBRL(remaining)} em investimentos.`
 	}
 	return `${header} Não é preciso resgatar: a conta fecha o mês positiva e permanecem ${formatBRL(input.investmentsCents)} em investimentos.`
+}
+
+const periodSchema = {
+	year: z
+		.number()
+		.int()
+		.min(2000)
+		.max(2100)
+		.optional()
+		.describe("Ano (ex. 2026). Sem valor, usa o ano atual."),
+	month: z
+		.number()
+		.int()
+		.min(1)
+		.max(12)
+		.optional()
+		.describe("Mês de 1 a 12. Sem valor, usa o mês atual."),
+}
+
+export type ResolvedPeriod = { year: number; month: number }
+
+/** Resolve year/month informados pelo modelo, caindo para o mês atual. */
+export function resolvePeriod(
+	year?: number,
+	month?: number,
+	now: Date = new Date(),
+): ResolvedPeriod {
+	return {
+		year: year ?? now.getFullYear(),
+		month: month ?? now.getMonth() + 1,
+	}
+}
+
+/** Rótulo em pt-BR, ex. "setembro de 2026". Puro e testável. */
+export function formatPeriodLabel(year: number, month: number): string {
+	return new Intl.DateTimeFormat("pt-BR", {
+		month: "long",
+		year: "numeric",
+		timeZone: "UTC",
+	}).format(new Date(Date.UTC(year, month - 1, 1)))
+}
+
+export type SpendingGroupForChat = {
+	group: string
+	totalCents: number
+	categories: Array<{ name: string; amountCents: number }>
+}
+
+/** Converte os grupos por ícone em rótulos legíveis para a IA. Puro. */
+export function buildSpendingByCategoryForChat(
+	groups: SpendingIconGroup[],
+): SpendingGroupForChat[] {
+	return groups.map((group) => ({
+		group: eventIconDefinitions[group.iconKey].label,
+		totalCents: group.total,
+		categories: group.categories.map((category) => ({
+			name: category.name,
+			amountCents: category.amount,
+		})),
+	}))
+}
+
+export type BudgetReportForChat = {
+	income: { budgetedCents: number; actualCents: number }
+	outgoing: { budgetedCents: number; actualCents: number }
+	planAdjustment: {
+		shortfallCents: number
+		reductions: Record<string, number>
+	} | null
+	allocation: BudgetReport["allocation"]
+	insight: { tone: string; message: string }
+	groups: Array<{
+		name: string
+		type: string
+		budgetedCents: number
+		actualCents: number
+		categories: Array<{
+			name: string
+			budgetedCents: number
+			actualCents: number
+			executionPercent: number
+		}>
+	}>
+}
+
+/** Compacta o relatório de orçamento para a IA. Puro e testável. */
+export function buildBudgetReportForChat(
+	report: BudgetReport,
+): BudgetReportForChat {
+	return {
+		income: {
+			budgetedCents: report.income.budgeted,
+			actualCents: report.income.actual,
+		},
+		outgoing: {
+			budgetedCents: report.outgoing.budgeted,
+			actualCents: report.outgoing.actual,
+		},
+		planAdjustment: report.planAdjustment
+			? {
+					shortfallCents: report.planAdjustment.shortfall,
+					reductions: report.planAdjustment.reductions,
+				}
+			: null,
+		allocation: report.allocation,
+		insight: buildBudgetInsight(report),
+		groups: report.groups.map((group) => ({
+			name: group.name,
+			type: group.type,
+			budgetedCents: group.budgeted,
+			actualCents: group.actual,
+			categories: group.items.map((item) => ({
+				name: item.categoryName,
+				budgetedCents: item.budgeted,
+				actualCents: item.actual,
+				executionPercent: Math.round(item.executionPercent),
+			})),
+		})),
+	}
 }
 
 export const chatTools = {
@@ -191,6 +318,50 @@ export const chatTools = {
 					group: category.categoryGroup.name,
 					groupType: category.categoryGroup.type,
 				})),
+			}
+		},
+	}),
+
+	get_budget_report: tool({
+		description:
+			"Relatório de orçamento mensal (tela /reports/budget): orçado x realizado por tipo, grupo e categoria, sobra/falta do plano, alocação (essencial/estilo de vida/investimentos) e uma leitura geral. Aceita year e month; sem eles usa o mês atual. Use para 'estou dentro do orçamento?', 'quanto planejei x gastei' e 'qual categoria estourou'.",
+		inputSchema: z.object(periodSchema),
+		execute: async ({ year, month }) => {
+			const resolved = resolvePeriod(year, month)
+			const result = await getBudgetReport(resolved.year, resolved.month)
+			if (!result.success) return { error: result.error }
+			const period = {
+				...resolved,
+				label: formatPeriodLabel(resolved.year, resolved.month),
+			}
+			if (!result.report) return { period, hasBudget: false }
+			return {
+				period,
+				hasBudget: true,
+				...buildBudgetReportForChat(result.report),
+			}
+		},
+	}),
+
+	get_spending_by_category: tool({
+		description:
+			"Gastos confirmados por categoria no mês (tela /reports/spending), agrupados por tipo (Alimentação, Moradia, Transporte...). Aceita year e month; sem eles usa o mês atual. Use para 'quanto gastei', 'onde gastei mais', 'gastos por categoria' e comparações entre categorias.",
+		inputSchema: z.object(periodSchema),
+		execute: async ({ year, month }) => {
+			const resolved = resolvePeriod(year, month)
+			const result = await getSpendingByCategory(resolved.year, resolved.month)
+			if (!result.success) return { error: result.error }
+			const totalCents = result.groups.reduce(
+				(total, group) => total + group.total,
+				0,
+			)
+			return {
+				period: {
+					...resolved,
+					label: formatPeriodLabel(resolved.year, resolved.month),
+				},
+				totalCents,
+				groups: buildSpendingByCategoryForChat(result.groups),
 			}
 		},
 	}),

@@ -5,7 +5,16 @@ import {
 	sanitizeAssistantReply,
 	stripThinkingBlocks,
 } from "./text"
-import { formatDivergencesForChat, formatMonthEndForChat } from "./tools"
+import {
+	buildBudgetReportForChat,
+	buildSpendingByCategoryForChat,
+	formatDivergencesForChat,
+	formatMonthEndForChat,
+	formatPeriodLabel,
+	resolvePeriod,
+} from "./tools"
+import type { BudgetReport } from "@/lib/engines/budget-report"
+import type { SpendingIconGroup } from "@/lib/engines/spending-by-category"
 
 describe("buildSystemPrompt", () => {
 	it("injeta a data atual (Brasília) como âncora", () => {
@@ -234,5 +243,106 @@ describe("formatDivergencesForChat", () => {
 		expect(text).toMatch(/Transferência\?/)
 		expect(text).toMatch(/R\$\s?800,00/)
 		expect(text).toMatch(/2\.244,50/)
+	})
+})
+
+describe("resolvePeriod", () => {
+	it("usa year/month informados", () => {
+		expect(resolvePeriod(2025, 3)).toEqual({ year: 2025, month: 3 })
+	})
+
+	it("cai para o mês atual quando ausentes", () => {
+		const now = new Date(2026, 8, 23)
+		expect(resolvePeriod(undefined, undefined, now)).toEqual({
+			year: 2026,
+			month: 9,
+		})
+		expect(resolvePeriod(2024, undefined, now)).toEqual({
+			year: 2024,
+			month: 9,
+		})
+	})
+})
+
+describe("formatPeriodLabel", () => {
+	it("rotula o mês em pt-BR", () => {
+		const label = formatPeriodLabel(2026, 9)
+		expect(label).toMatch(/setembro/i)
+		expect(label).toMatch(/2026/)
+	})
+})
+
+describe("buildSpendingByCategoryForChat", () => {
+	it("converte iconKey em rótulo legível e preserva valores", () => {
+		const groups: SpendingIconGroup[] = [
+			{
+				iconKey: "food",
+				total: 30000,
+				categories: [{ name: "Mercado", amount: 30000 }],
+			},
+			{
+				iconKey: "other",
+				total: 10000,
+				categories: [{ name: "Sem categoria", amount: 10000 }],
+			},
+		]
+		const result = buildSpendingByCategoryForChat(groups)
+		expect(result[0]).toEqual({
+			group: "Alimentação",
+			totalCents: 30000,
+			categories: [{ name: "Mercado", amountCents: 30000 }],
+		})
+		expect(result[1].group).toBe("Outros gastos")
+	})
+})
+
+describe("buildBudgetReportForChat", () => {
+	it("compacta orçado x realizado, insight e execução por categoria", () => {
+		const report: BudgetReport = {
+			groups: [
+				{
+					name: "Alimentação",
+					type: "LIFESTYLE",
+					budgeted: 50000,
+					actual: 60000,
+					items: [
+						{
+							categoryId: "c1",
+							categoryName: "Mercado",
+							budgeted: 50000,
+							actual: 60000,
+							difference: -10000,
+							executionPercent: 120,
+						},
+					],
+				},
+			],
+			income: { budgeted: 100000, actual: 90000 },
+			outgoing: { budgeted: 50000, actual: 60000 },
+			planAdjustment: null,
+			allocation: {
+				ESSENTIAL: { target: 50, budgeted: 0, actual: 0 },
+				LIFESTYLE: { target: 30, budgeted: 50, actual: 66.7 },
+				INVESTMENT: { target: 20, budgeted: 0, actual: 0 },
+			},
+			distribution: {
+				ESSENTIAL: { budgeted: 0, actual: 0 },
+				LIFESTYLE: { budgeted: 100, actual: 100 },
+				INVESTMENT: { budgeted: 0, actual: 0 },
+			},
+		}
+		const result = buildBudgetReportForChat(report)
+		expect(result.outgoing).toEqual({
+			budgetedCents: 50000,
+			actualCents: 60000,
+		})
+		expect(result.groups[0].categories[0]).toEqual({
+			name: "Mercado",
+			budgetedCents: 50000,
+			actualCents: 60000,
+			executionPercent: 120,
+		})
+		expect(result.insight.tone).toBe("warning")
+		expect(result.planAdjustment).toBeNull()
 	})
 })
