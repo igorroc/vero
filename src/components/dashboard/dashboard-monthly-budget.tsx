@@ -68,7 +68,7 @@ export function DashboardMonthlyBudget({
 						)
 						const isOverBudget = category.remaining < 0
 						return (
-							<div key={category.name}>
+							<div key={category.id}>
 								<div className="flex items-baseline justify-between gap-3 text-sm">
 									<p className="font-medium text-text-primary">
 										{category.name}
@@ -103,7 +103,9 @@ export function DashboardMonthlyBudget({
 								>
 									{isOverBudget
 										? `${formatCurrency(Math.abs(category.remaining))} acima do orçamento`
-										: `${formatCurrency(category.remaining)} restantes`}
+										: `${formatCurrency(category.remaining)} disponíveis`}
+									{category.committed > 0 &&
+										` · ${formatCurrency(category.committed)} comprometido`}
 								</p>
 							</div>
 						)

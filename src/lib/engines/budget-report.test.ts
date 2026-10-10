@@ -90,6 +90,52 @@ describe("buildBudgetReport", () => {
 		expect(buildBudgetInsight(result)).toMatchObject({ tone: "success" })
 	})
 
+	it("expoe comprometido e disponivel por categoria", () => {
+		const result = buildBudgetReport({
+			items: [
+				{
+					categoryId: "rent",
+					categoryName: "Aluguel",
+					groupName: "Moradia",
+					groupType: "ESSENTIAL",
+					amount: 200000,
+				},
+			],
+			events: [
+				{ categoryId: "rent", amount: -80000, status: "CONFIRMED" },
+				{ categoryId: "rent", amount: -50000, status: "PLANNED" },
+				{
+					categoryId: "food",
+					amount: -30000,
+					status: "PLANNED",
+					categoryName: "Mercado",
+					groupName: "Alimentacao",
+					groupType: "ESSENTIAL",
+				},
+			],
+		})
+
+		const rentGroup = result.groups.find((group) => group.name === "Moradia")!
+		expect(rentGroup.items[0]).toMatchObject({
+			budgeted: 200000,
+			actual: 80000,
+			committed: 50000,
+			available: 70000,
+			difference: 120000,
+		})
+
+		const foodGroup = result.groups.find(
+			(group) => group.name === "Alimentacao",
+		)!
+		expect(foodGroup.committed).toBe(30000)
+		expect(foodGroup.items[0]).toMatchObject({
+			budgeted: 0,
+			actual: 0,
+			committed: 30000,
+			available: -30000,
+		})
+	})
+
 	it("recomenda reducoes proporcionais quando as saidas superam as entradas", () => {
 		expect(
 			calculateBudgetPlanAdjustment(100000, {

@@ -4,6 +4,23 @@ import type { CategoryWithGroup } from "@/features/categories"
 import { formatCurrency } from "@/types/finance"
 import { BudgetCategoryRow } from "./budget-category-row"
 
+export function amountInputToCents(value: string): number {
+	const normalized = value.trim().replace(",", ".")
+	if (!normalized) return 0
+
+	const [wholePart, decimalPart = "", ...remainingParts] = normalized.split(".")
+	if (
+		remainingParts.length > 0 ||
+		!/^\d+$/.test(wholePart) ||
+		!/^\d*$/.test(decimalPart)
+	)
+		return 0
+
+	const cents =
+		Number(wholePart) * 100 + Number(decimalPart.padEnd(2, "0").slice(0, 2))
+	return Number.isSafeInteger(cents) ? cents : 0
+}
+
 export const budgetTypes = [
 	"INCOME",
 	"ESSENTIAL",
@@ -31,6 +48,7 @@ interface BudgetTypeSectionProps {
 	values: Record<string, string>
 	total: number
 	incomeTotal: number
+	usage: Map<string, { actual: number; committed: number }>
 	onValueChange: (categoryId: string, value: string) => void
 }
 
@@ -40,19 +58,29 @@ export function BudgetTypeSection({
 	values,
 	total,
 	incomeTotal,
+	usage,
 	onValueChange,
 }: BudgetTypeSectionProps) {
 	return (
 		<section className="modern-card overflow-hidden">
 			<h2 className="border-b p-4 font-semibold">{typeLabels[type]}</h2>
-			{categories.map((category) => (
-				<BudgetCategoryRow
-					key={category.id}
-					category={category}
-					value={values[category.id] ?? ""}
-					onValueChange={(value) => onValueChange(category.id, value)}
-				/>
-			))}
+			{categories.map((category) => {
+				const categoryUsage = usage.get(category.id)
+				const actual = categoryUsage?.actual ?? 0
+				const committed = categoryUsage?.committed ?? 0
+				const planned = amountInputToCents(values[category.id] ?? "")
+				return (
+					<BudgetCategoryRow
+						key={category.id}
+						category={category}
+						value={values[category.id] ?? ""}
+						actual={actual}
+						committed={committed}
+						available={planned - actual - committed}
+						onValueChange={(value) => onValueChange(category.id, value)}
+					/>
+				)
+			})}
 			<BudgetTypeTotal type={type} total={total} incomeTotal={incomeTotal} />
 		</section>
 	)

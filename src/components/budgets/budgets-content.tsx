@@ -7,6 +7,7 @@ import { toast } from "react-toastify"
 import {
 	createBudget,
 	getBudget,
+	getBudgetReport,
 	saveBudgetItems,
 	type BudgetWithItems,
 } from "@/features/budgets"
@@ -16,24 +17,11 @@ import { calculateBudgetPlanAdjustment } from "@/lib/engines/budget-report"
 import { centsToDollars } from "@/types/finance"
 import { BudgetCreateModal } from "./budget-create-modal"
 import { BudgetPlanWarning } from "./budget-plan-warning"
-import { budgetTypes, BudgetTypeSection } from "./budget-type-section"
-
-function amountInputToCents(value: string): number {
-	const normalized = value.trim().replace(",", ".")
-	if (!normalized) return 0
-
-	const [wholePart, decimalPart = "", ...remainingParts] = normalized.split(".")
-	if (
-		remainingParts.length > 0 ||
-		!/^\d+$/.test(wholePart) ||
-		!/^\d*$/.test(decimalPart)
-	)
-		return 0
-
-	const cents =
-		Number(wholePart) * 100 + Number(decimalPart.padEnd(2, "0").slice(0, 2))
-	return Number.isSafeInteger(cents) ? cents : 0
-}
+import {
+	amountInputToCents,
+	budgetTypes,
+	BudgetTypeSection,
+} from "./budget-type-section"
 
 export function BudgetsContent() {
 	const now = new Date()
@@ -42,15 +30,19 @@ export function BudgetsContent() {
 	const [budget, setBudget] = useState<BudgetWithItems | null>(null)
 	const [categories, setCategories] = useState<CategoryWithGroup[]>([])
 	const [values, setValues] = useState<Record<string, string>>({})
+	const [usage, setUsage] = useState<
+		Map<string, { actual: number; committed: number }>
+	>(new Map())
 	const [loading, setLoading] = useState(true)
 	const [saving, setSaving] = useState(false)
 	const { isOpen, onOpen, onClose } = useDisclosure()
 
 	const load = async () => {
 		setLoading(true)
-		const [budgetResult, categoriesResult] = await Promise.all([
+		const [budgetResult, categoriesResult, reportResult] = await Promise.all([
 			getBudget(year, month),
 			getCategories(),
+			getBudgetReport(year, month),
 		])
 		if (budgetResult.success) {
 			setBudget(budgetResult.budget)
@@ -67,6 +59,23 @@ export function BudgetsContent() {
 		}
 		if (categoriesResult.success) setCategories(categoriesResult.categories)
 		else toast.error(categoriesResult.error)
+		if (reportResult.success && reportResult.report) {
+			const nextUsage = new Map<
+				string,
+				{ actual: number; committed: number }
+			>()
+			for (const group of reportResult.report.groups) {
+				for (const item of group.items) {
+					nextUsage.set(item.categoryId, {
+						actual: item.actual,
+						committed: item.committed,
+					})
+				}
+			}
+			setUsage(nextUsage)
+		} else {
+			setUsage(new Map())
+		}
 		setLoading(false)
 	}
 
@@ -192,6 +201,7 @@ export function BudgetsContent() {
 								values={values}
 								total={typeTotals[type]}
 								incomeTotal={typeTotals.INCOME}
+								usage={usage}
 								onValueChange={(categoryId, value) =>
 									setValues((current) => ({ ...current, [categoryId]: value }))
 								}

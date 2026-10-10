@@ -4,8 +4,10 @@ import { useEffect, useState } from "react"
 import { cn, Input, Spinner } from "@nextui-org/react"
 import { ArrowDownRight, ArrowUpRight, ChevronDown, Minus } from "lucide-react"
 import { getBudgetReport } from "@/features/budgets"
+import { getMonthlySavings } from "@/features/reports"
 import { useReportPeriod } from "@/components/reports/use-report-period"
 import type { BudgetGroupType, BudgetReport } from "@/lib/engines/budget-report"
+import type { MonthlySavingsResult } from "@/lib/engines/monthly-savings"
 import { formatCurrency } from "@/types/finance"
 import { toast } from "react-toastify"
 import { BudgetPlanWarning } from "./budget-plan-warning"
@@ -16,6 +18,7 @@ const reportTypes = ["INCOME", "ESSENTIAL", "LIFESTYLE", "INVESTMENT"] as const
 export function BudgetReportContent() {
 	const { year, month, periodParam, setPeriod } = useReportPeriod()
 	const [report, setReport] = useState<BudgetReport | null>(null)
+	const [savings, setSavings] = useState<MonthlySavingsResult | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [expandedTypes, setExpandedTypes] = useState<Set<BudgetGroupType>>(
 		new Set(),
@@ -23,9 +26,13 @@ export function BudgetReportContent() {
 	const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
 	useEffect(() => {
 		setLoading(true)
-		getBudgetReport(year, month).then((result) => {
-			if (result.success) setReport(result.report)
-			else toast.error(result.error)
+		Promise.all([
+			getBudgetReport(year, month),
+			getMonthlySavings(year, month),
+		]).then(([reportResult, savingsResult]) => {
+			if (reportResult.success) setReport(reportResult.report)
+			else toast.error(reportResult.error)
+			if (savingsResult.success) setSavings(savingsResult.savings)
 			setLoading(false)
 		})
 	}, [year, month])
@@ -61,6 +68,7 @@ export function BudgetReportContent() {
 					className="max-w-xs"
 				/>
 			</div>
+			{savings && <SavingsSummary savings={savings} />}
 			{!report ? (
 				<div className="modern-card p-8 text-center text-slate-500">
 					Nenhum orçamento criado para este mês.
@@ -154,6 +162,64 @@ export function BudgetReportContent() {
 	)
 }
 
+function SavingsSummary({ savings }: { savings: MonthlySavingsResult }) {
+	const difference = savings.difference.saved
+	return (
+		<section className="modern-card p-4" aria-labelledby="savings-heading">
+			<div className="mb-3">
+				<h2
+					id="savings-heading"
+					className="text-sm font-semibold text-slate-700 dark:text-slate-200"
+				>
+					Economia do mês
+				</h2>
+				<p className="text-sm text-slate-500">
+					Quanto sobra no mês: previsto versus realizado.
+				</p>
+			</div>
+			<div className="grid gap-3 sm:grid-cols-2">
+				<div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">
+					<p className="text-xs font-medium text-slate-600 dark:text-slate-300">
+						Previsto
+					</p>
+					<p className="mt-1 text-lg font-semibold">
+						{formatCurrency(savings.previsto.saved)}
+					</p>
+					<p className="text-xs text-slate-500">
+						Economia total · {savings.previsto.savingsRate.toFixed(0)}% das
+						entradas
+					</p>
+					<p className="mt-1 text-xs text-slate-500">
+						Caixa livre: {formatCurrency(savings.previsto.freeCash)}
+					</p>
+				</div>
+				<div className="rounded-xl bg-emerald-50 p-3 dark:bg-emerald-900/20">
+					<p className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+						Realizado
+					</p>
+					<p className="mt-1 text-lg font-semibold text-emerald-800 dark:text-emerald-200">
+						{formatCurrency(savings.realizado.saved)}
+					</p>
+					<p className="text-xs text-emerald-700 dark:text-emerald-300">
+						Economia total · {savings.realizado.savingsRate.toFixed(0)}% das
+						entradas
+					</p>
+					<p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
+						Caixa livre: {formatCurrency(savings.realizado.freeCash)}
+					</p>
+				</div>
+			</div>
+			<p className="mt-3 text-sm text-slate-500">
+				{difference === 0
+					? "Economia exatamente como o previsto."
+					: difference > 0
+						? `Você está economizando ${formatCurrency(difference)} a mais que o previsto.`
+						: `Você está economizando ${formatCurrency(Math.abs(difference))} a menos que o previsto.`}
+			</p>
+		</section>
+	)
+}
+
 export function AllocationSummary({
 	target,
 	budgeted,
@@ -234,17 +300,18 @@ export function CategoryGroup({
 			</button>
 			{isExpanded && (
 				<div className="border-t bg-slate-50/70 p-2 dark:bg-slate-800/30 sm:p-3">
-					<div className="hidden grid-cols-[minmax(0,1fr)_auto_auto_auto] gap-3 px-3 pb-2 text-[11px] font-medium uppercase tracking-wide text-slate-400 sm:grid">
+					<div className="hidden grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] gap-3 px-3 pb-2 text-[11px] font-medium uppercase tracking-wide text-slate-400 sm:grid">
 						<span>Categoria</span>
 						<span>Orçado</span>
 						<span>Realizado</span>
-						<span>Diferença</span>
+						<span>{group.type === "INCOME" ? "Previsto" : "Comprometido"}</span>
+						<span>{group.type === "INCOME" ? "A receber" : "Disponível"}</span>
 					</div>
 					{group.items.map((item, index) => (
 						<div
 							key={item.categoryId}
 							className={cn(
-								"grid grid-cols-2 gap-x-3 gap-y-2 rounded-lg p-3 text-sm shadow-sm sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-center",
+								"grid grid-cols-2 gap-x-3 gap-y-2 rounded-lg p-3 text-sm shadow-sm sm:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] sm:items-center",
 								index % 2 === 0
 									? "bg-white dark:bg-slate-900"
 									: "bg-indigo-50/10 dark:bg-indigo-950/10",
@@ -272,27 +339,23 @@ export function CategoryGroup({
 								</p>
 							</div>
 							<div className="sm:contents">
-								<span className="flex flex-col gap-0.5 sm:block">
-									<span className="text-[11px] font-medium uppercase tracking-wide text-slate-400 sm:hidden">
-										Orçado
-									</span>
-									{formatCurrency(item.budgeted)}
-								</span>
-								<span className="flex flex-col gap-0.5 sm:block">
-									<span className="text-[11px] font-medium uppercase tracking-wide text-slate-400 sm:hidden">
-										Realizado
-									</span>
-									{formatCurrency(item.actual)}
-								</span>
-								<div className="col-span-2 flex flex-col gap-0.5 sm:col-span-1 sm:block">
-									<span className="text-[11px] font-medium uppercase tracking-wide text-slate-400 sm:hidden">
-										Diferença
-									</span>
-									<DifferenceIndicator
-										type={group.type}
-										difference={item.difference}
-									/>
-								</div>
+								<ReportCell
+									label="Orçado"
+									value={formatCurrency(item.budgeted)}
+								/>
+								<ReportCell
+									label="Realizado"
+									value={formatCurrency(item.actual)}
+								/>
+								<ReportCell
+									label={group.type === "INCOME" ? "Previsto" : "Comprometido"}
+									value={formatCurrency(item.committed)}
+								/>
+								<ReportCell
+									label={group.type === "INCOME" ? "A receber" : "Disponível"}
+									value={formatCurrency(item.available)}
+									tone={item.available < 0 ? "danger" : "default"}
+								/>
 							</div>
 						</div>
 					))}
@@ -371,6 +434,30 @@ export function DifferenceIndicator({
 			<Icon className="h-4 w-4" aria-hidden />
 			{formatCurrency(difference)}
 			{showLabel && <span className="text-xs">{label}</span>}
+		</span>
+	)
+}
+
+function ReportCell({
+	label,
+	value,
+	tone = "default",
+}: {
+	label: string
+	value: string
+	tone?: "default" | "danger"
+}) {
+	return (
+		<span
+			className={cn(
+				"flex flex-col gap-0.5 sm:block",
+				tone === "danger" && "font-medium text-red-600 dark:text-red-400",
+			)}
+		>
+			<span className="text-[11px] font-medium uppercase tracking-wide text-slate-400 sm:hidden">
+				{label}
+			</span>
+			{value}
 		</span>
 	)
 }

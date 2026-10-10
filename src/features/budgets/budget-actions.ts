@@ -260,7 +260,7 @@ export async function getBudgetReport(
 		const events = await prisma.event.findMany({
 			where: {
 				userId: user.id,
-				status: "CONFIRMED",
+				status: { in: ["CONFIRMED", "PLANNED"] },
 				date: { gte: startDate, lt: endDate },
 				categoryId: { not: null },
 			},

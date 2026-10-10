@@ -34,6 +34,10 @@ export interface BudgetReportItem {
 	categoryName: string
 	budgeted: Cents
 	actual: Cents
+	/** Planejado (ainda não confirmado) já comprometido no mês. */
+	committed: Cents
+	/** Disponível para gastar: orçado - realizado - comprometido. */
+	available: Cents
 	difference: Cents
 	executionPercent: number
 }
@@ -44,6 +48,7 @@ export interface BudgetReportGroup {
 	items: BudgetReportItem[]
 	budgeted: Cents
 	actual: Cents
+	committed: Cents
 }
 
 export interface BudgetReport {
@@ -99,16 +104,13 @@ export function calculateBudgetPlanAdjustment(
 
 export function buildBudgetReport(input: BudgetReportInput): BudgetReport {
 	const actualByCategory = new Map<string, Cents>()
+	const committedByCategory = new Map<string, Cents>()
 	const eventCategories = new Map<
 		string,
 		{ categoryName: string; groupName: string; groupType: BudgetGroupType }
 	>()
 	for (const event of input.events) {
-		if (event.status !== "CONFIRMED" || !event.categoryId) continue
-		actualByCategory.set(
-			event.categoryId,
-			(actualByCategory.get(event.categoryId) ?? 0) + Math.abs(event.amount),
-		)
+		if (!event.categoryId) continue
 		if (event.categoryName && event.groupName && event.groupType) {
 			eventCategories.set(event.categoryId, {
 				categoryName: event.categoryName,
@@ -116,17 +118,31 @@ export function buildBudgetReport(input: BudgetReportInput): BudgetReport {
 				groupType: event.groupType,
 			})
 		}
+		if (event.status === "CONFIRMED") {
+			actualByCategory.set(
+				event.categoryId,
+				(actualByCategory.get(event.categoryId) ?? 0) + Math.abs(event.amount),
+			)
+		} else if (event.status === "PLANNED") {
+			committedByCategory.set(
+				event.categoryId,
+				(committedByCategory.get(event.categoryId) ?? 0) + Math.abs(event.amount),
+			)
+		}
 	}
 
 	const groups = new Map<string, BudgetReportGroup>()
 	for (const item of input.items) {
 		const key = `${item.groupType}:${item.groupName}`
 		const actual = actualByCategory.get(item.categoryId) ?? 0
+		const committed = committedByCategory.get(item.categoryId) ?? 0
 		const reportItem: BudgetReportItem = {
 			categoryId: item.categoryId,
 			categoryName: item.categoryName,
 			budgeted: item.amount,
 			actual,
+			committed,
+			available: item.amount - actual - committed,
 			difference: item.amount - actual,
 			executionPercent: item.amount > 0 ? (actual / item.amount) * 100 : 0,
 		}
@@ -136,10 +152,12 @@ export function buildBudgetReport(input: BudgetReportInput): BudgetReport {
 			items: [],
 			budgeted: 0,
 			actual: 0,
+			committed: 0,
 		}
 		group.items.push(reportItem)
 		group.budgeted += item.amount
 		group.actual += actual
+		group.committed += committed
 		groups.set(key, group)
 	}
 	const budgetedCategoryIds = new Set(
@@ -149,6 +167,7 @@ export function buildBudgetReport(input: BudgetReportInput): BudgetReport {
 		if (budgetedCategoryIds.has(categoryId)) continue
 		const category = eventCategories.get(categoryId)
 		if (!category) continue
+		const committed = committedByCategory.get(categoryId) ?? 0
 		const key = `${category.groupType}:${category.groupName}`
 		const group = groups.get(key) ?? {
 			name: category.groupName,
@@ -156,16 +175,48 @@ export function buildBudgetReport(input: BudgetReportInput): BudgetReport {
 			items: [],
 			budgeted: 0,
 			actual: 0,
+			committed: 0,
 		}
 		group.items.push({
 			categoryId,
 			categoryName: category.categoryName,
 			budgeted: 0,
 			actual,
+			committed,
+			available: -(actual + committed),
 			difference: -actual,
 			executionPercent: 0,
 		})
 		group.actual += actual
+		group.committed += committed
+		groups.set(key, group)
+	}
+	for (const [categoryId, committed] of committedByCategory) {
+		if (budgetedCategoryIds.has(categoryId) || actualByCategory.has(categoryId)) {
+			continue
+		}
+		const category = eventCategories.get(categoryId)
+		if (!category) continue
+		const key = `${category.groupType}:${category.groupName}`
+		const group = groups.get(key) ?? {
+			name: category.groupName,
+			type: category.groupType,
+			items: [],
+			budgeted: 0,
+			actual: 0,
+			committed: 0,
+		}
+		group.items.push({
+			categoryId,
+			categoryName: category.categoryName,
+			budgeted: 0,
+			actual: 0,
+			committed,
+			available: -committed,
+			difference: 0,
+			executionPercent: 0,
+		})
+		group.committed += committed
 		groups.set(key, group)
 	}
 
