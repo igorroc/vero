@@ -6,6 +6,7 @@ import { getDashboardData } from "@/features/dashboard"
 import { DashboardAlerts } from "./dashboard-alerts"
 import { DashboardBalanceCard } from "./dashboard-balance-card"
 import { DashboardMonthlyBudget } from "./dashboard-monthly-budget"
+import { DashboardMonthlySavings } from "./dashboard-monthly-savings"
 import { DashboardBalanceChart } from "./dashboard-balance-chart"
 import { DashboardMonthlyComparison } from "./dashboard-monthly-comparison"
 import { DashboardMonthEndBalance } from "./dashboard-month-end-balance"
@@ -82,6 +83,7 @@ export function DashboardContent() {
 			{data.monthlyBudget && (
 				<DashboardMonthlyBudget monthlyBudget={data.monthlyBudget} />
 			)}
+			<DashboardMonthlySavings savings={data.monthlySavings} />
 			<DashboardMonthlyComparison comparison={data.monthlyComparison} />
 
 			<DashboardUpcomingEvents events={data.upcomingEvents} />
