@@ -99,6 +99,56 @@ export function formatMonthEndForChat(input: MonthEndForChatInput): string {
 	return `${header} Não é preciso resgatar: a conta fecha o mês positiva e permanecem ${formatBRL(input.investmentsCents)} em investimentos.`
 }
 
+export type MonthEndAccountForChatInput = {
+	name: string
+	type: string
+	projectedBalanceCents: number
+}
+
+export type MonthEndByAccountForChatInput = {
+	/** Último dia do mês em YYYY-MM-DD. */
+	monthEndDate: string
+	accounts: MonthEndAccountForChatInput[]
+	/** Total de parcelas de dívida do mês (centavos positivos). */
+	debtCents: number
+	/** Saldo em conta (não-investimento) agregado, já líquido de dívidas. */
+	availableCents: number
+	/** Saldo em investimentos agregado. */
+	investmentsCents: number
+}
+
+/**
+ * Texto determinístico do saldo de fim de mês SEPARADO POR CONTA (puro,
+ * testável). Cada conta traz o saldo projetado para o último dia do mês; as
+ * parcelas de dívida, que não têm conta definida, aparecem em linha própria
+ * para a soma fechar com os totais agregados. A IA apenas apresenta esse texto
+ * (nunca recalcula nem soma contas por conta própria).
+ */
+export function formatMonthEndByAccountForChat(
+	input: MonthEndByAccountForChatInput,
+): string {
+	const [year, month, day] = input.monthEndDate.split("-")
+	const dateLabel =
+		year && month && day ? `${day}/${month}/${year}` : input.monthEndDate
+	const accountLines = input.accounts.map((account) => {
+		const kind = account.type === "INVESTMENT" ? "investimento" : "conta"
+		return `- ${account.name} (${kind}): ${formatBRL(account.projectedBalanceCents)}`
+	})
+	const lines = [
+		`Saldo projetado no fim do mês (${dateLabel}), por conta, considerando todos os lançamentos planejados e parcelas deste mês:`,
+		...accountLines,
+	]
+	if (input.debtCents > 0) {
+		lines.push(
+			`- Parcelas de dívida (conta a definir): ${formatBRL(-input.debtCents)}`,
+		)
+	}
+	lines.push(
+		`Resumo — saldo em conta: ${formatBRL(input.availableCents)}; saldo em investimentos: ${formatBRL(input.investmentsCents)}.`,
+	)
+	return lines.join("\n")
+}
+
 const periodSchema = {
 	year: z
 		.number()
@@ -493,7 +543,7 @@ export function buildCompareMonthsForChat(
 export const chatTools = {
 	get_financial_summary: tool({
 		description:
-			"Resumo financeiro atual: saldo em conta e por conta, limite diário de gastos, próximos eventos (7 dias), saldo projetado no FIM DO MÊS CORRENTE (último dia corrido, com recomendação de resgate de investimentos) e projeção de 30 dias corridos. Para perguntas sobre 'fim do mês', 'desse mês' ou 'neste mês', use SEMPRE monthEndBalance (data exata no campo date). projection30d soma todas as contas em 30 dias corridos — nunca use para fim do mês.",
+			"Resumo financeiro atual: saldo em conta e por conta, limite diário de gastos, próximos eventos (7 dias), saldo projetado no FIM DO MÊS CORRENTE (último dia corrido, com recomendação de resgate de investimentos) e projeção de 30 dias corridos. Para perguntas sobre 'fim do mês', 'desse mês' ou 'neste mês', use SEMPRE monthEndBalance (data exata no campo date). projection30d soma todas as contas em 30 dias corridos — nunca use para fim do mês. Para o saldo de fim do mês SEPARADO POR CONTA, use monthEndByAccount (uma linha por conta com o saldo projetado e, à parte, as parcelas de dívida, que não têm conta definida); nunca use o saldo ATUAL de accounts para responder sobre fim do mês.",
 		inputSchema: z.object({}),
 		execute: async () => {
 			const result = await getDashboardData()
@@ -528,6 +578,29 @@ export const chatTools = {
 						investmentsCents: monthEnd.investmentsCents,
 						afterRedeemingCents: monthEnd.afterRedeemingCents,
 						monthEndDate: monthEnd.date,
+					}),
+				},
+				monthEndByAccount: {
+					date: monthEndDate,
+					accounts: data.monthEndAccountBalances.map((account) => ({
+						name: account.name,
+						type: account.type,
+						projectedBalance: formatBRL(account.projectedBalance),
+					})),
+					debt:
+						data.monthEndDebtCents > 0
+							? formatBRL(-data.monthEndDebtCents)
+							: null,
+					guidance: formatMonthEndByAccountForChat({
+						monthEndDate,
+						accounts: data.monthEndAccountBalances.map((account) => ({
+							name: account.name,
+							type: account.type,
+							projectedBalanceCents: account.projectedBalance,
+						})),
+						debtCents: data.monthEndDebtCents,
+						availableCents: data.monthEndBalances.available,
+						investmentsCents: data.monthEndBalances.investments,
 					}),
 				},
 				upcomingEvents: data.upcomingEvents.slice(0, 10).map((event) => ({
