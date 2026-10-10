@@ -17,6 +17,10 @@ import {
 	type BudgetInsight,
 } from "@/lib/engines/budget-report"
 import {
+	buildMonthlySavings,
+	type MonthlySavingsResult,
+} from "@/lib/engines/monthly-savings"
+import {
 	buildCashflowProjection,
 	getProjectionSummary,
 	findCriticalEvents,
@@ -36,6 +40,30 @@ import { addDays, endOfMonth, startOfDay } from "@/types/finance"
 import { canUse } from "@/features/billing"
 import { isLimitPreviewActive } from "@/features/onboarding"
 
+interface SavingsAmounts {
+	income: number
+	expense: number
+	investment: number
+}
+
+function sumSavingsAmounts(
+	events: Array<{ type: string; amount: number; status: string }>,
+): SavingsAmounts {
+	const totals: SavingsAmounts = { income: 0, expense: 0, investment: 0 }
+	for (const event of events) {
+		if (event.status === "SKIPPED") continue
+		if (event.type === "INCOME" && event.amount > 0) {
+			totals.income += event.amount
+		} else if (event.type === "EXPENSE" && event.amount < 0) {
+			totals.expense += Math.abs(event.amount)
+		} else if (event.type === "INVESTMENT" && event.amount < 0) {
+			totals.investment += Math.abs(event.amount)
+		}
+	}
+	return totals
+}
+
+
 export interface DashboardData {
 	// Balance info
 	availableBalance: Cents
@@ -45,9 +73,11 @@ export interface DashboardData {
 		outgoing: { budgeted: Cents; actual: Cents }
 		insight: BudgetInsight
 		categories: Array<{
+			id: string
 			name: string
 			budgeted: Cents
 			actual: Cents
+			committed: Cents
 			remaining: Cents
 			executionPercent: number
 		}>
@@ -57,6 +87,9 @@ export interface DashboardData {
 		outgoing: { current: Cents; previous: Cents }
 	}
 
+	// Monthly savings capacity (projected vs actual)
+	monthlySavings: MonthlySavingsResult
+
 	// Spending limit
 	spendingLimit: SpendingLimitResult | null
 	monthEndBalances: {
@@ -64,6 +97,14 @@ export interface DashboardData {
 		investments: Cents
 		afterRedeemingInvestments: Cents
 	}
+	monthEndAccountBalances: Array<{
+		id: string
+		name: string
+		type: string
+		currentBalance: Cents
+		projectedBalance: Cents
+	}>
+	monthEndDebtCents: Cents
 	monthlyBalanceSeries: BalanceSeriesPoint[]
 
 	// Upcoming events (next 7 days)
@@ -196,12 +237,13 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 							.filter((group) => group.type !== "INCOME")
 							.flatMap((group) => group.items)
 							.sort((a, b) => b.actual - a.actual || b.budgeted - a.budgeted)
-							.slice(0, 4)
 							.map((item) => ({
+								id: item.categoryId,
 								name: item.categoryName,
 								budgeted: item.budgeted,
 								actual: item.actual,
-								remaining: item.difference,
+								committed: item.committed,
+								remaining: item.available,
 								executionPercent: item.executionPercent,
 							})),
 					}
@@ -234,6 +276,19 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 				startOfDay(event.date).getTime() >= monthStart.getTime() &&
 				startOfDay(event.date).getTime() <= monthEnd.getTime(),
 		)
+		const savingsPrevisto = sumSavingsAmounts(
+			monthlyEvents.filter((event) => event.status === "PLANNED"),
+		)
+		savingsPrevisto.expense += monthlyDebtInstallments.reduce(
+			(total, installment) => total + installment.plannedAmount,
+			0,
+		)
+		const monthlySavings = buildMonthlySavings({
+			previsto: savingsPrevisto,
+			realizado: sumSavingsAmounts(
+				monthlyEvents.filter((event) => event.status === "CONFIRMED"),
+			),
+		})
 		const remainingMonthlyEvents = monthlyEvents.filter(
 			(event) =>
 				startOfDay(event.date).getTime() >= startOfDay(today).getTime(),
@@ -325,6 +380,18 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 				monthEndBalanceTotals.investments,
 			),
 		}
+		const monthEndAccountBalances = accounts.map((account) => ({
+			id: account.id,
+			name: account.name,
+			type: account.type,
+			currentBalance: account.currentBalance,
+			projectedBalance:
+				projectedAccountBalances.get(account.id) ?? account.currentBalance,
+		}))
+		const monthEndDebtCents = monthlyDebtInstallments.reduce(
+			(total, installment) => total + installment.plannedAmount,
+			0,
+		)
 
 		// Calculate spending limit
 		const spendingLimit = canShowSpendingLimit
@@ -493,8 +560,11 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
 				accounts,
 				monthlyBudget,
 				monthlyComparison: comparison,
+				monthlySavings,
 				spendingLimit,
 				monthEndBalances,
+				monthEndAccountBalances,
+				monthEndDebtCents,
 				monthlyBalanceSeries,
 				upcomingEvents,
 				projectionSummary,

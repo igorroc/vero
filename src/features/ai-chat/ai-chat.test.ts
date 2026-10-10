@@ -13,6 +13,7 @@ import {
 	buildSpendingByCategoryForChat,
 	buildTopExpensesForChat,
 	formatDivergencesForChat,
+	formatMonthEndByAccountForChat,
 	formatMonthEndForChat,
 	formatPeriodLabel,
 	resolvePeriod,
@@ -224,6 +225,52 @@ describe("formatMonthEndForChat", () => {
 	})
 })
 
+describe("formatMonthEndByAccountForChat", () => {
+	it("lista o saldo projetado por conta e separa as parcelas de dívida", () => {
+		const text = formatMonthEndByAccountForChat({
+			monthEndDate: "2026-09-30",
+			accounts: [
+				{ name: "Nubank", type: "BANK", projectedBalanceCents: 120500 },
+				{ name: "Carteira", type: "CASH", projectedBalanceCents: 30000 },
+				{ name: "Corretora", type: "INVESTMENT", projectedBalanceCents: 179388 },
+			],
+			debtCents: 45000,
+			availableCents: 105500,
+			investmentsCents: 179388,
+		})
+		expect(text).toMatch(/30\/09\/2026/)
+		expect(text).toMatch(/Nubank \(conta\): R\$\s?1\.205,00/)
+		expect(text).toMatch(/Carteira \(conta\): R\$\s?300,00/)
+		expect(text).toMatch(/Corretora \(investimento\): R\$\s?1\.793,88/)
+		expect(text).toMatch(/Parcelas de dívida \(conta a definir\): -R\$\s?450,00/)
+		expect(text).toMatch(/saldo em conta: R\$\s?1\.055,00/)
+		expect(text).toMatch(/saldo em investimentos: R\$\s?1\.793,88/)
+	})
+
+	it("omite a linha de dívida quando não há parcelas", () => {
+		const text = formatMonthEndByAccountForChat({
+			monthEndDate: "2026-09-30",
+			accounts: [{ name: "Nubank", type: "BANK", projectedBalanceCents: 50000 }],
+			debtCents: 0,
+			availableCents: 50000,
+			investmentsCents: 0,
+		})
+		expect(text).not.toMatch(/Parcelas de dívida/)
+		expect(text).toMatch(/Nubank \(conta\): R\$\s?500,00/)
+	})
+
+	it("mantém saldo negativo de uma conta", () => {
+		const text = formatMonthEndByAccountForChat({
+			monthEndDate: "2026-09-30",
+			accounts: [{ name: "Nubank", type: "BANK", projectedBalanceCents: -12345 }],
+			debtCents: 0,
+			availableCents: -12345,
+			investmentsCents: 0,
+		})
+		expect(text).toMatch(/Nubank \(conta\): -R\$\s?123,45/)
+	})
+})
+
 describe("formatDivergencesForChat", () => {
 	it("informa quando está tudo conciliado", () => {
 		expect(formatDivergencesForChat([])).toMatch(/conciliados/i)
@@ -328,12 +375,15 @@ describe("buildBudgetReportForChat", () => {
 					type: "LIFESTYLE",
 					budgeted: 50000,
 					actual: 60000,
+					committed: 0,
 					items: [
 						{
 							categoryId: "c1",
 							categoryName: "Mercado",
 							budgeted: 50000,
 							actual: 60000,
+							committed: 0,
+							available: -10000,
 							difference: -10000,
 							executionPercent: 120,
 						},
