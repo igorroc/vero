@@ -1,809 +1,923 @@
 .dashboard {
-	--dashboard-green: #08685c;
-	--dashboard-muted: #536966;
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	color: #142321;
+    --dashboard-green: #08685c;
+    --dashboard-muted: #536966;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    color: #142321;
 }
 
 .dashboard ::selection {
-	background: #bceee0;
-	color: #064e43;
+    background: #bceee0;
+    color: #064e43;
 }
 
 .dashboard :is(button, a):focus-visible {
-	outline: 3px solid #258b7c;
-	outline-offset: 4px;
+    outline: 3px solid #258b7c;
+    outline-offset: 4px;
 }
 
 .header,
 .sectionHeading {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
 }
 
 .header {
-	margin-bottom: 2px;
+    margin-bottom: 2px;
 }
 
 .header h1 {
-	font-size: clamp(26px, 3vw, 36px);
-	font-weight: 750;
-	letter-spacing: -0.035em;
-	line-height: 1.2;
+    font-size: clamp(26px, 3vw, 36px);
+    font-weight: 750;
+    letter-spacing: -0.035em;
+    line-height: 1.2;
 }
 
 .monthPicker {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	min-width: 250px;
-	border: 1px solid #d2e2de;
-	border-radius: 12px;
-	background: #ffffffb3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 250px;
+    border: 1px solid #d2e2de;
+    border-radius: 12px;
+    background: #ffffffb3;
 }
 
 .monthPicker span {
-	font-size: 15px;
-	font-weight: 650;
-	text-transform: capitalize;
+    font-size: 15px;
+    font-weight: 650;
+    text-transform: capitalize;
 }
 
 .monthPicker button {
-	display: grid;
-	width: 42px;
-	height: 42px;
-	place-items: center;
-	border-radius: 10px;
-	color: #254b45;
-	transition: background 160ms ease;
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border-radius: 10px;
+    color: #254b45;
+    transition: background 160ms ease;
 }
 
 .monthPicker button:hover:not(:disabled) {
-	background: #e1f2ed;
+    background: #e1f2ed;
 }
 
 .monthPicker button:disabled {
-	opacity: 0.35;
-	cursor: not-allowed;
+    opacity: 0.35;
+    cursor: not-allowed;
 }
 
 .section {
-	padding: 16px;
-	border-radius: 16px;
-	background: #fff;
+    padding: 16px;
+    border-radius: 16px;
+    background: #fff;
 }
 
 .section h2 {
-	font-size: clamp(20px, 2.3vw, 25px);
-	font-weight: 730;
-	letter-spacing: -0.03em;
-	line-height: 1.3;
+    font-size: clamp(20px, 2.3vw, 25px);
+    font-weight: 730;
+    letter-spacing: -0.03em;
+    line-height: 1.3;
 }
 
 .sectionHeading {
-	margin-bottom: 16px;
+    margin-bottom: 16px;
 }
 
 .summary {
-	position: relative;
-	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	overflow: hidden;
-	border-radius: 22px;
-	background: linear-gradient(110deg, #0a6a5e, #085c51);
-	color: white;
-	padding: 26px 10px;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: hidden;
+    border-radius: 22px;
+    background: linear-gradient(110deg, #0a6a5e, #085c51);
+    color: white;
+    padding: 26px 10px;
 }
 
 .summary::after {
-	position: absolute;
-	top: -34px;
-	right: -22px;
-	width: 100px;
-	height: 100px;
-	border-radius: 50%;
-	background: #8ce0c92b;
-	content: "";
-	pointer-events: none;
+    position: absolute;
+    top: -34px;
+    right: -22px;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: #8ce0c92b;
+    content: "";
+    pointer-events: none;
 }
 
 .metric {
-	z-index: 1;
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	min-width: 0;
-	padding: 8px 22px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+    padding: 8px 22px;
 }
 
 .metric + .metric {
-	border-left: 1px solid #ffffff50;
+    border-left: 1px solid #ffffff50;
 }
 
 .metricIcon {
-	display: grid;
-	flex: 0 0 42px;
-	height: 42px;
-	place-items: center;
-	border-radius: 50%;
-	background: #ffffff21;
-	color: #defff4;
+    display: grid;
+    flex: 0 0 42px;
+    height: 42px;
+    place-items: center;
+    border-radius: 50%;
+    background: #ffffff21;
+    color: #defff4;
 }
 
 .metricBody {
-	min-width: 0;
+    min-width: 0;
 }
 
 .metric h3 {
-	font-size: 13px;
-	font-weight: 500;
-	color: #e0f4ed;
+    font-size: 13px;
+    font-weight: 500;
+    color: #e0f4ed;
 }
 
 .metric h3 span {
-	white-space: nowrap;
+    white-space: nowrap;
 }
 
 .metricValue {
-	margin-top: 4px;
-	font-size: clamp(22px, 2.5vw, 31px);
-	font-weight: 730;
-	letter-spacing: -0.035em;
-	font-variant-numeric: tabular-nums;
-	line-height: 1.3;
-	overflow-wrap: anywhere;
+    margin-top: 4px;
+    font-size: clamp(22px, 2.5vw, 31px);
+    font-weight: 730;
+    letter-spacing: -0.035em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
 }
 
 .budgeted {
-	margin-top: 10px;
-	font-size: 13px;
-	color: #daeee8;
-	font-variant-numeric: tabular-nums;
+    margin-top: 10px;
+    font-size: 13px;
+    color: #daeee8;
+    font-variant-numeric: tabular-nums;
 }
 
 .summaryTarget {
-	position: absolute;
-	top: 12px;
-	right: 14px;
-	color: #b2eddb;
-	opacity: 0.6;
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    color: #b2eddb;
+    opacity: 0.6;
 }
 
 .textLink {
-	display: inline-flex;
-	flex-shrink: 0;
-	align-items: center;
-	gap: 7px;
-	min-height: 32px;
-	color: var(--dashboard-green);
-	font-size: 13px;
-	font-weight: 600;
-	text-underline-offset: 3px;
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 7px;
+    min-height: 32px;
+    color: var(--dashboard-green);
+    font-size: 13px;
+    font-weight: 600;
+    text-underline-offset: 3px;
 }
 
 .textLink:hover {
-	text-decoration: underline;
+    text-decoration: underline;
 }
 
 .goals {
-	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 16px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
 }
 
 .goalCard {
-	min-width: 0;
-	position: relative;
-	display: flex;
-	align-items: center;
-	gap: 18px;
-	min-height: 150px;
-	padding: 14px 20px;
-	border: 1px solid #dce6e3;
-	border-radius: 13px;
-	transition:
-		border-color 180ms ease,
-		background 180ms ease;
+    min-width: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    min-height: 150px;
+    padding: 14px 20px;
+    border: 1px solid #dce6e3;
+    border-radius: 13px;
+    transition: border-color 180ms ease,
+    background 180ms ease;
 }
 
 .goalCard:hover {
-	border-color: #79b9a9;
-	background: #f8fcfa;
+    border-color: #79b9a9;
+    background: #f8fcfa;
 }
 
 .vessel {
-	position: relative;
-	flex: 0 0 62px;
-	height: 122px;
-	overflow: hidden;
-	border: 2px solid #dce2df;
-	border-radius: 34px;
-	background: linear-gradient(
-		90deg,
-		#e6eeeb 0%,
-		#fff 22%,
-		#f6faf8 58%,
-		#dfe9e5 100%
-	);
-	box-shadow:
-		2px 4px 5px #183b2f18,
-		inset 0 0 8px #53695b10;
+    position: relative;
+    flex: 0 0 62px;
+    height: 122px;
+    overflow: hidden;
+    border: 2px solid #dce2df;
+    border-radius: 34px;
+    background: linear-gradient(
+            90deg,
+            #e6eeeb 0%,
+            #fff 22%,
+            #f6faf8 58%,
+            #dfe9e5 100%
+    );
+    box-shadow: 2px 4px 5px #183b2f18,
+    inset 0 0 8px #53695b10;
 }
 
 .vessel::after {
-	position: absolute;
-	inset: 12px auto 16px 7px;
-	width: 5px;
-	border-radius: 8px;
-	background: linear-gradient(#ffffffdb, #ffffff05);
-	content: "";
-	pointer-events: none;
+    position: absolute;
+    inset: 12px auto 16px 7px;
+    width: 5px;
+    border-radius: 8px;
+    background: linear-gradient(#ffffffdb, #ffffff05);
+    content: "";
+    pointer-events: none;
 }
 
 .liquid {
-	position: absolute;
-	right: 0;
-	bottom: 0;
-	left: 0;
-	max-height: 100%;
-	background: #00a98a;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    max-height: 100%;
+    background: #00a98a;
 }
 
 .wave {
-	position: absolute;
-	top: -10px;
-	left: 0;
-	width: 200%;
-	height: 12px;
-	display: block;
-	animation: water-drift 3.6s linear infinite;
+    position: absolute;
+    top: -10px;
+    left: 0;
+    width: 200%;
+    height: 12px;
+    display: block;
+    animation: water-drift 3.6s linear infinite;
 }
 
 .waveBack {
-	top: -11px;
-	fill: #62d8bf;
-	animation-duration: 5.2s;
-	animation-direction: reverse;
+    top: -11px;
+    fill: #62d8bf;
+    animation-duration: 5.2s;
+    animation-direction: reverse;
 }
 
 .waveFront {
-	fill: #00a98a;
+    fill: #00a98a;
 }
 
 .goalCard:nth-child(2) .wave {
-	animation-delay: -1.3s;
+    animation-delay: -1.3s;
 }
 
 .goalCard:nth-child(3) .wave {
-	animation-delay: -2.6s;
+    animation-delay: -2.6s;
 }
 
 @keyframes water-drift {
-	from {
-		transform: translateX(0);
-	}
-	to {
-		transform: translateX(-50%);
-	}
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.wave {
-		animation: none;
-	}
+    .wave {
+        animation: none;
+    }
 }
 
 .goalBody {
-	min-width: 0;
-	overflow-wrap: anywhere;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .goalBody h3 {
-	font-size: 17px;
-	font-weight: 700;
-	letter-spacing: -0.02em;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
 }
 
 .goalBody p {
-	margin-top: 6px;
-	color: var(--dashboard-muted);
-	font-size: 14px;
-	font-variant-numeric: tabular-nums;
+    margin-top: 6px;
+    color: var(--dashboard-muted);
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
 }
 
 .goalBody strong {
-	font-weight: 650;
-	color: #142321;
+    font-weight: 650;
+    color: #142321;
 }
 
 .percentage {
-	display: inline-block;
-	min-width: 74px;
-	margin-top: 14px;
-	padding: 1px 16px;
-	border-radius: 30px;
-	background: #d3f5e9;
-	color: #075e4f;
-	font-size: 21px;
-	font-weight: 750;
-	line-height: 1.4;
-	text-align: center;
-	font-variant-numeric: tabular-nums;
+    display: inline-block;
+    min-width: 74px;
+    margin-top: 14px;
+    padding: 1px 16px;
+    border-radius: 30px;
+    background: #d3f5e9;
+    color: #075e4f;
+    font-size: 21px;
+    font-weight: 750;
+    line-height: 1.4;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
 }
 
 .goalArrow {
-	margin-left: auto;
-	color: #6c9086;
+    margin-left: auto;
+    color: #6c9086;
 }
 
 .goalNote {
-	margin-top: 10px;
-	color: var(--dashboard-muted);
-	font-size: 12px;
+    margin-top: 10px;
+    color: var(--dashboard-muted);
+    font-size: 12px;
 }
 
 .emptyGoals {
-	display: flex;
-	align-items: center;
-	gap: 20px;
-	min-height: 138px;
-	padding: 22px;
-	border: 1px solid #dce6e3;
-	border-radius: 13px;
-	background: #fafdfc;
-	color: var(--dashboard-green);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    min-height: 138px;
+    padding: 22px;
+    border: 1px solid #dce6e3;
+    border-radius: 13px;
+    background: #fafdfc;
+    color: var(--dashboard-green);
 }
 
 .emptyGoals h3 {
-	font-size: 16px;
-	font-weight: 650;
-	color: #203f36;
+    font-size: 16px;
+    font-weight: 650;
+    color: #203f36;
 }
 
 .emptyGoals p {
-	margin-top: 4px;
-	color: var(--dashboard-muted);
-	font-size: 13px;
+    margin-top: 4px;
+    color: var(--dashboard-muted);
+    font-size: 13px;
 }
 
 .outlineLink {
-	display: inline-flex;
-	flex-shrink: 0;
-	align-items: center;
-	justify-content: center;
-	gap: 8px;
-	min-height: 40px;
-	margin-left: auto;
-	padding: 8px 14px;
-	border: 1px solid #a6cfc2;
-	border-radius: 8px;
-	font-size: 13px;
-	font-weight: 600;
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 40px;
+    margin-left: auto;
+    padding: 8px 14px;
+    border: 1px solid #a6cfc2;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 .outlineLink:hover {
-	background: #e2f4ed;
+    background: #e2f4ed;
 }
 
 .tableScroll {
-	overflow-x: auto;
-	border: 1px solid #e0e9e6;
-	border-radius: 10px;
-	scrollbar-color: #a6c6bb #f2f7f4;
+    overflow-x: auto;
+    border: 1px solid #e0e9e6;
+    border-radius: 10px;
+    scrollbar-color: #a6c6bb #f2f7f4;
 }
 
 .table {
-	width: 100%;
-	border-collapse: collapse;
-	table-layout: fixed;
-	text-align: left;
-	font-size: 13px;
-	font-variant-numeric: tabular-nums;
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    text-align: left;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
 }
 
 .table thead {
-	background: #eaf3f0;
-	color: #345952;
+    background: #eaf3f0;
+    color: #345952;
 }
 
 .table :is(th, td) {
-	padding: 9px 14px;
+    padding: 9px 14px;
 }
 
 .table thead th {
-	font-weight: 500;
+    font-weight: 500;
 }
 
 .table :is(th, td):last-child {
-	width: 48%;
-	text-align: right;
+    width: 48%;
+    text-align: right;
 }
 
 .actualCell {
-	display: flex;
-	flex-direction: column;
-	align-items: flex-end;
-	gap: 6px;
-	min-width: 0;
-	overflow-wrap: anywhere;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .budgetTrack {
-	width: 100%;
-	max-width: 220px;
-	height: 6px;
-	overflow: hidden;
-	border-radius: 6px;
-	background: #dce8e3;
+    width: 100%;
+    max-width: 220px;
+    height: 6px;
+    overflow: hidden;
+    border-radius: 6px;
+    background: #dce8e3;
 }
 
 .budgetFill {
-	height: 100%;
-	border-radius: inherit;
-	background: #168b73;
+    height: 100%;
+    border-radius: inherit;
+    background: #168b73;
 }
 
 .budgetExceeded {
-	background: #c42d42;
+    background: #c42d42;
 }
 
 .budgetReference {
-	font-size: 11px;
-	font-weight: 400;
-	color: #536966;
+    font-size: 11px;
+    font-weight: 400;
+    color: #536966;
 }
 
 .table tbody tr + tr {
-	border-top: 1px solid #eaf0ed;
+    border-top: 1px solid #eaf0ed;
 }
 
 .groupRow {
-	background: #f5f8f6;
-	font-weight: 650;
+    background: #f5f8f6;
+    font-weight: 650;
 }
 
 .groupRow.expanded {
-	background: #e2f3ed;
+    background: #e2f3ed;
 }
 
 .groupRow th {
-	padding: 0;
+    padding: 0;
 }
 
 .groupRow button {
-	display: flex;
-	align-items: center;
-	gap: 15px;
-	width: 100%;
-	min-height: 42px;
-	padding: 9px 14px;
-	text-align: left;
-	overflow-wrap: anywhere;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+    min-height: 42px;
+    padding: 9px 14px;
+    text-align: left;
+    overflow-wrap: anywhere;
 }
 
 .groupRow button:hover {
-	background: #c9e6db70;
+    background: #c9e6db70;
 }
 
 .groupRow button svg {
-	flex-shrink: 0;
+    flex-shrink: 0;
 }
 
 .categoryRow th {
-	padding-left: 46px;
-	font-weight: 400;
-	overflow-wrap: anywhere;
+    padding-left: 46px;
+    font-weight: 400;
+    overflow-wrap: anywhere;
 }
 
 .categoryRow {
-	background: #fff;
+    background: #fff;
 }
 
 .positive {
-	color: #16703d;
+    color: #16703d;
 }
 
 .negative {
-	color: #c42d42;
+    color: #c42d42;
 }
 
 .budgetNote {
-	margin: -2px 0 16px;
-	max-width: 75ch;
-	color: var(--dashboard-muted);
-	font-size: 13px;
-	line-height: 1.7;
+    margin: -2px 0 16px;
+    color: var(--dashboard-muted);
+    font-size: 13px;
+    line-height: 1.7;
 }
 
 .budgetNote a {
-	color: var(--dashboard-green);
-	text-decoration: underline;
-	text-underline-offset: 3px;
+    color: var(--dashboard-green);
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
 .emptyBudget {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 16px;
-	min-height: 100px;
-	padding: 20px;
-	border-radius: 10px;
-	background: #f3f8f5;
-	color: var(--dashboard-muted);
-	font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 100px;
+    padding: 20px;
+    border-radius: 10px;
+    background: #f3f8f5;
+    color: var(--dashboard-muted);
+    font-size: 14px;
 }
 
 .loading {
-	display: grid;
-	gap: 16px;
+    display: grid;
+    gap: 16px;
 }
 
 .loadingSummary,
 .loadingGoals,
 .loadingTable {
-	border-radius: 16px;
-	background: #e2ece7;
+    border-radius: 16px;
+    background: #e2ece7;
 }
 
 .loadingSummary {
-	height: 200px;
-	background: #d3e7de;
+    height: 200px;
+    background: #d3e7de;
 }
 
 .loadingGoals {
-	height: 200px;
+    height: 200px;
 }
 
 .loadingTable {
-	height: 250px;
+    height: 250px;
 }
 
 .loading > span {
-	color: var(--dashboard-muted);
-	font-size: 14px;
+    color: var(--dashboard-muted);
+    font-size: 14px;
 }
 
 .error {
-	display: grid;
-	justify-items: center;
-	gap: 14px;
-	padding: 70px 20px;
-	border-radius: 16px;
-	background: white;
-	text-align: center;
+    display: grid;
+    justify-items: center;
+    gap: 14px;
+    padding: 70px 20px;
+    border-radius: 16px;
+    background: white;
+    text-align: center;
 }
 
 .error h2 {
-	font-size: 21px;
-	font-weight: 650;
+    font-size: 21px;
+    font-weight: 650;
 }
 
 .error p {
-	color: var(--dashboard-muted);
+    color: var(--dashboard-muted);
 }
 
 .error button {
-	padding: 10px 18px;
-	border-radius: 8px;
-	background: var(--dashboard-green);
-	color: white;
+    padding: 10px 18px;
+    border-radius: 8px;
+    background: var(--dashboard-green);
+    color: white;
 }
 
 @media (min-width: 1280px) {
-	.section {
-		padding: 16px 20px 20px;
-	}
+    .section {
+        padding: 16px 20px 20px;
+    }
 }
 
 @media (max-width: 1100px) {
-	.goals {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
+    .goals {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 
-	.goalCard {
-		gap: 16px;
-		padding: 14px 18px;
-	}
+    .goalCard {
+        gap: 16px;
+        padding: 14px 18px;
+    }
 
-	.metric {
-		gap: 10px;
-		padding: 8px 14px;
-	}
+    .metric {
+        gap: 10px;
+        padding: 8px 14px;
+    }
 
-	.metricIcon {
-		flex-basis: 34px;
-		height: 34px;
-	}
+    .metricIcon {
+        flex-basis: 34px;
+        height: 34px;
+    }
 
-	.metricIcon svg {
-		width: 22px;
-	}
+    .metricIcon svg {
+        width: 22px;
+    }
 
-	.metric h3 span {
-		display: block;
-	}
+    .metric h3 span {
+        display: block;
+    }
 
-	.metricValue {
-		font-size: 23px;
-	}
+    .metricValue {
+        font-size: 23px;
+    }
 }
 
 @media (max-width: 640px) {
-	.dashboard {
-		gap: 14px;
-	}
+    .dashboard {
+        gap: 14px;
+    }
 
-	.header {
-		align-items: center;
-		gap: 8px;
-		margin-bottom: 2px;
-	}
+    .header {
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 2px;
+    }
 
-	.header h1 {
-		flex-shrink: 0;
-		font-size: clamp(18px, 5vw, 24px);
-	}
+    .header h1 {
+        flex-shrink: 0;
+        font-size: clamp(18px, 5vw, 24px);
+    }
 
-	.monthPicker {
-		min-width: 0;
-		width: auto;
-	}
+    .monthPicker {
+        min-width: 0;
+        width: auto;
+    }
 
-	.monthPicker span {
-		font-size: clamp(11px, 2.8vw, 13px);
-		white-space: nowrap;
-	}
+    .monthPicker span {
+        font-size: clamp(11px, 2.8vw, 13px);
+        white-space: nowrap;
+    }
 
-	.monthPicker button {
-		flex: 0 0 30px;
-		width: 30px;
-		height: 40px;
-	}
+    .monthPicker button {
+        flex: 0 0 30px;
+        width: 30px;
+        height: 40px;
+    }
 
-	.section {
-		padding: 14px;
-	}
+    .section {
+        padding: 14px;
+    }
 
-	.summary {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		padding: 8px 20px;
-		border-radius: 16px;
-	}
+    .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 8px 20px;
+        border-radius: 16px;
+    }
 
-	.metric {
-		gap: 18px;
-		padding: 18px 0;
-	}
+    .metric {
+        gap: 18px;
+        padding: 18px 0;
+    }
 
-	.metric + .metric {
-		border-left: 0;
-	}
+    .metric + .metric {
+        border-left: 0;
+    }
 
-	.metric:nth-child(-n + 2) {
-		grid-row: 2;
-		border-top: 1px solid #ffffff40;
-	}
+    .metric:nth-child(-n + 2) {
+        grid-row: 2;
+        border-top: 1px solid #ffffff40;
+    }
 
-	.metric:nth-child(1) {
-		padding-right: 10px;
-	}
+    .metric:nth-child(1) {
+        padding-right: 10px;
+    }
 
-	.metric:nth-child(2) {
-		padding-left: 10px;
-	}
+    .metric:nth-child(2) {
+        padding-left: 10px;
+    }
 
-	.metric:nth-child(3) {
-		grid-column: 1 / -1;
-		grid-row: 1;
-	}
+    .metric:nth-child(3) {
+        grid-column: 1 / -1;
+        grid-row: 1;
+    }
 
-	.metric:nth-child(-n + 2) .metricIcon {
-		display: none;
-	}
+    .metric:nth-child(-n + 2) .metricIcon {
+        display: none;
+    }
 
-	.metricIcon {
-		flex-basis: 42px;
-		height: 42px;
-	}
+    .metricIcon {
+        flex-basis: 42px;
+        height: 42px;
+    }
 
-	.metric h3 span {
-		display: inline;
-	}
+    .metric h3 span {
+        display: inline;
+    }
 
-	.metricValue {
-		font-size: clamp(18px, 4.5vw, 25px);
-	}
+    .metricValue {
+        font-size: clamp(18px, 4.5vw, 25px);
+    }
 
-	.metric:nth-child(3) .metricValue {
-		font-size: 29px;
-	}
+    .metric:nth-child(3) .metricValue {
+        font-size: 29px;
+    }
 
-	.budgeted {
-		margin-top: 5px;
-		font-size: 11px;
-	}
+    .budgeted {
+        margin-top: 5px;
+        font-size: 11px;
+    }
 
-	.metric:nth-child(3) .budgeted {
-		font-size: 13px;
-	}
+    .metric:nth-child(3) .budgeted {
+        font-size: 13px;
+    }
 
-	.sectionHeading {
-		gap: 10px;
-	}
+    .sectionHeading {
+        gap: 10px;
+    }
 
-	.sectionHeading h2 {
-		font-size: 20px;
-	}
+    .sectionHeading h2 {
+        font-size: 20px;
+    }
 
-	.textLink {
-		font-size: 12px;
-	}
+    .textLink {
+        font-size: 12px;
+    }
 
-	.goals {
-		grid-template-columns: 1fr;
-	}
+    .goals {
+        grid-template-columns: 1fr;
+    }
 
-	.goalCard {
-		gap: 20px;
-		padding: 14px 18px;
-	}
+    .goalCard {
+        gap: 20px;
+        padding: 14px 18px;
+    }
 
-	.goalArrow {
-		display: none;
-	}
+    .goalArrow {
+        display: none;
+    }
 
-	.goalBody p {
-		font-size: 13px;
-	}
+    .goalBody p {
+        font-size: 13px;
+    }
 
-	.emptyGoals {
-		flex-wrap: wrap;
-		gap: 14px;
-		padding: 20px 16px;
-	}
+    .emptyGoals {
+        flex-wrap: wrap;
+        gap: 14px;
+        padding: 20px 16px;
+    }
 
-	.emptyGoals > svg {
-		flex-shrink: 0;
-	}
+    .emptyGoals > svg {
+        flex-shrink: 0;
+    }
 
-	.emptyGoals > div {
-		flex: 1;
-		min-width: 180px;
-	}
+    .emptyGoals > div {
+        flex: 1;
+        min-width: 180px;
+    }
 
-	.outlineLink {
-		width: 100%;
-	}
+    .outlineLink {
+        width: 100%;
+    }
 
-	.table {
-		font-size: 12px;
-	}
+    .table {
+        font-size: 12px;
+    }
 
-	.table :is(th, td) {
-		padding: 9px 12px;
-	}
+    .table :is(th, td) {
+        padding: 9px 12px;
+    }
 
-	.groupRow th {
-		padding: 0;
-	}
+    .groupRow th {
+        padding: 0;
+    }
 
-	.categoryRow th {
-		padding-left: 36px;
-	}
+    .categoryRow th {
+        padding-left: 36px;
+    }
 
-	.groupRow button {
-		gap: 8px;
-		padding: 9px 10px;
-	}
+    .groupRow button {
+        gap: 8px;
+        padding: 9px 10px;
+    }
 
-	.emptyBudget {
-		align-items: flex-start;
-		flex-direction: column;
-		gap: 8px;
-	}
+    .emptyBudget {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+
+.categoryPicker {
+    min-width: 0;
+    margin-bottom: 20px;
+}
+
+.categoryPicker legend {
+    margin-bottom: 10px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.categoryPicker legend span {
+    color: #536966;
+    font-weight: 400;
+}
+
+.selectedCategories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.categoryDot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-left: 4px;
+    border-radius: 50%;
+}
+
+.historyMessage {
+    padding: 24px 0;
+    color: #536966;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.historyLegend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    margin-bottom: 16px;
+    font-size: 13px;
+}
+
+.historyLegend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.historyLegend i {
+    width: 18px;
+    height: 3px;
+    border-radius: 2px;
+}
+
+.historyChart {
+    width: 100%;
+    min-width: 0;
+    height: 290px;
+    font-variant-numeric: tabular-nums;
+}
+
+.historyTooltip {
+    padding: 12px;
+    border-radius: 10px;
+    background: white;
+    box-shadow: 0 4px 16px #183b2f20;
+    color: #203f36;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.historyTooltip p {
+    margin-top: 6px;
+}
+
+.historyDetails {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #536966;
+}
+
+.historyDetails summary {
+    width: fit-content;
+    padding: 8px 0;
+    color: #08685c;
+    cursor: pointer;
+}
+
+.historyTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.historyTable :is(th, td) {
+    padding: 10px 12px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.historyTable th:first-child {
+    text-align: left;
+}
+
+.historyTable thead {
+    background: #eaf3f0;
+}
+
+.historyTable tbody tr + tr {
+    border-top: 1px solid #eaf0ed;
 }

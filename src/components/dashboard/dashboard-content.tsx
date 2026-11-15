@@ -18,6 +18,7 @@ import { getDashboardOverview } from "@/features/dashboard"
 import type { BudgetReportGroup } from "@/lib/engines/budget-report"
 import { formatCurrency } from "@/types/finance"
 import styles from "./dashboard-overview.module.css"
+import { DashboardCategoryHistory } from "./dashboard-category-history"
 
 function signedCurrency(value: number) {
 	return `${value > 0 ? "+" : value < 0 ? "−" : ""}${formatCurrency(Math.abs(value))}`
@@ -415,6 +416,7 @@ export function DashboardContent() {
 					</>
 				)
 			)}
+			<DashboardCategoryHistory />
 		</div>
 	)
 }
