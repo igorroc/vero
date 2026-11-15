@@ -601,14 +601,30 @@
 	}
 
 	.header {
-		align-items: flex-start;
-		flex-direction: column;
-		gap: 14px;
+		align-items: center;
+		gap: 8px;
 		margin-bottom: 2px;
 	}
 
+	.header h1 {
+		flex-shrink: 0;
+		font-size: clamp(18px, 5vw, 24px);
+	}
+
 	.monthPicker {
-		width: 100%;
+		min-width: 0;
+		width: auto;
+	}
+
+	.monthPicker span {
+		font-size: clamp(11px, 2.8vw, 13px);
+		white-space: nowrap;
+	}
+
+	.monthPicker button {
+		flex: 0 0 30px;
+		width: 30px;
+		height: 40px;
 	}
 
 	.section {
