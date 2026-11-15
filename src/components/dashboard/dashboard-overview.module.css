@@ -399,6 +399,7 @@
 .table {
 	width: 100%;
 	border-collapse: collapse;
+	table-layout: fixed;
 	text-align: left;
 	font-size: 13px;
 	font-variant-numeric: tabular-nums;
@@ -417,9 +418,43 @@
 	font-weight: 500;
 }
 
-.table :is(th, td):nth-child(n + 3) {
+.table :is(th, td):last-child {
+	width: 48%;
 	text-align: right;
-	white-space: nowrap;
+}
+
+.actualCell {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 6px;
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.budgetTrack {
+	width: 100%;
+	max-width: 220px;
+	height: 6px;
+	overflow: hidden;
+	border-radius: 6px;
+	background: #dce8e3;
+}
+
+.budgetFill {
+	height: 100%;
+	border-radius: inherit;
+	background: #168b73;
+}
+
+.budgetExceeded {
+	background: #c42d42;
+}
+
+.budgetReference {
+	font-size: 11px;
+	font-weight: 400;
+	color: #536966;
 }
 
 .table tbody tr + tr {
@@ -447,6 +482,7 @@
 	min-height: 42px;
 	padding: 9px 14px;
 	text-align: left;
+	overflow-wrap: anywhere;
 }
 
 .groupRow button:hover {
@@ -458,7 +494,9 @@
 }
 
 .categoryRow th {
+	padding-left: 46px;
 	font-weight: 400;
+	overflow-wrap: anywhere;
 }
 
 .categoryRow {
@@ -743,7 +781,6 @@
 	}
 
 	.table {
-		min-width: 640px;
 		font-size: 12px;
 	}
 
@@ -753,6 +790,15 @@
 
 	.groupRow th {
 		padding: 0;
+	}
+
+	.categoryRow th {
+		padding-left: 36px;
+	}
+
+	.groupRow button {
+		gap: 8px;
+		padding: 9px 10px;
 	}
 
 	.emptyBudget {
