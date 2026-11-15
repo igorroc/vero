@@ -616,19 +616,40 @@
 	}
 
 	.summary {
-		grid-template-columns: 1fr;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		padding: 8px 20px;
 		border-radius: 16px;
 	}
 
 	.metric {
 		gap: 18px;
-		padding: 20px 0;
+		padding: 18px 0;
 	}
 
 	.metric + .metric {
-		border-top: 1px solid #ffffff40;
 		border-left: 0;
+	}
+
+	.metric:nth-child(-n + 2) {
+		grid-row: 2;
+		border-top: 1px solid #ffffff40;
+	}
+
+	.metric:nth-child(1) {
+		padding-right: 10px;
+	}
+
+	.metric:nth-child(2) {
+		padding-left: 10px;
+	}
+
+	.metric:nth-child(3) {
+		grid-column: 1 / -1;
+		grid-row: 1;
+	}
+
+	.metric:nth-child(-n + 2) .metricIcon {
+		display: none;
 	}
 
 	.metricIcon {
@@ -641,11 +662,20 @@
 	}
 
 	.metricValue {
+		font-size: clamp(18px, 4.5vw, 25px);
+	}
+
+	.metric:nth-child(3) .metricValue {
 		font-size: 29px;
 	}
 
 	.budgeted {
 		margin-top: 5px;
+		font-size: 11px;
+	}
+
+	.metric:nth-child(3) .budgeted {
+		font-size: 13px;
 	}
 
 	.sectionHeading {
